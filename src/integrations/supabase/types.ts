@@ -14,21 +14,32 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          room_id: string | null
           room_number: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          room_id?: string | null
           room_number: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          room_id?: string | null
           room_number?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "guests_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
@@ -39,6 +50,8 @@ export type Database = {
           id: string
           is_audio: boolean
           is_guest: boolean
+          responded_at: string | null
+          response_time: number | null
         }
         Insert: {
           audio_url?: string | null
@@ -48,6 +61,8 @@ export type Database = {
           id?: string
           is_audio?: boolean
           is_guest?: boolean
+          responded_at?: string | null
+          response_time?: number | null
         }
         Update: {
           audio_url?: string | null
@@ -57,6 +72,8 @@ export type Database = {
           id?: string
           is_audio?: boolean
           is_guest?: boolean
+          responded_at?: string | null
+          response_time?: number | null
         }
         Relationships: [
           {
@@ -65,6 +82,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "guests"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "response_statistics"
+            referencedColumns: ["guest_id"]
           },
         ]
       }
@@ -89,9 +113,51 @@ export type Database = {
         }
         Relationships: []
       }
+      rooms: {
+        Row: {
+          created_at: string | null
+          floor: string | null
+          id: string
+          room_number: string
+          status: string
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          floor?: string | null
+          id?: string
+          room_number: string
+          status?: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          floor?: string | null
+          id?: string
+          room_number?: string
+          status?: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      response_statistics: {
+        Row: {
+          avg_response_time: number | null
+          guest_id: string | null
+          guest_name: string | null
+          max_response_time: number | null
+          pending_messages: number | null
+          room_number: string | null
+          total_messages: number | null
+          wait_time_minutes: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

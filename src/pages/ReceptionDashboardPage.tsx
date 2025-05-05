@@ -2,8 +2,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ReceptionDashboard from "@/components/ReceptionDashboard";
+import RoomManagement from "@/components/RoomManagement";
+import DashboardStats from "@/components/DashboardStats";
 import { Button } from "@/components/ui/button";
-import { Hotel, LogOut } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Hotel, LogOut, MessageSquare, BarChart, Bed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 
@@ -11,6 +14,7 @@ const ReceptionDashboardPage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("messages");
 
   // Comprobar autenticación con Supabase Auth
   useEffect(() => {
@@ -82,8 +86,39 @@ const ReceptionDashboardPage = () => {
         </div>
       </header>
       
-      <div className="flex-grow">
-        <ReceptionDashboard />
+      <div className="flex-grow overflow-hidden bg-gray-100">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <div className="bg-white border-b">
+            <div className="container mx-auto">
+              <TabsList className="h-14">
+                <TabsTrigger value="messages" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  <span>Mensajes</span>
+                </TabsTrigger>
+                <TabsTrigger value="stats" className="flex items-center gap-2">
+                  <BarChart className="h-4 w-4" />
+                  <span>Estadísticas</span>
+                </TabsTrigger>
+                <TabsTrigger value="rooms" className="flex items-center gap-2">
+                  <Bed className="h-4 w-4" />
+                  <span>Habitaciones</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </div>
+          
+          <div className="flex-grow overflow-hidden">
+            <TabsContent value="messages" className="h-full m-0 p-0">
+              <ReceptionDashboard />
+            </TabsContent>
+            <TabsContent value="stats" className="h-full m-0 p-0">
+              <DashboardStats />
+            </TabsContent>
+            <TabsContent value="rooms" className="h-full m-0 p-0">
+              <RoomManagement />
+            </TabsContent>
+          </div>
+        </Tabs>
       </div>
     </div>
   );

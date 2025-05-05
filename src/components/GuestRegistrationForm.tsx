@@ -1,21 +1,66 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Hotel } from "lucide-react";
+import { Hotel, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface GuestRegistrationFormProps {
   onRegister: (guestName: string, roomNumber: string, guestId: string) => void;
 }
 
+type Room = {
+  id: string;
+  room_number: string;
+  status: string;
+  floor: string | null;
+  type: string | null;
+};
+
 const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
   const [guestName, setGuestName] = useState("");
-  const [roomNumber, setRoomNumber] = useState("");
+  const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(true);
   const { toast } = useToast();
+
+  // Fetch available rooms
+  useEffect(() => {
+    const fetchRooms = async () => {
+      setIsLoadingRooms(true);
+      try {
+        const { data, error } = await supabase
+          .from('rooms')
+          .select('*')
+          .eq('status', 'occupied') // Only show occupied rooms for guest chat
+          .order('room_number', { ascending: true });
+
+        if (error) throw error;
+        setRooms(data || []);
+      } catch (error) {
+        console.error("Error fetching rooms:", error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar las habitaciones",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingRooms(false);
+      }
+    };
+
+    fetchRooms();
+  }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,10 +74,10 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
       return;
     }
     
-    if (!roomNumber.trim()) {
+    if (!selectedRoomId) {
       toast({
-        title: "Número de habitación requerido",
-        description: "Por favor ingrese su número de habitación",
+        title: "Habitación requerida",
+        description: "Por favor seleccione su habitación",
         variant: "destructive",
       });
       return;
@@ -41,18 +86,26 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
     setIsLoading(true);
     
     try {
+      // Find room number from selected room id
+      const selectedRoom = rooms.find(room => room.id === selectedRoomId);
+      if (!selectedRoom) throw new Error("Habitación no encontrada");
+
       // Insert guest into Supabase
       const { data: guest, error } = await supabase
         .from('guests')
         .insert([
-          { name: guestName, room_number: roomNumber }
+          { 
+            name: guestName, 
+            room_number: selectedRoom.room_number, 
+            room_id: selectedRoomId 
+          }
         ])
         .select('id')
         .single();
       
       if (error) throw error;
       
-      onRegister(guestName, roomNumber, guest.id);
+      onRegister(guestName, selectedRoom.room_number, guest.id);
       
       toast({
         title: "¡Registro exitoso!",
@@ -99,21 +152,42 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="roomNumber">Número de Habitación</Label>
-          <Input
-            id="roomNumber"
-            placeholder="Ej: 101"
-            value={roomNumber}
-            onChange={(e) => setRoomNumber(e.target.value)}
-            className="w-full"
-            disabled={isLoading}
-          />
+          <Label htmlFor="roomNumber">Habitación</Label>
+          {isLoadingRooms ? (
+            <div className="flex items-center justify-center p-2">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <span className="text-sm">Cargando habitaciones...</span>
+            </div>
+          ) : rooms.length === 0 ? (
+            <div className="text-center p-2 text-sm text-red-500">
+              No hay habitaciones disponibles
+            </div>
+          ) : (
+            <Select 
+              value={selectedRoomId} 
+              onValueChange={setSelectedRoomId}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccione su habitación" />
+              </SelectTrigger>
+              <SelectContent>
+                {rooms.map((room) => (
+                  <SelectItem key={room.id} value={room.id}>
+                    {room.room_number} 
+                    {room.type && ` - ${room.type}`}
+                    {room.floor && ` (Piso ${room.floor})`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         
         <Button 
           type="submit" 
           className="w-full bg-hotel-600 hover:bg-hotel-700 transition-all"
-          disabled={isLoading}
+          disabled={isLoading || isLoadingRooms}
         >
           {isLoading ? "Procesando..." : "Continuar"}
         </Button>
