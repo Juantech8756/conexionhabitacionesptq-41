@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 const ReceptionLogin = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -20,36 +20,25 @@ const ReceptionLogin = () => {
     setIsLoading(true);
     
     try {
-      // Query the reception_users table to check credentials
-      const { data, error } = await supabase
-        .from('reception_users')
-        .select('id, username')
-        .eq('username', username)
-        .single();
+      // Use Supabase Auth for login
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      if (error || !data) {
-        throw new Error('Credenciales incorrectas');
-      }
+      if (error) throw error;
       
-      // For simplicity, we're using the hardcoded admin/admin123 credentials
-      // In a real-world app, we would use proper password hashing and verification
-      if (username === 'admin' && password === 'admin123') {
+      if (data && data.user) {
         // Login successful
         toast({
           title: "Acceso correcto",
           description: "Redirigiendo al dashboard..."
         });
         
-        // Store auth state
-        localStorage.setItem("receptionAuth", "true");
-        localStorage.setItem("receptionUserId", data.id);
-        
         // Redirect to dashboard
         navigate("/reception/dashboard");
-      } else {
-        throw new Error('Credenciales incorrectas');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
       toast({
         title: "Error de autenticación",
@@ -73,13 +62,13 @@ const ReceptionLogin = () => {
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="username">Usuario</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Ingrese su nombre de usuario"
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Ingrese su correo electrónico"
               disabled={isLoading}
               required
             />
@@ -108,7 +97,7 @@ const ReceptionLogin = () => {
         </form>
         
         <div className="mt-4 text-center text-sm text-gray-500">
-          <p>Para demo: usuario: admin, contraseña: admin123</p>
+          <p>Use la cuenta de administrador proporcionada por Supabase Auth</p>
         </div>
       </div>
     </div>
