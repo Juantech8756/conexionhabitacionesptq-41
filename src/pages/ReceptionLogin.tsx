@@ -6,36 +6,58 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Hotel } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const ReceptionLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    // Demo: Credenciales hardcodeadas para propósitos de demostración
-    // En una aplicación real, esto sería autenticado contra un backend
-    if (username === "admin" && password === "admin123") {
-      // Login exitoso
-      toast({
-        title: "Acceso correcto",
-        description: "Redirigiendo al dashboard..."
-      });
+    try {
+      // Query the reception_users table to check credentials
+      const { data, error } = await supabase
+        .from('reception_users')
+        .select('id, username')
+        .eq('username', username)
+        .single();
       
-      // En una aplicación real, aquí almacenaríamos un token de sesión
-      localStorage.setItem("receptionAuth", "true");
+      if (error || !data) {
+        throw new Error('Credenciales incorrectas');
+      }
       
-      // Redirigir al dashboard
-      navigate("/reception/dashboard");
-    } else {
+      // For simplicity, we're using the hardcoded admin/admin123 credentials
+      // In a real-world app, we would use proper password hashing and verification
+      if (username === 'admin' && password === 'admin123') {
+        // Login successful
+        toast({
+          title: "Acceso correcto",
+          description: "Redirigiendo al dashboard..."
+        });
+        
+        // Store auth state
+        localStorage.setItem("receptionAuth", "true");
+        localStorage.setItem("receptionUserId", data.id);
+        
+        // Redirect to dashboard
+        navigate("/reception/dashboard");
+      } else {
+        throw new Error('Credenciales incorrectas');
+      }
+    } catch (error) {
+      console.error("Login error:", error);
       toast({
         title: "Error de autenticación",
         description: "Credenciales incorrectas. Por favor, inténtelo de nuevo.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -58,6 +80,7 @@ const ReceptionLogin = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Ingrese su nombre de usuario"
+              disabled={isLoading}
               required
             />
           </div>
@@ -70,6 +93,7 @@ const ReceptionLogin = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Ingrese su contraseña"
+              disabled={isLoading}
               required
             />
           </div>
@@ -77,8 +101,9 @@ const ReceptionLogin = () => {
           <Button
             type="submit"
             className="w-full bg-hotel-600 hover:bg-hotel-700"
+            disabled={isLoading}
           >
-            Iniciar Sesión
+            {isLoading ? "Procesando..." : "Iniciar Sesión"}
           </Button>
         </form>
         

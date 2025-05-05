@@ -1,40 +1,49 @@
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import GuestRegistrationForm from "@/components/GuestRegistrationForm";
 import GuestChat from "@/components/GuestChat";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const GuestPortal = () => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [guestName, setGuestName] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
+  const [guestId, setGuestId] = useState("");
+  const { toast } = useToast();
 
-  // Comprobar si el usuario ya se ha registrado previamente
+  // Check if the user has registered previously
   useEffect(() => {
     const savedName = localStorage.getItem("guestName");
     const savedRoom = localStorage.getItem("roomNumber");
+    const savedId = localStorage.getItem("guestId");
     
-    if (savedName && savedRoom) {
+    if (savedName && savedRoom && savedId) {
       setGuestName(savedName);
       setRoomNumber(savedRoom);
+      setGuestId(savedId);
       setIsRegistered(true);
     }
   }, []);
 
-  const handleRegister = (name: string, room: string) => {
+  const handleRegister = async (name: string, room: string, id: string) => {
     setGuestName(name);
     setRoomNumber(room);
+    setGuestId(id);
     setIsRegistered(true);
     
-    // Guardar en localStorage para futuras visitas
+    // Save to localStorage for future visits
     localStorage.setItem("guestName", name);
     localStorage.setItem("roomNumber", room);
+    localStorage.setItem("guestId", id);
   };
 
   const handleBackToRegistration = () => {
-    // Para pruebas, permitimos volver al formulario
+    // For testing, allow returning to the form
     setIsRegistered(false);
     localStorage.removeItem("guestName");
     localStorage.removeItem("roomNumber");
+    localStorage.removeItem("guestId");
   };
 
   return (
@@ -43,6 +52,7 @@ const GuestPortal = () => {
         <GuestChat
           guestName={guestName}
           roomNumber={roomNumber}
+          guestId={guestId}
           onBack={handleBackToRegistration}
         />
       ) : (

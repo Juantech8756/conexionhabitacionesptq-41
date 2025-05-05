@@ -1,74 +1,143 @@
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { MessageCircle, Mic, MicOff, Send, ArrowLeft } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GuestChatProps {
   guestName: string;
   roomNumber: string;
+  guestId: string;
   onBack: () => void;
 }
 
 type MessageType = {
   id: string;
-  text: string;
-  isGuest: boolean;
-  isAudio?: boolean;
-  audioUrl?: string;
-  timestamp: Date;
+  content: string;
+  is_guest: boolean;
+  is_audio: boolean;
+  audio_url?: string;
+  created_at: string;
 };
 
-const GuestChat = ({ guestName, roomNumber, onBack }: GuestChatProps) => {
+const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) => {
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<MessageType[]>([
-    {
-      id: "welcome",
-      text: `¡Hola ${guestName}! Bienvenido/a. ¿En qué podemos ayudarte?`,
-      isGuest: false,
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<MessageType[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  // Fetch messages on initial load
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('guest_id', guestId)
+          .order('created_at', { ascending: true });
+        
+        if (error) throw error;
+        
+        if (data.length === 0) {
+          // Add welcome message if no messages exist
+          const welcomeMessage = {
+            id: 'welcome',
+            guest_id: guestId,
+            content: `¡Hola ${guestName}! Bienvenido/a. ¿En qué podemos ayudarte?`,
+            is_guest: false,
+            is_audio: false,
+            created_at: new Date().toISOString()
+          };
+          
+          const { error: insertError } = await supabase
+            .from('messages')
+            .insert([welcomeMessage]);
+            
+          if (!insertError) {
+            setMessages([welcomeMessage]);
+          }
+        } else {
+          setMessages(data);
+        }
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los mensajes",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    fetchMessages();
+    
+    // Subscribe to new messages
+    const channel = supabase
+      .channel('messages-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `guest_id=eq.${guestId}`
+        },
+        (payload) => {
+          setMessages(prev => [...prev, payload.new as MessageType]);
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [guestId, guestName, toast]);
+
+  // Scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  const generateId = () => Math.random().toString(36).substring(2, 9);
-
-  const sendMessage = () => {
-    if (message.trim() === "") return;
+  const sendMessage = async () => {
+    if (message.trim() === "" || isLoading) return;
     
-    const newMessage: MessageType = {
-      id: generateId(),
-      text: message,
-      isGuest: true,
-      timestamp: new Date(),
-    };
+    setIsLoading(true);
     
-    setMessages([...messages, newMessage]);
-    setMessage("");
-    
-    // Simulación de respuesta de la recepción después de 1-2 segundos
-    setTimeout(() => {
-      const receptionResponse: MessageType = {
-        id: generateId(),
-        text: "Gracias por su mensaje. Un miembro del personal le responderá en breve.",
-        isGuest: false,
-        timestamp: new Date(),
+    try {
+      const newMessage = {
+        guest_id: guestId,
+        content: message,
+        is_guest: true,
+        is_audio: false
       };
-      setMessages(prev => [...prev, receptionResponse]);
-    }, 1000 + Math.random() * 1000);
+      
+      const { error } = await supabase
+        .from('messages')
+        .insert([newMessage]);
+      
+      if (error) throw error;
+      
+      setMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el mensaje",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const startRecording = async () => {
@@ -81,32 +150,53 @@ const GuestChat = ({ guestName, roomNumber, onBack }: GuestChatProps) => {
         chunks.push(e.data);
       };
       
-      recorder.onstop = () => {
-        const audioBlob = new Blob(chunks, { type: "audio/webm" });
-        const audioUrl = URL.createObjectURL(audioBlob);
+      recorder.onstop = async () => {
+        setIsLoading(true);
         
-        const newAudioMessage: MessageType = {
-          id: generateId(),
-          text: "Mensaje de voz",
-          isGuest: true,
-          isAudio: true,
-          audioUrl: audioUrl,
-          timestamp: new Date(),
-        };
-        
-        setMessages([...messages, newAudioMessage]);
-        setAudioChunks([]);
-        
-        // Simulación de respuesta
-        setTimeout(() => {
-          const receptionResponse: MessageType = {
-            id: generateId(),
-            text: "Hemos recibido su mensaje de voz. Le responderemos en breve.",
-            isGuest: false,
-            timestamp: new Date(),
+        try {
+          const audioBlob = new Blob(chunks, { type: "audio/webm" });
+          
+          // Upload audio to Supabase Storage
+          const fileName = `audio_${Date.now()}_${guestId}.webm`;
+          const { data: uploadData, error: uploadError } = await supabase
+            .storage
+            .from('audio_messages')
+            .upload(fileName, audioBlob);
+          
+          if (uploadError) throw uploadError;
+          
+          // Get public URL for the uploaded file
+          const { data: publicUrlData } = supabase
+            .storage
+            .from('audio_messages')
+            .getPublicUrl(fileName);
+          
+          // Insert message with audio URL
+          const newAudioMessage = {
+            guest_id: guestId,
+            content: "Mensaje de voz",
+            is_guest: true,
+            is_audio: true,
+            audio_url: publicUrlData.publicUrl
           };
-          setMessages(prev => [...prev, receptionResponse]);
-        }, 1000 + Math.random() * 1000);
+          
+          const { error: messageError } = await supabase
+            .from('messages')
+            .insert([newAudioMessage]);
+          
+          if (messageError) throw messageError;
+          
+          setAudioChunks([]);
+        } catch (error) {
+          console.error("Error uploading audio:", error);
+          toast({
+            title: "Error",
+            description: "No se pudo enviar el mensaje de voz",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
       };
       
       recorder.start();
@@ -146,7 +236,8 @@ const GuestChat = ({ guestName, roomNumber, onBack }: GuestChatProps) => {
     }
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
     return new Intl.DateTimeFormat('es', {
       hour: '2-digit',
       minute: '2-digit'
@@ -173,22 +264,22 @@ const GuestChat = ({ guestName, roomNumber, onBack }: GuestChatProps) => {
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex ${msg.isGuest ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
             >
               <div
                 className={`max-w-[80%] p-3 ${
-                  msg.isGuest ? 'chat-bubble-guest' : 'chat-bubble-staff'
+                  msg.is_guest ? 'chat-bubble-guest' : 'chat-bubble-staff'
                 }`}
               >
-                {msg.isAudio ? (
-                  <audio controls src={msg.audioUrl} className="w-full">
+                {msg.is_audio ? (
+                  <audio controls src={msg.audio_url} className="w-full">
                     Su navegador no soporta el elemento de audio.
                   </audio>
                 ) : (
-                  <p>{msg.text}</p>
+                  <p>{msg.content}</p>
                 )}
                 <p className="text-xs mt-1 opacity-70 text-right">
-                  {formatTime(msg.timestamp)}
+                  {formatTime(msg.created_at)}
                 </p>
               </div>
             </div>
@@ -204,6 +295,7 @@ const GuestChat = ({ guestName, roomNumber, onBack }: GuestChatProps) => {
             variant="outline"
             onClick={toggleRecording}
             className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
+            disabled={isLoading}
           >
             {isRecording ? (
               <MicOff className="h-5 w-5 recording-animation" />
@@ -218,14 +310,14 @@ const GuestChat = ({ guestName, roomNumber, onBack }: GuestChatProps) => {
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && sendMessage()}
             className="flex-grow"
-            disabled={isRecording}
+            disabled={isRecording || isLoading}
           />
           
           <Button
             type="button"
             size="icon"
             onClick={sendMessage}
-            disabled={message.trim() === "" || isRecording}
+            disabled={message.trim() === "" || isRecording || isLoading}
             className="flex-shrink-0 bg-hotel-600 hover:bg-hotel-700"
           >
             <Send className="h-5 w-5" />

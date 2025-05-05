@@ -5,17 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Hotel } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GuestRegistrationFormProps {
-  onRegister: (guestName: string, roomNumber: string) => void;
+  onRegister: (guestName: string, roomNumber: string, guestId: string) => void;
 }
 
 const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
   const [guestName, setGuestName] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!guestName.trim()) {
@@ -35,13 +37,37 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
       });
       return;
     }
+
+    setIsLoading(true);
     
-    onRegister(guestName, roomNumber);
-    
-    toast({
-      title: "¡Registro exitoso!",
-      description: "Ahora puede comunicarse con recepción",
-    });
+    try {
+      // Insert guest into Supabase
+      const { data: guest, error } = await supabase
+        .from('guests')
+        .insert([
+          { name: guestName, room_number: roomNumber }
+        ])
+        .select('id')
+        .single();
+      
+      if (error) throw error;
+      
+      onRegister(guestName, roomNumber, guest.id);
+      
+      toast({
+        title: "¡Registro exitoso!",
+        description: "Ahora puede comunicarse con recepción",
+      });
+    } catch (error) {
+      console.error("Error registering guest:", error);
+      toast({
+        title: "Error de registro",
+        description: "No se pudo completar el registro. Por favor intente nuevamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -68,6 +94,7 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
             value={guestName}
             onChange={(e) => setGuestName(e.target.value)}
             className="w-full"
+            disabled={isLoading}
           />
         </div>
         
@@ -79,14 +106,16 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
             value={roomNumber}
             onChange={(e) => setRoomNumber(e.target.value)}
             className="w-full"
+            disabled={isLoading}
           />
         </div>
         
         <Button 
           type="submit" 
           className="w-full bg-hotel-600 hover:bg-hotel-700 transition-all"
+          disabled={isLoading}
         >
-          Continuar
+          {isLoading ? "Procesando..." : "Continuar"}
         </Button>
       </form>
     </div>
