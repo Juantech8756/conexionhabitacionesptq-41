@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -83,6 +84,8 @@
   }
   body {
     @apply bg-background text-foreground overflow-hidden;
+    touch-action: manipulation; /* Improve touch experience */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
   }
   
   /* Mejoras para el scroll */
@@ -97,9 +100,26 @@
   ::-webkit-scrollbar-thumb {
     @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
   }
+
+  /* Optimizaciones para mobile */
+  @media (max-width: 768px) {
+    ::-webkit-scrollbar {
+      @apply w-1 h-1;
+    }
+    
+    input, button, select, textarea {
+      @apply text-base; /* Slightly larger text on mobile for better readability */
+      font-size: 16px !important; /* Prevent iOS zoom on input focus */
+    }
+
+    /* Increase tap target sizes */
+    .tap-target {
+      @apply min-h-10 min-w-10;
+    }
+  }
 }
 
-/* Chat bubbles */
+/* Chat bubbles - optimized for mobile */
 .chat-bubble-guest {
   @apply bg-gradient-to-r from-hotel-600 to-hotel-500 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl shadow-md;
 }
@@ -229,6 +249,23 @@ button, a, .interactive {
   @apply transition-all duration-200;
 }
 
+/* Mobile optimized touch targets */
+@media (max-width: 768px) {
+  button, a, .interactive {
+    @apply touch-manipulation;
+  }
+  
+  /* Optimizar audio controls para mobile */
+  audio {
+    @apply max-h-10;
+  }
+  
+  /* Aumentar el tamaño minimo de elementos interactivos en mobile */
+  .interactive-mobile {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
+
 /* Gradientes para cabeceras */
 .gradient-header {
   @apply bg-gradient-to-r from-hotel-700 to-hotel-500 text-white shadow-md;
@@ -246,4 +283,41 @@ button, a, .interactive {
 /* Badge con gradiente */
 .gradient-badge {
   @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gradient-to-r from-hotel-500 to-hotel-400 text-white shadow-sm;
+}
+
+/* Mobile slide transitions */
+.slide-from-right {
+  animation: slideFromRight 0.3s forwards;
+}
+
+.slide-to-right {
+  animation: slideToRight 0.3s forwards;
+}
+
+.slide-from-left {
+  animation: slideFromLeft 0.3s forwards;
+}
+
+.slide-to-left {
+  animation: slideToLeft 0.3s forwards;
+}
+
+@keyframes slideFromRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideToRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes slideFromLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideToLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
 }

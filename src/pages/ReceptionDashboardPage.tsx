@@ -6,11 +6,13 @@ import RoomManagement from "@/components/RoomManagement";
 import DashboardStats from "@/components/DashboardStats";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Hotel, LogOut, MessageSquare, BarChart, Bed } from "lucide-react";
+import { Hotel, LogOut, MessageSquare, BarChart, Bed, Menu } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const ReceptionDashboardPage = () => {
   const navigate = useNavigate();
@@ -18,6 +20,8 @@ const ReceptionDashboardPage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("messages");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Comprobar autenticación con Supabase Auth
   useEffect(() => {
@@ -90,11 +94,70 @@ const ReceptionDashboardPage = () => {
       <header className="gradient-header p-4 shadow-lg">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
+            {isMobile && (
+              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="mr-2 text-white hover:bg-white/20">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Menú</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-0 w-[85vw] max-w-[300px]">
+                  <div className="bg-hotel-700 text-white p-4 flex items-center gap-2">
+                    <Hotel className="h-5 w-5" />
+                    <h2 className="text-lg font-medium">Hotel Connect</h2>
+                  </div>
+                  <nav className="p-4">
+                    <ul className="space-y-2">
+                      <li>
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start text-gray-700"
+                          onClick={() => {
+                            setActiveTab("messages");
+                            setSidebarOpen(false);
+                          }}
+                        >
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Mensajes
+                        </Button>
+                      </li>
+                      <li>
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start text-gray-700"
+                          onClick={() => {
+                            setActiveTab("stats");
+                            setSidebarOpen(false);
+                          }}
+                        >
+                          <BarChart className="h-4 w-4 mr-2" />
+                          Estadísticas
+                        </Button>
+                      </li>
+                      <li>
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start text-gray-700"
+                          onClick={() => {
+                            setActiveTab("rooms");
+                            setSidebarOpen(false);
+                          }}
+                        >
+                          <Bed className="h-4 w-4 mr-2" />
+                          Cabañas
+                        </Button>
+                      </li>
+                    </ul>
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            )}
             <Hotel className="h-6 w-6 mr-2" />
-            <h1 className="text-xl font-bold">Dashboard de Recepción</h1>
+            <h1 className={`font-bold ${isMobile ? "text-lg" : "text-xl"}`}>Dashboard de Recepción</h1>
           </div>
-          <div className="flex items-center space-x-4">
-            {user && (
+          <div className="flex items-center space-x-2">
+            {user && !isMobile && (
               <motion.span 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -112,9 +175,10 @@ const ReceptionDashboardPage = () => {
                 variant="ghost" 
                 className="text-white hover:bg-white/20 transition-colors" 
                 onClick={handleLogout}
+                size={isMobile ? "sm" : "default"}
               >
                 <LogOut className="h-4 w-4 mr-2" />
-                Cerrar sesión
+                {isMobile ? "" : "Cerrar sesión"}
               </Button>
             </motion.div>
           </div>
@@ -123,51 +187,53 @@ const ReceptionDashboardPage = () => {
       
       <div className="flex-grow overflow-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <div className="bg-white border-b shadow-sm">
-            <div className="container mx-auto">
-              <TabsList className="h-14">
-                <TabsTrigger value="messages" className="flex items-center gap-2 relative transition-all duration-300">
-                  <MessageSquare className="h-4 w-4" />
-                  <span>Mensajes</span>
-                  {activeTab === "messages" && (
-                    <motion.div 
-                      layoutId="active-tab-indicator"
-                      className="absolute -bottom-[1px] left-0 right-0 h-0.5 bg-hotel-600"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                    />
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="stats" className="flex items-center gap-2 relative transition-all duration-300">
-                  <BarChart className="h-4 w-4" />
-                  <span>Estadísticas</span>
-                  {activeTab === "stats" && (
-                    <motion.div 
-                      layoutId="active-tab-indicator"
-                      className="absolute -bottom-[1px] left-0 right-0 h-0.5 bg-hotel-600"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                    />
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="rooms" className="flex items-center gap-2 relative transition-all duration-300">
-                  <Bed className="h-4 w-4" />
-                  <span>Cabañas</span>
-                  {activeTab === "rooms" && (
-                    <motion.div 
-                      layoutId="active-tab-indicator"
-                      className="absolute -bottom-[1px] left-0 right-0 h-0.5 bg-hotel-600"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                    />
-                  )}
-                </TabsTrigger>
-              </TabsList>
+          {!isMobile && (
+            <div className="bg-white border-b shadow-sm">
+              <div className="container mx-auto">
+                <TabsList className="h-14">
+                  <TabsTrigger value="messages" className="flex items-center gap-2 relative transition-all duration-300">
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Mensajes</span>
+                    {activeTab === "messages" && (
+                      <motion.div 
+                        layoutId="active-tab-indicator"
+                        className="absolute -bottom-[1px] left-0 right-0 h-0.5 bg-hotel-600"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="stats" className="flex items-center gap-2 relative transition-all duration-300">
+                    <BarChart className="h-4 w-4" />
+                    <span>Estadísticas</span>
+                    {activeTab === "stats" && (
+                      <motion.div 
+                        layoutId="active-tab-indicator"
+                        className="absolute -bottom-[1px] left-0 right-0 h-0.5 bg-hotel-600"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="rooms" className="flex items-center gap-2 relative transition-all duration-300">
+                    <Bed className="h-4 w-4" />
+                    <span>Cabañas</span>
+                    {activeTab === "rooms" && (
+                      <motion.div 
+                        layoutId="active-tab-indicator"
+                        className="absolute -bottom-[1px] left-0 right-0 h-0.5 bg-hotel-600"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      />
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
             </div>
-          </div>
+          )}
           
           <div className="flex-grow overflow-auto">
             <TabsContent value="messages" className="h-full m-0 p-0 data-[state=active]:fade-in">

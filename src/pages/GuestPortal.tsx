@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import GuestRegistrationForm from "@/components/GuestRegistrationForm";
 import GuestChat from "@/components/GuestChat";
 import { useToast } from "@/components/ui/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 
 const GuestPortal = () => {
@@ -11,6 +12,7 @@ const GuestPortal = () => {
   const [roomNumber, setRoomNumber] = useState("");
   const [guestId, setGuestId] = useState("");
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Check if the user has registered previously
   useEffect(() => {

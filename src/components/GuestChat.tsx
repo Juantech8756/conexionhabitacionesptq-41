@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { MessageCircle, Mic, MicOff, Send, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface GuestChatProps {
   guestName: string;
@@ -33,6 +34,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Scroll to bottom function with smooth scrolling
   const scrollToBottom = (smooth = true) => {
@@ -257,10 +259,10 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      <header className="gradient-header-soft p-4 shadow-md">
+      <header className="gradient-header-soft p-3 shadow-md">
         <div className="flex items-center justify-between">
           <motion.button 
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: isMobile ? 1.05 : 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={onBack} 
             className="mr-2 p-2 rounded-full hover:bg-white/10 transition-colors" 
@@ -276,8 +278,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </header>
 
-      <div className="flex-grow overflow-auto p-4" ref={scrollContainerRef}>
-        <div className="space-y-4 max-w-3xl mx-auto">
+      <div className="flex-grow overflow-auto p-3" ref={scrollContainerRef}>
+        <div className={`space-y-3 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
           <AnimatePresence>
             {messages.map((msg) => (
               <motion.div
@@ -288,20 +290,25 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
                 className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] p-3 ${
+                  className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]"} p-3 ${
                     msg.is_guest 
                       ? 'chat-bubble-guest shadow-md' 
                       : 'chat-bubble-staff shadow-sm'
                   }`}
                 >
                   {msg.is_audio ? (
-                    <audio controls src={msg.audio_url} className="w-full">
-                      Su navegador no soporta el elemento de audio.
-                    </audio>
+                    <div className="w-full">
+                      <audio 
+                        controls 
+                        src={msg.audio_url} 
+                        className={`w-full ${isMobile ? "h-10" : ""}`}
+                      >
+                        Su navegador no soporta el elemento de audio.
+                      </audio>
+                    </div>
                   ) : (
-                    <p>{msg.content}</p>
+                    <p className={isMobile ? "text-sm break-words" : "break-words"}>{msg.content}</p>
                   )}
-                  {/* Timestamp removed */}
                 </div>
               </motion.div>
             ))}
@@ -309,8 +316,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      <div className="p-4 border-t border-gray-200 bg-white shadow-inner">
-        <div className="flex items-center space-x-2 max-w-3xl mx-auto">
+      <div className="p-3 border-t border-gray-200 bg-white shadow-inner">
+        <div className={`flex items-center space-x-2 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
           <Button
             type="button"
             size="icon"
@@ -331,7 +338,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-            className="flex-grow shadow-sm focus:ring-2 focus:ring-hotel-600/30 transition-all"
+            className="flex-grow shadow-sm focus:ring-2 focus:ring-hotel-600/30 transition-all text-sm"
             disabled={isRecording || isLoading}
           />
           

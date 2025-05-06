@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, MessageCircle, Mic, MicOff, Send, Bell, Clock, CircleCheck } from "lucide-react";
+import { User, MessageCircle, Mic, MicOff, Send, Bell, ArrowLeft, Menu } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile"; 
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 type Guest = {
   id: string;
@@ -46,7 +47,9 @@ const ReceptionDashboard = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
+  const [showGuestList, setShowGuestList] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -386,6 +389,15 @@ const ReceptionDashboard = () => {
         g.id === guest.id ? { ...g, unread_messages: 0 } : g
       )
     );
+    if (isMobile) {
+      setShowGuestList(false);
+    }
+  };
+
+  const handleBackToGuestList = () => {
+    if (isMobile) {
+      setSelectedGuest(null);
+    }
   };
 
   const formatTime = (dateString: string) => {
@@ -584,10 +596,198 @@ const ReceptionDashboard = () => {
     return null;
   };
 
+  // Mobile layout with sliding panels
+  if (isMobile) {
+    return (
+      <div className="flex h-full bg-gray-100 relative">
+        <AnimatePresence initial={false}>
+          {!selectedGuest ? (
+            <motion.div 
+              key="guest-list"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+              className="w-full h-full bg-white"
+            >
+              <div className="p-4 gradient-header flex items-center">
+                <h2 className="text-lg font-semibold flex items-center text-white">
+                  <User className="mr-2 h-5 w-5" />
+                  Huéspedes
+                </h2>
+              </div>
+              
+              <ScrollArea className="h-[calc(100%-64px)]">
+                <AnimatePresence>
+                  {guests.length === 0 ? (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="p-4 text-gray-500 text-center"
+                    >
+                      No hay huéspedes registrados
+                    </motion.div>
+                  ) : (
+                    guests.map((guest) => (
+                      <motion.div
+                        key={guest.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${
+                          selectedGuest?.id === guest.id ? "bg-blue-50 border-l-4 border-l-hotel-600" : ""
+                        }`}
+                        onClick={() => selectGuest(guest)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium flex items-center flex-wrap">
+                              {guest.name} 
+                              <span className="ml-2 text-sm text-gray-500">
+                                Cabaña {guest.room_number}
+                              </span>
+                            </p>
+                            {getRoomInfo(guest)}
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formatLastActivity(guest.last_activity)}
+                            </p>
+                          </div>
+                          {guest.unread_messages > 0 && (
+                            <motion.div 
+                              initial={{ scale: 0.8 }}
+                              animate={{ scale: 1 }}
+                              className="bg-hotel-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow-md"
+                            >
+                              {guest.unread_messages}
+                            </motion.div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </AnimatePresence>
+              </ScrollArea>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="chat-view"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+              className="flex flex-col w-full h-full bg-gray-50"
+            >
+              <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-3 text-white shadow-sm">
+                <div className="flex items-center">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="mr-2 text-white hover:bg-white/20"
+                    onClick={handleBackToGuestList}
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                  <div>
+                    <h2 className="text-base font-semibold">{selectedGuest.name}</h2>
+                    <p className="text-xs text-white/90">
+                      Cabaña {selectedGuest.room_number}
+                    </p>
+                  </div>
+                </div>
+              </header>
+
+              <div className="flex-grow overflow-auto p-2" ref={scrollContainerRef}>
+                <div className="space-y-3">
+                  <AnimatePresence>
+                    {messages[selectedGuest.id]?.map((msg) => (
+                      <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'}`}
+                      >
+                        <div
+                          className={`max-w-[85%] p-3 rounded-lg ${
+                            msg.is_guest 
+                              ? 'bg-white border border-gray-200 text-gray-800' 
+                              : 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white'
+                          }`}
+                        >
+                          {msg.is_audio ? (
+                            <div className="flex flex-col">
+                              <div className="flex items-center space-x-2">
+                                <Mic className="h-4 w-4" />
+                                <span className="text-sm">{msg.is_guest ? "Audio recibido" : "Audio enviado"}</span>
+                              </div>
+                              <audio 
+                                controls 
+                                src={msg.audio_url} 
+                                className="w-full mt-2 h-10"
+                              >
+                                Su navegador no soporta el elemento de audio.
+                              </audio>
+                            </div>
+                          ) : (
+                            <p className="text-sm break-words">{msg.content}</p>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+
+              <div className="p-3 border-t bg-white shadow-inner">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    onClick={toggleRecording}
+                    className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`}
+                    disabled={isLoading}
+                  >
+                    {isRecording ? (
+                      <MicOff className="h-4 w-4" />
+                    ) : (
+                      <Mic className="h-4 w-4" />
+                    )}
+                  </Button>
+                  
+                  <Input
+                    placeholder="Escriba su respuesta..."
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && sendReply()}
+                    className="flex-grow shadow-sm text-sm"
+                    disabled={isRecording || isLoading}
+                  />
+                  
+                  <Button
+                    type="button"
+                    size="icon"
+                    onClick={sendReply}
+                    disabled={replyText.trim() === "" || isRecording || isLoading}
+                    className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  // Desktop layout 
   return (
     <div className="flex h-full bg-gray-100">
       <div className="w-full h-full flex overflow-hidden">
-        {/* Lista de huéspedes */}
+        {/* Lista de huéspedes (desktop) */}
         <div className="w-1/4 border-r bg-white overflow-hidden flex flex-col">
           <div className="p-4 border-b bg-gradient-to-r from-hotel-700 to-hotel-500 text-white">
             <h2 className="text-xl font-semibold flex items-center">
@@ -650,7 +850,7 @@ const ReceptionDashboard = () => {
           </div>
         </div>
 
-        {/* Panel de mensajes */}
+        {/* Panel de mensajes (desktop) */}
         <div className="flex-grow flex flex-col bg-gray-50 overflow-hidden">
           {selectedGuest ? (
             <>
@@ -718,13 +918,6 @@ const ReceptionDashboard = () => {
                             ) : (
                               <p>{msg.content}</p>
                             )}
-                            <div className="flex items-center justify-end gap-2 mt-1">
-                              {msg.is_guest && msg.responded_at && (
-                                <div className="text-xs flex items-center">
-                                  <CircleCheck className="h-3 w-3" />
-                                </div>
-                              )}
-                            </div>
                           </div>
                         </motion.div>
                       ))}
