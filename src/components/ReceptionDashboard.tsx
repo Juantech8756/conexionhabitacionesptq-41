@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,6 +98,48 @@ const ReceptionDashboard = () => {
     };
   }, []);
 
+  // Force refresh guest statistics after a staff reply to properly update wait times
+  const refreshGuestStatistics = async () => {
+    try {
+      // Join guests and response_statistics to get updated wait times
+      const { data: statsData, error: statsError } = await supabase
+        .from('response_statistics')
+        .select('guest_id, guest_name, room_number, pending_messages, wait_time_minutes');
+
+      if (statsError) throw statsError;
+      
+      // Create a map of response statistics by guest_id
+      const statsMap: Record<string, any> = {};
+      statsData?.forEach(stat => {
+        statsMap[stat.guest_id] = stat;
+      });
+
+      // Update existing guests with new statistics
+      setGuests(prevGuests => 
+        prevGuests.map(guest => {
+          const guestStats = statsMap[guest.id] || {};
+          return {
+            ...guest,
+            unread_messages: guestStats.pending_messages || 0,
+            wait_time_minutes: guestStats.wait_time_minutes || 0
+          };
+        })
+      );
+
+      // Also update the selected guest if needed
+      if (selectedGuest) {
+        const updatedStats = statsMap[selectedGuest.id] || {};
+        setSelectedGuest(prev => prev ? {
+          ...prev,
+          unread_messages: updatedStats.pending_messages || 0,
+          wait_time_minutes: updatedStats.wait_time_minutes || 0
+        } : null);
+      }
+    } catch (error) {
+      console.error("Error refreshing guest statistics:", error);
+    }
+  };
+
   // Load guests with response stats
   useEffect(() => {
     const fetchGuests = async () => {
@@ -142,7 +185,7 @@ const ReceptionDashboard = () => {
               ...guest,
               last_activity: latestMessage?.created_at || guest.created_at,
               unread_messages: guestStats.pending_messages || 0,
-              wait_time_minutes: guestStats.wait_time_minutes || null
+              wait_time_minutes: guestStats.wait_time_minutes || 0
             };
           })
         );
@@ -179,13 +222,31 @@ const ReceptionDashboard = () => {
       .channel('public:messages')
       .on('postgres_changes', 
         { event: 'INSERT', schema: 'public', table: 'messages' },
-        fetchGuests
+        payload => {
+          // Only update wait times for guest messages
+          if ((payload.new as any).is_guest) {
+            fetchGuests();
+          }
+        }
+      )
+      .subscribe();
+    
+    // Subscribe to message updates (to track when messages are responded to)
+    const messageUpdatesChannel = supabase
+      .channel('public:message_updates')
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'messages' },
+        () => {
+          // When messages are marked as responded to, refresh statistics
+          refreshGuestStatistics();
+        }
       )
       .subscribe();
     
     return () => {
       supabase.removeChannel(guestsChannel);
       supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(messageUpdatesChannel);
     };
   }, [toast]);
 
@@ -297,7 +358,12 @@ const ReceptionDashboard = () => {
           .eq('id', msg.id);
       }
 
-      // Reset wait time in local state whenever staff replies
+      // Force refresh wait times from response_statistics
+      setTimeout(() => {
+        refreshGuestStatistics();
+      }, 500);
+
+      // Immediately reset wait time in local state - this provides instant UI feedback
       if (selectedGuest && selectedGuest.id === guestId) {
         setSelectedGuest(prev => prev ? { ...prev, wait_time_minutes: 0 } : null);
       }
@@ -347,6 +413,7 @@ const ReceptionDashboard = () => {
     setIsLoading(true);
     
     try {
+      // 1. Add the new message from reception staff
       const newMessage = {
         guest_id: selectedGuest.id,
         content: replyText,
@@ -361,8 +428,11 @@ const ReceptionDashboard = () => {
       if (error) throw error;
       
       setReplyText("");
-
-      // Reset wait time locally
+      
+      // 2. Mark all pending messages as responded
+      await updateResponseStatus(selectedGuest.id);
+      
+      // 3. Immediately reset wait time in the local UI for better UX feedback
       setSelectedGuest(prev => prev ? { ...prev, wait_time_minutes: 0 } : null);
       
       setGuests(prevGuests => 
@@ -370,6 +440,11 @@ const ReceptionDashboard = () => {
           g.id === selectedGuest.id ? { ...g, wait_time_minutes: 0 } : g
         )
       );
+
+      // 4. Force refresh guest statistics to ensure wait time is properly reset
+      setTimeout(() => {
+        refreshGuestStatistics();
+      }, 500);
     } catch (error) {
       console.error("Error sending reply:", error);
       toast({
@@ -430,7 +505,10 @@ const ReceptionDashboard = () => {
           
           if (messageError) throw messageError;
 
-          // Reset wait time locally for both selectedGuest and in the guests list
+          // Mark all pending messages as responded
+          await updateResponseStatus(selectedGuest.id);
+          
+          // Immediately reset wait time in UI
           setSelectedGuest(prev => prev ? { ...prev, wait_time_minutes: 0 } : null);
           
           setGuests(prevGuests => 
@@ -438,6 +516,11 @@ const ReceptionDashboard = () => {
               g.id === selectedGuest.id ? { ...g, wait_time_minutes: 0 } : g
             )
           );
+          
+          // Force refresh statistics to ensure wait time is properly updated
+          setTimeout(() => {
+            refreshGuestStatistics();
+          }, 500);
         } catch (error) {
           console.error("Error uploading audio:", error);
           toast({

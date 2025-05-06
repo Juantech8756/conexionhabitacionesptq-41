@@ -10,9 +10,11 @@ import { Hotel, LogOut, MessageSquare, BarChart, Bed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
+import { useToast } from "@/components/ui/use-toast";
 
 const ReceptionDashboardPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("messages");
@@ -29,6 +31,11 @@ const ReceptionDashboardPage = () => {
         }
       } catch (error) {
         console.error("Error getting session:", error);
+        toast({
+          title: "Error de sesión",
+          description: "No se pudo verificar tu sesión. Por favor, inicia sesión nuevamente.",
+          variant: "destructive",
+        });
         navigate("/reception");
       } finally {
         setIsLoading(false);
@@ -46,7 +53,7 @@ const ReceptionDashboardPage = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const handleLogout = async () => {
     try {
@@ -54,6 +61,11 @@ const ReceptionDashboardPage = () => {
       navigate("/reception");
     } catch (error) {
       console.error("Error signing out:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo cerrar sesión. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
     }
   };
 
