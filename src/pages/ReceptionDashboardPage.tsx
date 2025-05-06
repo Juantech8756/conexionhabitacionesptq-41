@@ -109,7 +109,7 @@ const ReceptionDashboardPage = () => {
         </div>
       </header>
       
-      <div className="flex-grow overflow-hidden bg-gray-100">
+      <div className="flex-grow overflow-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <div className="bg-white border-b shadow-sm">
             <div className="container mx-auto">
@@ -157,7 +157,7 @@ const ReceptionDashboardPage = () => {
             </div>
           </div>
           
-          <div className="flex-grow overflow-hidden">
+          <div className="flex-grow overflow-auto">
             <TabsContent value="messages" className="h-full m-0 p-0 data-[state=active]:fade-in">
               <ReceptionDashboard />
             </TabsContent>

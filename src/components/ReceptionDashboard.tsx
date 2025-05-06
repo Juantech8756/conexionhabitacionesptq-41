@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -494,72 +493,74 @@ const ReceptionDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-full bg-gray-100">
       <div className="w-full h-full flex overflow-hidden">
         {/* Lista de huéspedes */}
         <div className="w-1/4 border-r bg-white overflow-hidden flex flex-col">
-          <div className="p-4 border-b bg-gradient-to-r from-hotel-600 to-hotel-500 text-white">
+          <div className="p-4 border-b bg-gradient-to-r from-hotel-700 to-hotel-500 text-white">
             <h2 className="text-xl font-semibold flex items-center">
               <User className="mr-2 h-5 w-5" />
               Huéspedes
             </h2>
           </div>
           
-          <ScrollArea className="flex-grow">
-            <AnimatePresence>
-              {guests.length === 0 ? (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="p-4 text-gray-500 text-center"
-                >
-                  No hay huéspedes registrados
-                </motion.div>
-              ) : (
-                guests.map((guest) => (
-                  <motion.div
-                    key={guest.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${
-                      selectedGuest?.id === guest.id ? "bg-blue-50 border-l-4 border-l-hotel-600" : ""
-                    }`}
-                    onClick={() => selectGuest(guest)}
+          <div className="flex-grow overflow-auto">
+            <ScrollArea className="h-full">
+              <AnimatePresence>
+                {guests.length === 0 ? (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="p-4 text-gray-500 text-center"
                   >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium flex items-center">
-                          {guest.name} 
-                          <span className="ml-2 text-sm text-gray-500">
-                            Cabaña {guest.room_number}
-                          </span>
-                          {getWaitTimeIndicator(guest.wait_time_minutes)}
-                        </p>
-                        {getRoomInfo(guest)}
-                        <p className="text-xs text-gray-500 mt-1">
-                          {formatLastActivity(guest.last_activity)}
-                        </p>
-                      </div>
-                      {guest.unread_messages > 0 && (
-                        <motion.div 
-                          initial={{ scale: 0.8 }}
-                          animate={{ scale: 1 }}
-                          className="bg-hotel-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow-md"
-                        >
-                          {guest.unread_messages}
-                        </motion.div>
-                      )}
-                    </div>
+                    No hay huéspedes registrados
                   </motion.div>
-                ))
-              )}
-            </AnimatePresence>
-          </ScrollArea>
+                ) : (
+                  guests.map((guest) => (
+                    <motion.div
+                      key={guest.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${
+                        selectedGuest?.id === guest.id ? "bg-blue-50 border-l-4 border-l-hotel-600" : ""
+                      }`}
+                      onClick={() => selectGuest(guest)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium flex items-center">
+                            {guest.name} 
+                            <span className="ml-2 text-sm text-gray-500">
+                              Cabaña {guest.room_number}
+                            </span>
+                            {getWaitTimeIndicator(guest.wait_time_minutes)}
+                          </p>
+                          {getRoomInfo(guest)}
+                          <p className="text-xs text-gray-500 mt-1">
+                            {formatLastActivity(guest.last_activity)}
+                          </p>
+                        </div>
+                        {guest.unread_messages > 0 && (
+                          <motion.div 
+                            initial={{ scale: 0.8 }}
+                            animate={{ scale: 1 }}
+                            className="bg-hotel-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow-md"
+                          >
+                            {guest.unread_messages}
+                          </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+            </ScrollArea>
+          </div>
         </div>
 
         {/* Panel de mensajes */}
-        <div className="flex-grow flex flex-col bg-gray-50">
+        <div className="flex-grow flex flex-col bg-gray-50 overflow-hidden">
           {selectedGuest ? (
             <>
               <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-4 text-white shadow-sm">
@@ -600,8 +601,8 @@ const ReceptionDashboard = () => {
                 </div>
               </header>
 
-              <div className="flex-grow overflow-auto" ref={scrollContainerRef}>
-                <ScrollArea className="h-full p-4">
+              <div className="flex-grow overflow-auto">
+                <div className="h-full p-4">
                   <div className="space-y-4">
                     <AnimatePresence>
                       {messages[selectedGuest.id]?.map((msg) => (
@@ -648,7 +649,7 @@ const ReceptionDashboard = () => {
                     </AnimatePresence>
                     <div ref={messagesEndRef} />
                   </div>
-                </ScrollArea>
+                </div>
               </div>
 
               <div className="p-4 border-t bg-white shadow-inner">

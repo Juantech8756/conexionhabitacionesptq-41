@@ -83,17 +83,30 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-hidden;
+  }
+  
+  /* Mejoras para el scroll */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
   }
 }
 
 /* Chat bubbles */
 .chat-bubble-guest {
-  @apply bg-gradient-to-r from-hotel-600 to-hotel-500 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl;
+  @apply bg-gradient-to-r from-hotel-600 to-hotel-500 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl shadow-md;
 }
 
 .chat-bubble-staff {
-  @apply bg-gray-100 text-gray-800 rounded-tr-2xl rounded-tl-2xl rounded-br-2xl border border-gray-200/50;
+  @apply bg-gray-100 text-gray-800 rounded-tr-2xl rounded-tl-2xl rounded-br-2xl border border-gray-200/50 shadow-sm;
 }
 
 /* Recording animation */
@@ -104,12 +117,15 @@
 @keyframes pulse {
   0% {
     opacity: 1;
+    transform: scale(1);
   }
   50% {
     opacity: 0.5;
+    transform: scale(1.05);
   }
   100% {
     opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -181,4 +197,54 @@
 /* Enhanced scroll behavior */
 .smooth-scroll {
   scroll-behavior: smooth;
+}
+
+/* Asegurar que los contenedores con scroll tengan la altura completa */
+.overflow-auto, .overflow-y-auto, .overflow-x-auto, .overflow-scroll, .overflow-y-scroll, .overflow-x-scroll {
+  @apply h-full;
+}
+
+/* Mejoras en animaciones de mensajes */
+.message-animation-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.message-animation-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.message-animation-exit {
+  opacity: 1;
+}
+
+.message-animation-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+/* Mejoras de diseño para elementos interactivos */
+button, a, .interactive {
+  @apply transition-all duration-200;
+}
+
+/* Gradientes para cabeceras */
+.gradient-header {
+  @apply bg-gradient-to-r from-hotel-700 to-hotel-500 text-white shadow-md;
+}
+
+.gradient-header-soft {
+  @apply bg-gradient-to-r from-hotel-600/90 to-hotel-400/90 text-white backdrop-blur-sm;
+}
+
+/* Mejora en las tarjetas */
+.enhanced-card {
+  @apply bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100;
+}
+
+/* Badge con gradiente */
+.gradient-badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gradient-to-r from-hotel-500 to-hotel-400 text-white shadow-sm;
 }
