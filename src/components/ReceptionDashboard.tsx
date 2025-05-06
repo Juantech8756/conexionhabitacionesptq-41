@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, MessageCircle, Mic, MicOff, Send, Bell, Clock, CircleCheck, CircleX } from "lucide-react";
+import { User, MessageCircle, Mic, MicOff, Send, Bell, Clock, CircleCheck, CircleX, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ const ReceptionDashboard = () => {
   const [replyText, setReplyText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResettingWaitTime, setIsResettingWaitTime] = useState(false);
   const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
   const { toast } = useToast();
   
@@ -474,7 +475,7 @@ const ReceptionDashboard = () => {
 
   // Get status indicator based on wait time
   const getWaitTimeIndicator = (waitMinutes: number | null) => {
-    if (waitMinutes === null) return null;
+    if (waitMinutes === null || waitMinutes === 0) return null;
     
     if (waitMinutes > 15) {
       return (
@@ -490,6 +491,66 @@ const ReceptionDashboard = () => {
       );
     }
     return null;
+  };
+
+  // Add a function to clear wait time
+  const clearWaitTime = async () => {
+    if (!selectedGuest) return;
+    
+    setIsResettingWaitTime(true);
+    
+    try {
+      // Update the guest's wait time in the local state
+      setGuests(prevGuests => 
+        prevGuests.map(g => 
+          g.id === selectedGuest.id ? { ...g, wait_time_minutes: 0 } : g
+        )
+      );
+      
+      // If the selected guest is the one being updated, update that too
+      if (selectedGuest) {
+        setSelectedGuest({ ...selectedGuest, wait_time_minutes: 0 });
+      }
+      
+      // Mark all pending messages as responded to ensure wait time resets
+      const { data: pendingMessages, error: fetchError } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('guest_id', selectedGuest.id)
+        .eq('is_guest', true)
+        .is('responded_at', null);
+      
+      if (fetchError) throw fetchError;
+      
+      if (pendingMessages && pendingMessages.length > 0) {
+        const now = new Date().toISOString();
+        
+        // Update each message with response time
+        for (const msg of pendingMessages) {
+          await supabase
+            .from('messages')
+            .update({
+              responded_at: now,
+              response_time: 0 // Set to 0 to indicate immediate response
+            })
+            .eq('id', msg.id);
+        }
+      }
+      
+      toast({
+        title: "Tiempo de espera reiniciado",
+        description: "El tiempo de espera ha sido eliminado para este huésped.",
+      });
+    } catch (error) {
+      console.error("Error clearing wait time:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo reiniciar el tiempo de espera",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResettingWaitTime(false);
+    }
   };
 
   return (
@@ -594,6 +655,16 @@ const ReceptionDashboard = () => {
                     )}
                   </div>
                   <div className="flex space-x-2">
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      className="bg-white/20 hover:bg-white/30 text-white border-none"
+                      onClick={clearWaitTime}
+                      disabled={isResettingWaitTime || !selectedGuest.wait_time_minutes || selectedGuest.wait_time_minutes === 0}
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-1 ${isResettingWaitTime ? 'animate-spin' : ''}`} /> 
+                      Borrar tiempo de espera
+                    </Button>
                     <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-none">
                       <Bell className="h-4 w-4 mr-1" /> Notificar
                     </Button>
