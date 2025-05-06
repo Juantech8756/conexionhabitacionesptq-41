@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion } from "framer-motion";
+import { Progress } from "@/components/ui/progress";
 
 interface AudioMessagePlayerProps {
   audioUrl: string;
@@ -95,9 +96,6 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
 
   // Dynamic text color based on props
   const textColorClass = isDark || isGuest ? "text-white" : "text-gray-700";
-
-  // Wavy animation bars
-  const waveBars = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   
   return (
     <div className={`rounded-lg shadow-sm overflow-hidden ${bgColorClass} ${isMobile ? 'p-2' : 'p-3'}`}>
@@ -119,51 +117,50 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
           )}
         </motion.button>
 
-        {/* Wave animation */}
-        <div className={`flex items-center gap-[2px] h-8 ${isMobile ? 'w-20' : 'w-24'}`}>
-          {waveBars.map((i) => (
+        {/* Animated wave visualization */}
+        <div className="flex items-center gap-[3px] h-10">
+          {Array.from({ length: 7 }).map((_, i) => (
             <motion.div
               key={i}
-              className={`w-[3px] rounded-full ${isDark || isGuest ? 'bg-white/60' : 'bg-hotel-400/60'}`}
-              animate={isPlaying ? {
-                height: [
-                  `${Math.random() * 30 + 10}%`,
-                  `${Math.random() * 90 + 30}%`,
-                  `${Math.random() * 40 + 20}%`,
-                ],
-              } : { height: "40%" }}
+              className={`w-1.5 rounded-full ${isDark || isGuest ? 'bg-white/70' : 'bg-hotel-400/70'}`}
+              animate={{
+                height: isPlaying 
+                  ? [
+                      `${20 + Math.sin(i * 0.5) * 15}%`, 
+                      `${60 + Math.sin(i * 0.8) * 40}%`,
+                      `${30 + Math.sin(i * 0.3) * 20}%`
+                    ]
+                  : "40%"
+              }}
               transition={{
-                duration: 0.8,
+                duration: 1.2,
                 repeat: isPlaying ? Infinity : 0,
                 repeatType: "reverse",
-                delay: i * 0.08,
+                ease: "easeInOut"
               }}
             />
           ))}
         </div>
         
         {/* Time display */}
-        <div className={`text-xs min-w-16 ${textColorClass}`}>
+        <div className={`text-xs font-medium ml-1 ${textColorClass}`}>
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
       </div>
       
       {/* Progress bar */}
-      <div 
-        ref={progressBarRef}
-        onClick={handleProgressBarClick}
-        className={`mt-2 w-full h-1.5 ${isDark || isGuest ? 'bg-white/20' : 'bg-gray-200'} rounded-full cursor-pointer relative overflow-hidden`}
-      >
-        <motion.div 
-          className={`absolute top-0 left-0 h-full ${isDark || isGuest ? 'bg-white/90' : 'bg-hotel-400'} rounded-full`}
-          style={{ width: `${progressPercentage}%` }}
-          animate={isPlaying ? { opacity: [0.7, 1, 0.7] } : { opacity: 1 }}
-          transition={{ duration: 1, repeat: isPlaying ? Infinity : 0 }}
+      <div className="mt-3 w-full">
+        <Progress 
+          value={progressPercentage} 
+          max={100}
+          className={`h-1.5 cursor-pointer ${isDark || isGuest ? 'bg-white/20' : 'bg-gray-200'}`}
+          onClick={handleProgressBarClick}
+          ref={progressBarRef}
         />
       </div>
       
       {/* Audio info */}
-      <div className={`flex items-center mt-2 text-xs ${textColorClass}`}>
+      <div className={`flex items-center mt-2 text-xs ${textColorClass} opacity-80`}>
         <Volume2 className="h-3 w-3 mr-1" />
         <span>{isLoaded ? "Mensaje de voz" : "Cargando audio..."}</span>
       </div>
