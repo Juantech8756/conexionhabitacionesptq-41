@@ -68,10 +68,10 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
 
   // Format time display (mm:ss)
   const formatTime = (time: number) => {
-    if (isNaN(time)) return "00:00";
+    if (isNaN(time)) return "";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   // Handle manual seeking
@@ -98,16 +98,16 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
   const textColorClass = isDark || isGuest ? "text-white" : "text-gray-700";
   
   return (
-    <div className={`rounded-lg shadow-sm overflow-hidden ${bgColorClass} ${isMobile ? 'p-2' : 'p-3'}`}>
+    <div className={`rounded-lg shadow-sm overflow-hidden ${bgColorClass} ${isMobile ? 'p-3' : 'p-4'}`}>
       {/* Hidden audio element */}
       <audio ref={audioRef} src={audioUrl} preload="metadata" />
       
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {/* Play/Pause button */}
         <motion.button 
           onClick={togglePlayPause}
           whileTap={{ scale: 0.95 }}
-          className={`flex-shrink-0 rounded-full ${isDark || isGuest ? 'bg-white/20 hover:bg-white/30' : 'bg-hotel-100 hover:bg-hotel-200'} p-2 transition-colors`}
+          className={`flex-shrink-0 rounded-full ${isDark || isGuest ? 'bg-white/20 hover:bg-white/30' : 'bg-hotel-100 hover:bg-hotel-200'} p-2.5 transition-colors`}
           aria-label={isPlaying ? "Pausar" : "Reproducir"}
         >
           {isPlaying ? (
@@ -117,34 +117,35 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
           )}
         </motion.button>
 
-        {/* Animated wave visualization */}
-        <div className="flex items-center gap-[3px] h-10">
-          {Array.from({ length: 7 }).map((_, i) => (
+        {/* Wave visualization */}
+        <div className="flex-grow flex items-end justify-center h-10 gap-1.5">
+          {Array.from({ length: 9 }).map((_, i) => (
             <motion.div
               key={i}
-              className={`w-1.5 rounded-full ${isDark || isGuest ? 'bg-white/70' : 'bg-hotel-400/70'}`}
+              className={`w-1 rounded-full ${isDark || isGuest ? 'bg-white/70' : 'bg-hotel-400/70'}`}
               animate={{
                 height: isPlaying 
                   ? [
-                      `${20 + Math.sin(i * 0.5) * 15}%`, 
-                      `${60 + Math.sin(i * 0.8) * 40}%`,
-                      `${30 + Math.sin(i * 0.3) * 20}%`
+                      `${20 + Math.sin((i + 1) * 0.8) * 15}%`, 
+                      `${45 + Math.sin((i + 3) * 0.4) * 25}%`,
+                      `${30 + Math.sin((i + 2) * 0.6) * 20}%`
                     ]
-                  : "40%"
+                  : `${30 + Math.sin(i * 0.7) * 10}%`
               }}
               transition={{
-                duration: 1.2,
-                repeat: isPlaying ? Infinity : 0,
-                repeatType: "reverse",
-                ease: "easeInOut"
+                duration: 2.5,
+                repeat: Infinity,
+                repeatType: "mirror",
+                ease: "easeInOut",
+                delay: i * 0.1
               }}
             />
           ))}
         </div>
         
         {/* Time display */}
-        <div className={`text-xs font-medium ml-1 ${textColorClass}`}>
-          {formatTime(currentTime)} / {formatTime(duration)}
+        <div className={`text-xs font-medium ${textColorClass} min-w-[38px] text-right`}>
+          {formatTime(currentTime)}
         </div>
       </div>
       
@@ -160,9 +161,9 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
       </div>
       
       {/* Audio info */}
-      <div className={`flex items-center mt-2 text-xs ${textColorClass} opacity-80`}>
-        <Volume2 className="h-3 w-3 mr-1" />
-        <span>{isLoaded ? "Mensaje de voz" : "Cargando audio..."}</span>
+      <div className={`flex items-center justify-center mt-2 text-xs ${textColorClass} opacity-70`}>
+        <Volume2 className="h-3 w-3 mr-1.5" />
+        <span>{isLoaded ? "Mensaje de voz" : "Cargando..."}</span>
       </div>
     </div>
   );
