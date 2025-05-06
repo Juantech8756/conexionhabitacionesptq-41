@@ -1,9 +1,10 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
-import { MessageCircle, Mic, MicOff, Send, ArrowLeft, phone } from "lucide-react";
+import { MessageCircle, Mic, MicOff, Send, ArrowLeft, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -291,7 +292,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             onClick={startCall}
             className="ml-2 text-white hover:bg-white/20"
           >
-            <phone className="h-5 w-5" />
+            <Phone className="h-5 w-5" />
           </Button>
         </div>
       </header>

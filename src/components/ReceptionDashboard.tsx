@@ -39,7 +39,11 @@ type Message = {
   responded_at: string | null;
 };
 
-const ReceptionDashboard = () => {
+interface ReceptionDashboardProps {
+  onCallGuest?: (guest: { id: string; name: string; roomNumber: string }) => void;
+}
+
+const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [rooms, setRooms] = useState<Record<string, Room>>({});
   const [messages, setMessages] = useState<Record<string, Message[]>>({});

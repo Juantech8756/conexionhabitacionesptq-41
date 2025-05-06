@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { phone, phoneOff, mic, micOff, video, videoOff } from "lucide-react";
+import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CallInterfaceProps {
@@ -408,7 +408,7 @@ const CallInterface = ({
                     : "bg-blue-500 h-20 w-20 mb-6"
                 }`}>
                   <div className="flex items-center justify-center h-full">
-                    {callState === "idle" && <phone className="h-10 w-10 text-white" />}
+                    {callState === "idle" && <Phone className="h-10 w-10 text-white" />}
                   </div>
                 </div>
                 <h3 className="text-xl font-medium text-white mb-2">
@@ -434,7 +434,7 @@ const CallInterface = ({
                   size="lg"
                   className="rounded-full bg-green-500 hover:bg-green-600 h-14 w-14 p-0"
                 >
-                  <phone className="h-6 w-6" />
+                  <Phone className="h-6 w-6" />
                 </Button>
               )}
               
@@ -444,7 +444,7 @@ const CallInterface = ({
                   size="lg"
                   className="rounded-full bg-red-500 hover:bg-red-600 h-14 w-14 p-0"
                 >
-                  <phoneOff className="h-6 w-6" />
+                  <PhoneOff className="h-6 w-6" />
                 </Button>
               )}
               
@@ -455,14 +455,14 @@ const CallInterface = ({
                     size="lg"
                     className="rounded-full bg-green-500 hover:bg-green-600 h-14 w-14 p-0"
                   >
-                    <phone className="h-6 w-6" />
+                    <Phone className="h-6 w-6" />
                   </Button>
                   <Button
                     onClick={rejectCall}
                     size="lg"
                     className="rounded-full bg-red-500 hover:bg-red-600 h-14 w-14 p-0"
                   >
-                    <phoneOff className="h-6 w-6" />
+                    <PhoneOff className="h-6 w-6" />
                   </Button>
                 </>
               )}
@@ -474,7 +474,7 @@ const CallInterface = ({
                     size="lg"
                     className={`rounded-full ${isMuted ? "bg-red-500 hover:bg-red-600" : "bg-gray-700 hover:bg-gray-600"} h-12 w-12 p-0`}
                   >
-                    {isMuted ? <micOff className="h-5 w-5" /> : <mic className="h-5 w-5" />}
+                    {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
                   </Button>
                   
                   <Button
@@ -482,7 +482,7 @@ const CallInterface = ({
                     size="lg"
                     className={`rounded-full ${!isVideoEnabled ? "bg-red-500 hover:bg-red-600" : "bg-gray-700 hover:bg-gray-600"} h-12 w-12 p-0`}
                   >
-                    {isVideoEnabled ? <video className="h-5 w-5" /> : <videoOff className="h-5 w-5" />}
+                    {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
                   </Button>
                   
                   <Button
@@ -490,7 +490,7 @@ const CallInterface = ({
                     size="lg"
                     className="rounded-full bg-red-500 hover:bg-red-600 h-14 w-14 p-0"
                   >
-                    <phoneOff className="h-6 w-6" />
+                    <PhoneOff className="h-6 w-6" />
                   </Button>
                 </>
               )}
