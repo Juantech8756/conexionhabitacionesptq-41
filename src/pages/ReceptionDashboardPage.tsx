@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import CallInterface from "@/components/CallInterface";
 
 const ReceptionDashboardPage = () => {
   const navigate = useNavigate();
@@ -21,6 +22,13 @@ const ReceptionDashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("messages");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [selectedGuest, setSelectedGuest] = useState<{
+    id: string;
+    name: string;
+    roomNumber: string;
+  } | null>(null);
+  
   const isMobile = useIsMobile();
 
   // Comprobar autenticación con Supabase Auth
@@ -73,6 +81,16 @@ const ReceptionDashboardPage = () => {
     }
   };
 
+  const handleStartCall = (guest: { id: string; name: string; roomNumber: string }) => {
+    setSelectedGuest(guest);
+    setIsCallActive(true);
+  };
+
+  const handleEndCall = () => {
+    setIsCallActive(false);
+    setSelectedGuest(null);
+  };
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
@@ -105,7 +123,7 @@ const ReceptionDashboardPage = () => {
                 <SheetContent side="left" className="p-0 w-[85vw] max-w-[300px]">
                   <div className="bg-hotel-700 text-white p-4 flex items-center gap-2">
                     <Hotel className="h-5 w-5" />
-                    <h2 className="text-lg font-medium">Hotel Connect</h2>
+                    <h2 className="text-lg font-medium">Parque Temático Quimbaya</h2>
                   </div>
                   <nav className="p-4">
                     <ul className="space-y-2">
@@ -237,7 +255,7 @@ const ReceptionDashboardPage = () => {
           
           <div className="flex-grow overflow-auto">
             <TabsContent value="messages" className="h-full m-0 p-0 data-[state=active]:fade-in">
-              <ReceptionDashboard />
+              <ReceptionDashboard onCallGuest={handleStartCall} />
             </TabsContent>
             <TabsContent value="stats" className="h-full m-0 p-0 data-[state=active]:fade-in">
               <DashboardStats />
@@ -248,6 +266,16 @@ const ReceptionDashboardPage = () => {
           </div>
         </Tabs>
       </div>
+
+      {isCallActive && selectedGuest && (
+        <CallInterface 
+          isGuest={false}
+          guestId={selectedGuest.id}
+          roomNumber={selectedGuest.roomNumber}
+          guestName={selectedGuest.name}
+          onClose={handleEndCall}
+        />
+      )}
     </div>
   );
 };

@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
-import { MessageCircle, Mic, MicOff, Send, ArrowLeft } from "lucide-react";
+import { MessageCircle, Mic, MicOff, Send, ArrowLeft, phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
+import CallInterface from "@/components/CallInterface";
 
 interface GuestChatProps {
   guestName: string;
@@ -32,6 +33,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [isLoading, setIsLoading] = useState(false);
   const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+  const [isCallActive, setIsCallActive] = useState(false);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -65,7 +67,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           const welcomeMessage = {
             id: 'welcome',
             guest_id: guestId,
-            content: `¡Hola ${guestName}! Bienvenido/a. ¿En qué podemos ayudarte?`,
+            content: `¡Hola ${guestName}! Bienvenido/a al Parque Temático Quimbaya. ¿En qué podemos ayudarte?`,
             is_guest: false,
             is_audio: false,
             created_at: new Date().toISOString()
@@ -249,6 +251,14 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     }
   };
 
+  const startCall = () => {
+    setIsCallActive(true);
+  };
+
+  const endCall = () => {
+    setIsCallActive(false);
+  };
+
   // Keep this function for other formatting needs
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -275,7 +285,14 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             <h1 className="text-lg font-semibold">Recepción</h1>
             <p className="text-sm opacity-90">Cabaña {roomNumber} - {guestName}</p>
           </div>
-          <MessageCircle className="h-5 w-5" />
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={startCall}
+            className="ml-2 text-white hover:bg-white/20"
+          >
+            <phone className="h-5 w-5" />
+          </Button>
         </div>
       </header>
 
@@ -356,6 +373,16 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           </motion.div>
         </div>
       </div>
+
+      {isCallActive && (
+        <CallInterface 
+          isGuest={true}
+          guestId={guestId}
+          roomNumber={roomNumber}
+          guestName={guestName}
+          onClose={endCall}
+        />
+      )}
     </div>
   );
 };

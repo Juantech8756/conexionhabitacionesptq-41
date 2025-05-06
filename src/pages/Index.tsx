@@ -11,7 +11,7 @@ const Index = () => {
           <div className="flex items-center justify-center mb-4">
             <Hotel className="h-12 w-12 text-hotel-600 mr-3" />
             <h1 className="text-4xl font-bold text-gray-900">
-              Hotel Connect Hub
+              Parque Temático Quimbaya
             </h1>
           </div>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -41,7 +41,7 @@ const Index = () => {
             </div>
             <h2 className="text-xl font-semibold mb-3">Código QR</h2>
             <p className="text-gray-600 mb-6">
-              Visualice el código QR para imprimir y colocar en cada habitación del hotel.
+              Visualice el código QR para imprimir y colocar en cada cabaña del parque temático.
             </p>
             <Link to="/qr-code" className="mt-auto">
               <Button className="w-full bg-hotel-600 hover:bg-hotel-700">
@@ -56,7 +56,7 @@ const Index = () => {
             </div>
             <h2 className="text-xl font-semibold mb-3">Recepción</h2>
             <p className="text-gray-600 mb-6">
-              Acceso al panel de administración para el personal de recepción del hotel.
+              Acceso al panel de administración para el personal de recepción del parque.
             </p>
             <Link to="/reception" className="mt-auto">
               <Button className="w-full bg-hotel-600 hover:bg-hotel-700">
@@ -74,7 +74,7 @@ const Index = () => {
                 <span className="text-hotel-700 font-bold text-xl">1</span>
               </div>
               <p className="text-gray-700">
-                El huésped escanea el código QR ubicado en su habitación
+                El huésped escanea el código QR ubicado en su cabaña
               </p>
             </div>
             <div>
@@ -82,7 +82,7 @@ const Index = () => {
                 <span className="text-hotel-700 font-bold text-xl">2</span>
               </div>
               <p className="text-gray-700">
-                Ingresa su nombre y número de habitación
+                Ingresa su nombre y número de cabaña
               </p>
             </div>
             <div>
@@ -101,9 +101,9 @@ const Index = () => {
       </div>
       <footer className="bg-gray-800 text-white py-6 mt-12">
         <div className="container mx-auto px-4 text-center">
-          <p>© 2025 Hotel Connect Hub. Todos los derechos reservados.</p>
+          <p>© 2025 Parque Temático Quimbaya. Todos los derechos reservados.</p>
           <p className="text-sm text-gray-400 mt-2">
-            Una aplicación de comunicación para hoteles
+            Una aplicación de comunicación para parques temáticos
           </p>
         </div>
       </footer>

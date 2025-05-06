@@ -31,6 +31,7 @@ type Room = {
 const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
   const [guestName, setGuestName] = useState("");
   const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [guestCount, setGuestCount] = useState("1");
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
@@ -108,7 +109,8 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
           { 
             name: guestName, 
             room_number: selectedRoom.room_number, 
-            room_id: selectedRoomId 
+            room_id: selectedRoomId,
+            guest_count: parseInt(guestCount)
           }
         ])
         .select('id')
@@ -152,11 +154,15 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
             <Hotel className="h-10 w-10 text-hotel-600" />
           </motion.div>
           <h1 className="text-2xl font-bold text-center text-gray-800">
-            Bienvenido al Hotel
+            Bienvenido al Parque Temático Quimbaya
           </h1>
           <p className="text-gray-600 text-center mt-2">
             Para comunicarse con recepción, por favor ingrese sus datos
           </p>
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg text-sm text-gray-700">
+            <p>Si necesita cualquier servicio para su cabaña, tiene alguna consulta o requiere asistencia, 
+            puede escribirnos directamente usando nuestro sistema de chat.</p>
+          </div>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -203,6 +209,28 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
               </Select>
             )}
           </div>
+          
+          {selectedRoomId && (
+            <div className="space-y-2">
+              <Label htmlFor="guestCount" className="text-gray-700">¿Cuántos hospedados hay en la cabaña?</Label>
+              <Select 
+                value={guestCount} 
+                onValueChange={setGuestCount}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="w-full h-12 rounded-lg focus:ring-hotel-500 focus:border-hotel-500 shadow-sm">
+                  <SelectValue placeholder="Seleccione cantidad de hospedados" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num} {num === 1 ? 'Persona' : 'Personas'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           <motion.div
             whileHover={{ scale: isLoading ? 1 : 1.02 }}
