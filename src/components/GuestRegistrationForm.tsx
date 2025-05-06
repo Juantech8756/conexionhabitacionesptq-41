@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,9 +141,9 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className={`w-full ${isMobile ? "max-w-[95%]" : "max-w-md"} bg-white rounded-xl shadow-lg p-6 space-y-6`}
+        className={`w-full ${isMobile ? "max-w-[95%]" : "max-w-md"} bg-white rounded-xl shadow-lg p-6 space-y-4`}
       >
-        <div className="flex flex-col items-center justify-center mb-6">
+        <div className="flex flex-col items-center justify-center mb-4">
           <motion.div 
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
@@ -159,13 +158,13 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
           <p className="text-gray-600 text-center mt-2">
             Para comunicarse con recepción, por favor ingrese sus datos
           </p>
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg text-sm text-gray-700">
+          <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
             <p>Si necesita cualquier servicio para su cabaña, tiene alguna consulta o requiere asistencia, 
             puede escribirnos directamente usando nuestro sistema de chat.</p>
           </div>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="guestName" className="text-gray-700">Nombre completo</Label>
             <Input
@@ -233,12 +232,13 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
           )}
           
           <motion.div
+            className="mt-4"
             whileHover={{ scale: isLoading ? 1 : 1.02 }}
             whileTap={{ scale: isLoading ? 1 : 0.98 }}
           >
             <Button 
               type="submit" 
-              className="w-full h-12 mt-4 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600 text-white rounded-lg font-medium shadow-md"
+              className="w-full h-12 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600 text-white rounded-lg font-medium shadow-md"
               disabled={isLoading || isLoadingRooms}
             >
               {isLoading ? (

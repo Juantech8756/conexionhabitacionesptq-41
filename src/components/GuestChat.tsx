@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -309,7 +308,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
                 className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]"} ${
+                  className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]" } ${
                     msg.is_audio ? '' : 'p-3'
                   } ${
                     msg.is_guest 
