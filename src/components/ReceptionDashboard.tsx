@@ -584,26 +584,6 @@ const ReceptionDashboard = () => {
     return null;
   };
 
-  // Get status indicator based on wait time
-  const getWaitTimeIndicator = (waitMinutes: number | null) => {
-    if (waitMinutes === null || waitMinutes === 0) return null;
-    
-    if (waitMinutes > 15) {
-      return (
-        <Badge variant="destructive" className="ml-2 shrink-0 animate-pulse">
-          <Clock className="h-3 w-3 mr-1" />{Math.round(waitMinutes)} min
-        </Badge>
-      );
-    } else if (waitMinutes > 5) {
-      return (
-        <Badge variant="default" className="bg-amber-500 ml-2 shrink-0">
-          <Clock className="h-3 w-3 mr-1" />{Math.round(waitMinutes)} min
-        </Badge>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className="flex h-full bg-gray-100">
       <div className="w-full h-full flex overflow-hidden">
@@ -646,7 +626,6 @@ const ReceptionDashboard = () => {
                             <span className="ml-2 text-sm text-gray-500">
                               Cabaña {guest.room_number}
                             </span>
-                            {getWaitTimeIndicator(guest.wait_time_minutes)}
                           </p>
                           {getRoomInfo(guest)}
                           <p className="text-xs text-gray-500 mt-1">
