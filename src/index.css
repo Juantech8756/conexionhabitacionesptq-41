@@ -89,11 +89,11 @@
 
 /* Chat bubbles */
 .chat-bubble-guest {
-  @apply bg-hotel-600 text-white rounded-tl-lg rounded-tr-lg rounded-bl-lg;
+  @apply bg-gradient-to-r from-hotel-600 to-hotel-500 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl;
 }
 
 .chat-bubble-staff {
-  @apply bg-gray-100 text-gray-800 rounded-tl-lg rounded-tr-lg rounded-br-lg;
+  @apply bg-gray-100 text-gray-800 rounded-tr-2xl rounded-tl-2xl rounded-br-2xl border border-gray-200/50;
 }
 
 /* Recording animation */
@@ -111,4 +111,74 @@
   100% {
     opacity: 1;
   }
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Slide in animation */
+@keyframes slideIn {
+  0% {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+/* Scale animation */
+@keyframes scaleIn {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.scale-in {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+/* Additional hover effects */
+.hover-scale {
+  @apply transition-transform duration-200;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.hover-shadow {
+  @apply transition-shadow duration-200;
+}
+
+.hover-shadow:hover {
+  @apply shadow-md;
+}
+
+/* Enhanced scroll behavior */
+.smooth-scroll {
+  scroll-behavior: smooth;
 }

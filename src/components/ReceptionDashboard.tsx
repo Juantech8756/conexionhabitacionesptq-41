@@ -7,6 +7,7 @@ import { User, MessageCircle, Mic, MicOff, Send, Bell, Clock, CircleCheck, Circl
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Guest = {
   id: string;
@@ -48,10 +49,16 @@ const ReceptionDashboard = () => {
   const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
   const { toast } = useToast();
   
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (smooth = true) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: smooth ? "smooth" : "auto", 
+        block: "end" 
+      });
+    }
   };
 
   // Load rooms
@@ -202,8 +209,8 @@ const ReceptionDashboard = () => {
           [selectedGuest.id]: data
         }));
 
-        // Scroll to bottom after messages are loaded
-        setTimeout(scrollToBottom, 100);
+        // Scroll to bottom after messages are loaded - use a delay to ensure DOM is updated
+        setTimeout(() => scrollToBottom(false), 100);
       } catch (error) {
         console.error("Error fetching messages:", error);
         toast({
@@ -249,7 +256,7 @@ const ReceptionDashboard = () => {
           );
           
           // Scroll to bottom when new message arrives
-          setTimeout(scrollToBottom, 100);
+          setTimeout(() => scrollToBottom(true), 100);
         }
       )
       .subscribe();
@@ -457,7 +464,7 @@ const ReceptionDashboard = () => {
       return (
         <div className="flex flex-col mt-1">
           <div className="text-xs text-gray-500">
-            {room.type && <span className="mr-2">{room.type}</span>}
+            {room.type && <span className="mr-2">{room.type === 'family' ? 'Cabaña familiar' : room.type === 'couple' ? 'Cabaña pareja' : room.type}</span>}
             {room.floor && <span>Piso {room.floor}</span>}
           </div>
         </div>
@@ -471,9 +478,17 @@ const ReceptionDashboard = () => {
     if (waitMinutes === null) return null;
     
     if (waitMinutes > 15) {
-      return <Badge variant="destructive" className="ml-2 shrink-0"><Clock className="h-3 w-3 mr-1" />{Math.round(waitMinutes)} min</Badge>;
+      return (
+        <Badge variant="destructive" className="ml-2 shrink-0 animate-pulse">
+          <Clock className="h-3 w-3 mr-1" />{Math.round(waitMinutes)} min
+        </Badge>
+      );
     } else if (waitMinutes > 5) {
-      return <Badge variant="default" className="bg-amber-500 ml-2 shrink-0"><Clock className="h-3 w-3 mr-1" />{Math.round(waitMinutes)} min</Badge>;
+      return (
+        <Badge variant="default" className="bg-amber-500 ml-2 shrink-0">
+          <Clock className="h-3 w-3 mr-1" />{Math.round(waitMinutes)} min
+        </Badge>
+      );
     }
     return null;
   };
@@ -483,7 +498,7 @@ const ReceptionDashboard = () => {
       <div className="w-full h-full flex overflow-hidden">
         {/* Lista de huéspedes */}
         <div className="w-1/4 border-r bg-white overflow-hidden flex flex-col">
-          <div className="p-4 border-b">
+          <div className="p-4 border-b bg-gradient-to-r from-hotel-600 to-hotel-500 text-white">
             <h2 className="text-xl font-semibold flex items-center">
               <User className="mr-2 h-5 w-5" />
               Huéspedes
@@ -491,42 +506,55 @@ const ReceptionDashboard = () => {
           </div>
           
           <ScrollArea className="flex-grow">
-            {guests.length === 0 ? (
-              <div className="p-4 text-gray-500 text-center">
-                No hay huéspedes registrados
-              </div>
-            ) : (
-              guests.map((guest) => (
-                <div
-                  key={guest.id}
-                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${
-                    selectedGuest?.id === guest.id ? "bg-blue-50" : ""
-                  }`}
-                  onClick={() => selectGuest(guest)}
+            <AnimatePresence>
+              {guests.length === 0 ? (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="p-4 text-gray-500 text-center"
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium flex items-center">
-                        {guest.name} 
-                        <span className="ml-2 text-sm text-gray-500">
-                          Hab. {guest.room_number}
-                        </span>
-                        {getWaitTimeIndicator(guest.wait_time_minutes)}
-                      </p>
-                      {getRoomInfo(guest)}
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatLastActivity(guest.last_activity)}
-                      </p>
-                    </div>
-                    {guest.unread_messages > 0 && (
-                      <div className="bg-hotel-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
-                        {guest.unread_messages}
+                  No hay huéspedes registrados
+                </motion.div>
+              ) : (
+                guests.map((guest) => (
+                  <motion.div
+                    key={guest.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${
+                      selectedGuest?.id === guest.id ? "bg-blue-50 border-l-4 border-l-hotel-600" : ""
+                    }`}
+                    onClick={() => selectGuest(guest)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium flex items-center">
+                          {guest.name} 
+                          <span className="ml-2 text-sm text-gray-500">
+                            Cabaña {guest.room_number}
+                          </span>
+                          {getWaitTimeIndicator(guest.wait_time_minutes)}
+                        </p>
+                        {getRoomInfo(guest)}
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatLastActivity(guest.last_activity)}
+                        </p>
                       </div>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
+                      {guest.unread_messages > 0 && (
+                        <motion.div 
+                          initial={{ scale: 0.8 }}
+                          animate={{ scale: 1 }}
+                          className="bg-hotel-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow-md"
+                        >
+                          {guest.unread_messages}
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </AnimatePresence>
           </ScrollArea>
         </div>
 
@@ -534,23 +562,29 @@ const ReceptionDashboard = () => {
         <div className="flex-grow flex flex-col bg-gray-50">
           {selectedGuest ? (
             <>
-              <header className="bg-white p-4 border-b shadow-sm">
+              <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-4 text-white shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-lg font-semibold">{selectedGuest.name}</h2>
-                    <p className="text-sm text-gray-500 flex items-center">
-                      Habitación {selectedGuest.room_number}
+                    <p className="text-sm text-white/90 flex items-center">
+                      Cabaña {selectedGuest.room_number}
                       {selectedGuest.wait_time_minutes && selectedGuest.wait_time_minutes > 0 && (
-                        <span className="ml-3 flex items-center text-amber-600">
+                        <span className="ml-3 flex items-center text-white/90">
                           <Clock className="h-3 w-3 mr-1" />
                           Esperando desde hace {Math.round(selectedGuest.wait_time_minutes)} min
                         </span>
                       )}
                     </p>
                     {selectedGuest.room_id && rooms[selectedGuest.room_id] && (
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-white/80 mt-1">
                         {rooms[selectedGuest.room_id].type && (
-                          <span className="mr-3">Tipo: {rooms[selectedGuest.room_id].type}</span>
+                          <span className="mr-3">
+                            Tipo: {rooms[selectedGuest.room_id].type === 'family' 
+                              ? 'Cabaña familiar' 
+                              : rooms[selectedGuest.room_id].type === 'couple' 
+                                ? 'Cabaña pareja' 
+                                : rooms[selectedGuest.room_id].type}
+                          </span>
                         )}
                         {rooms[selectedGuest.room_id].floor && (
                           <span>Piso: {rooms[selectedGuest.room_id].floor}</span>
@@ -559,65 +593,72 @@ const ReceptionDashboard = () => {
                     )}
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-none">
                       <Bell className="h-4 w-4 mr-1" /> Notificar
                     </Button>
                   </div>
                 </div>
               </header>
 
-              <ScrollArea className="flex-grow p-4">
-                <div className="space-y-4">
-                  {messages[selectedGuest.id]?.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'}`}
-                    >
-                      <div
-                        className={`max-w-[80%] p-3 rounded-lg ${
-                          msg.is_guest 
-                            ? 'bg-white border border-gray-200 text-gray-800' 
-                            : 'bg-hotel-600 text-white'
-                        }`}
-                      >
-                        {msg.is_audio ? (
-                          <div className="flex flex-col">
-                            <div className="flex items-center space-x-2">
-                              <Mic className="h-5 w-5" />
-                              <span>{msg.is_guest ? "Audio recibido" : "Audio enviado"}</span>
+              <div className="flex-grow overflow-auto" ref={scrollContainerRef}>
+                <ScrollArea className="h-full p-4">
+                  <div className="space-y-4">
+                    <AnimatePresence>
+                      {messages[selectedGuest.id]?.map((msg) => (
+                        <motion.div
+                          key={msg.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'}`}
+                        >
+                          <div
+                            className={`max-w-[80%] p-3 rounded-lg shadow-sm ${
+                              msg.is_guest 
+                                ? 'bg-white border border-gray-200 text-gray-800' 
+                                : 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white'
+                            }`}
+                          >
+                            {msg.is_audio ? (
+                              <div className="flex flex-col">
+                                <div className="flex items-center space-x-2">
+                                  <Mic className="h-5 w-5" />
+                                  <span>{msg.is_guest ? "Audio recibido" : "Audio enviado"}</span>
+                                </div>
+                                <audio controls src={msg.audio_url} className="w-full mt-2">
+                                  Su navegador no soporta el elemento de audio.
+                                </audio>
+                              </div>
+                            ) : (
+                              <p>{msg.content}</p>
+                            )}
+                            <div className="flex items-center justify-end gap-2 mt-1">
+                              <p className="text-xs opacity-70">
+                                {formatTime(msg.created_at)}
+                              </p>
+                              {msg.is_guest && msg.responded_at && (
+                                <div className="text-xs flex items-center">
+                                  <CircleCheck className="h-3 w-3 mr-1" />
+                                </div>
+                              )}
                             </div>
-                            <audio controls src={msg.audio_url} className="w-full mt-2">
-                              Su navegador no soporta el elemento de audio.
-                            </audio>
                           </div>
-                        ) : (
-                          <p>{msg.content}</p>
-                        )}
-                        <div className="flex items-center justify-end gap-2 mt-1">
-                          <p className="text-xs opacity-70">
-                            {formatTime(msg.created_at)}
-                          </p>
-                          {msg.is_guest && msg.responded_at && (
-                            <div className="text-xs flex items-center">
-                              <CircleCheck className="h-3 w-3 mr-1" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                    <div ref={messagesEndRef} />
+                  </div>
+                </ScrollArea>
+              </div>
 
-              <div className="p-4 border-t bg-white">
+              <div className="p-4 border-t bg-white shadow-inner">
                 <div className="flex items-center space-x-2">
                   <Button
                     type="button"
                     size="icon"
                     variant="outline"
                     onClick={toggleRecording}
-                    className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
+                    className={`flex-shrink-0 transition-colors duration-200 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`}
                     disabled={isLoading}
                   >
                     {isRecording ? (
@@ -632,7 +673,7 @@ const ReceptionDashboard = () => {
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && sendReply()}
-                    className="flex-grow"
+                    className="flex-grow shadow-sm focus:ring-2 focus:ring-hotel-500/50 transition-all duration-200"
                     disabled={isRecording || isLoading}
                   />
                   
@@ -640,7 +681,7 @@ const ReceptionDashboard = () => {
                     type="button"
                     onClick={sendReply}
                     disabled={replyText.trim() === "" || isRecording || isLoading}
-                    className="flex-shrink-0 bg-hotel-600 hover:bg-hotel-700"
+                    className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600 transition-all duration-200 shadow-sm"
                   >
                     <Send className="h-5 w-5 mr-1" /> Enviar
                   </Button>
@@ -648,12 +689,16 @@ const ReceptionDashboard = () => {
               </div>
             </>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center justify-center h-full text-gray-500"
+            >
               <div className="text-center">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-30" />
                 <p>Seleccione un huésped para ver los mensajes</p>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
