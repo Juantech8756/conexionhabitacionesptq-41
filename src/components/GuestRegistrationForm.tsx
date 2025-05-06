@@ -42,7 +42,7 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
         const { data, error } = await supabase
           .from('rooms')
           .select('*')
-          .eq('status', 'occupied') // Only show occupied rooms for guest chat
+          .eq('status', 'available') // Changed from 'occupied' to 'available'
           .order('room_number', { ascending: true });
 
         if (error) throw error;
@@ -51,7 +51,7 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
         console.error("Error fetching rooms:", error);
         toast({
           title: "Error",
-          description: "No se pudieron cargar las habitaciones",
+          description: "No se pudieron cargar las cabañas",
           variant: "destructive",
         });
       } finally {
@@ -76,8 +76,8 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
     
     if (!selectedRoomId) {
       toast({
-        title: "Habitación requerida",
-        description: "Por favor seleccione su habitación",
+        title: "Cabaña requerida",
+        description: "Por favor seleccione su cabaña",
         variant: "destructive",
       });
       return;
@@ -88,7 +88,15 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
     try {
       // Find room number from selected room id
       const selectedRoom = rooms.find(room => room.id === selectedRoomId);
-      if (!selectedRoom) throw new Error("Habitación no encontrada");
+      if (!selectedRoom) throw new Error("Cabaña no encontrada");
+
+      // Update the selected room to occupied status
+      const { error: updateError } = await supabase
+        .from('rooms')
+        .update({ status: 'occupied' })
+        .eq('id', selectedRoomId);
+        
+      if (updateError) throw updateError;
 
       // Insert guest into Supabase
       const { data: guest, error } = await supabase
@@ -152,15 +160,15 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="roomNumber">Habitación</Label>
+          <Label htmlFor="roomNumber">Cabaña</Label>
           {isLoadingRooms ? (
             <div className="flex items-center justify-center p-2">
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              <span className="text-sm">Cargando habitaciones...</span>
+              <span className="text-sm">Cargando cabañas...</span>
             </div>
           ) : rooms.length === 0 ? (
             <div className="text-center p-2 text-sm text-red-500">
-              No hay habitaciones disponibles
+              No hay cabañas disponibles
             </div>
           ) : (
             <Select 
@@ -169,14 +177,13 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
               disabled={isLoading}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Seleccione su habitación" />
+                <SelectValue placeholder="Seleccione su cabaña" />
               </SelectTrigger>
               <SelectContent>
                 {rooms.map((room) => (
                   <SelectItem key={room.id} value={room.id}>
                     {room.room_number} 
-                    {room.type && ` - ${room.type}`}
-                    {room.floor && ` (Piso ${room.floor})`}
+                    {room.type && ` - ${room.type === 'family' ? 'Familiar' : 'Pareja'}`}
                   </SelectItem>
                 ))}
               </SelectContent>
