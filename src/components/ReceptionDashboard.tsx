@@ -634,12 +634,9 @@ const ReceptionDashboard = () => {
                               <p>{msg.content}</p>
                             )}
                             <div className="flex items-center justify-end gap-2 mt-1">
-                              <p className="text-xs opacity-70">
-                                {formatTime(msg.created_at)}
-                              </p>
                               {msg.is_guest && msg.responded_at && (
                                 <div className="text-xs flex items-center">
-                                  <CircleCheck className="h-3 w-3 mr-1" />
+                                  <CircleCheck className="h-3 w-3" />
                                 </div>
                               )}
                             </div>

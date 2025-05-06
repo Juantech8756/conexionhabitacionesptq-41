@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -247,6 +246,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     }
   };
 
+  // Keep this function for other formatting needs
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('es', {
@@ -301,9 +301,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
                   ) : (
                     <p>{msg.content}</p>
                   )}
-                  <p className="text-xs mt-1 opacity-70 text-right">
-                    {formatTime(msg.created_at)}
-                  </p>
+                  {/* Timestamp removed */}
                 </div>
               </motion.div>
             ))}
