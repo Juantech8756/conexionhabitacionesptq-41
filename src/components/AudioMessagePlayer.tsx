@@ -1,9 +1,8 @@
 
 import { useState, useRef, useEffect } from "react";
-import { Play, Pause, Volume2 } from "lucide-react";
+import { Play, Pause, AudioWaveform } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion } from "framer-motion";
-import { Progress } from "@/components/ui/progress";
 
 interface AudioMessagePlayerProps {
   audioUrl: string;
@@ -17,7 +16,6 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
   const [currentTime, setCurrentTime] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const progressBarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
   // Set up audio element and event listeners
@@ -63,28 +61,12 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
     }
   };
 
-  // Calculate progress percentage
-  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
-
   // Format time display (mm:ss)
   const formatTime = (time: number) => {
     if (isNaN(time)) return "";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
-
-  // Handle manual seeking
-  const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!progressBarRef.current || !audioRef.current) return;
-    
-    const progressBar = progressBarRef.current;
-    const boundingRect = progressBar.getBoundingClientRect();
-    const clickPositionX = e.clientX - boundingRect.left;
-    const progressBarWidth = boundingRect.width;
-    const percentage = clickPositionX / progressBarWidth;
-    
-    audioRef.current.currentTime = percentage * duration;
   };
 
   // Dynamic background color based on props
@@ -117,27 +99,63 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
           )}
         </motion.button>
 
-        {/* Wave visualization */}
-        <div className="flex-grow flex items-end justify-center h-10 gap-1.5">
-          {Array.from({ length: 9 }).map((_, i) => (
+        {/* New wave visualization */}
+        <div className="flex-grow relative h-12 mx-1">
+          <div className="absolute inset-0 flex items-center justify-center">
+            {Array.from({ length: 12 }).map((_, i) => {
+              // Create different wave patterns based on position
+              const isEven = i % 2 === 0;
+              const amplitude = isEven ? 20 : 30;
+              const speed = 2 + (i % 3) * 0.5;
+              const delay = i * 0.15;
+              
+              return (
+                <motion.div
+                  key={i}
+                  className={`mx-0.5 rounded-full ${isDark || isGuest ? 'bg-white/70' : 'bg-hotel-400/70'}`}
+                  style={{
+                    width: i % 3 === 0 ? '2px' : '1px',
+                  }}
+                  animate={{
+                    height: isPlaying 
+                      ? [
+                        `${20 + amplitude}%`,
+                        `${50 - amplitude}%`,
+                        `${35 + amplitude / 2}%`,
+                      ]
+                      : `${15 + (i % 5) * 6}%`
+                  }}
+                  transition={{
+                    duration: speed,
+                    repeat: Infinity,
+                    repeatType: "reverse",
+                    ease: "easeInOut",
+                    delay: delay
+                  }}
+                />
+              );
+            })}
+          </div>
+          
+          {/* Floating particles - adds dynamic feeling */}
+          {isPlaying && Array.from({ length: 5 }).map((_, i) => (
             <motion.div
-              key={i}
-              className={`w-1 rounded-full ${isDark || isGuest ? 'bg-white/70' : 'bg-hotel-400/70'}`}
+              key={`particle-${i}`}
+              className={`absolute rounded-full ${isDark || isGuest ? 'bg-white/30' : 'bg-hotel-300/30'}`}
+              style={{
+                width: 3 + (i % 3),
+                height: 3 + (i % 3),
+                left: `${15 + (i * 15)}%`,
+              }}
               animate={{
-                height: isPlaying 
-                  ? [
-                      `${20 + Math.sin((i + 1) * 0.8) * 15}%`, 
-                      `${45 + Math.sin((i + 3) * 0.4) * 25}%`,
-                      `${30 + Math.sin((i + 2) * 0.6) * 20}%`
-                    ]
-                  : `${30 + Math.sin(i * 0.7) * 10}%`
+                y: [0, -15, 0],
+                opacity: [0, 1, 0],
               }}
               transition={{
-                duration: 2.5,
+                duration: 2 + i,
                 repeat: Infinity,
-                repeatType: "mirror",
+                delay: i * 0.5,
                 ease: "easeInOut",
-                delay: i * 0.1
               }}
             />
           ))}
@@ -149,20 +167,9 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
         </div>
       </div>
       
-      {/* Progress bar */}
-      <div className="mt-3 w-full">
-        <Progress 
-          value={progressPercentage} 
-          max={100}
-          className={`h-1.5 cursor-pointer ${isDark || isGuest ? 'bg-white/20' : 'bg-gray-200'}`}
-          onClick={handleProgressBarClick}
-          ref={progressBarRef}
-        />
-      </div>
-      
       {/* Audio info */}
-      <div className={`flex items-center justify-center mt-2 text-xs ${textColorClass} opacity-70`}>
-        <Volume2 className="h-3 w-3 mr-1.5" />
+      <div className={`flex items-center justify-center mt-3 text-xs ${textColorClass} opacity-70`}>
+        <AudioWaveform className="h-3 w-3 mr-1.5" />
         <span>{isLoaded ? "Mensaje de voz" : "Cargando..."}</span>
       </div>
     </div>
