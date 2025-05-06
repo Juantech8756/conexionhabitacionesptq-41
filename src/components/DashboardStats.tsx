@@ -243,26 +243,25 @@ const DashboardStats = () => {
                     <TableHead>Huésped</TableHead>
                     <TableHead>Hab.</TableHead>
                     <TableHead className="text-right">Pendientes</TableHead>
-                    <TableHead className="text-right">Espera</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">
+                      <TableCell colSpan={3} className="text-center">
                         Cargando...
                       </TableCell>
                     </TableRow>
                   ) : stats.filter(s => (s.pending_messages || 0) > 0).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">
+                      <TableCell colSpan={3} className="text-center">
                         No hay mensajes pendientes
                       </TableCell>
                     </TableRow>
                   ) : (
                     stats
                       .filter(stat => (stat.pending_messages || 0) > 0)
-                      .sort((a, b) => (b.wait_time_minutes || 0) - (a.wait_time_minutes || 0))
+                      .sort((a, b) => (b.pending_messages || 0) - (a.pending_messages || 0))
                       .map((stat) => (
                         <TableRow key={stat.guest_id}>
                           <TableCell>
@@ -273,15 +272,6 @@ const DashboardStats = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             {stat.pending_messages}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className={
-                              (stat.wait_time_minutes || 0) > 10 
-                                ? "text-red-600 font-semibold" 
-                                : "text-yellow-600"
-                            }>
-                              {stat.wait_time_minutes ? `${Math.round(stat.wait_time_minutes)} min` : "N/A"}
-                            </span>
                           </TableCell>
                         </TableRow>
                       ))

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -682,12 +681,6 @@ const ReceptionDashboard = () => {
                     <h2 className="text-lg font-semibold">{selectedGuest.name}</h2>
                     <p className="text-sm text-white/90 flex items-center">
                       Cabaña {selectedGuest.room_number}
-                      {selectedGuest.wait_time_minutes && selectedGuest.wait_time_minutes > 0 && (
-                        <span className="ml-3 flex items-center text-white/90">
-                          <Clock className="h-3 w-3 mr-1" />
-                          Esperando desde hace {Math.round(selectedGuest.wait_time_minutes)} min
-                        </span>
-                      )}
                     </p>
                     {selectedGuest.room_id && rooms[selectedGuest.room_id] && (
                       <div className="text-xs text-white/80 mt-1">
