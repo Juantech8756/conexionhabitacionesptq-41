@@ -101,7 +101,7 @@ const ReceptionDashboardPage = () => {
                 </TabsTrigger>
                 <TabsTrigger value="rooms" className="flex items-center gap-2">
                   <Bed className="h-4 w-4" />
-                  <span>Habitaciones</span>
+                  <span>Cabañas</span>
                 </TabsTrigger>
               </TabsList>
             </div>

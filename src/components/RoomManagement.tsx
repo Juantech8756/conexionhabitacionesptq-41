@@ -43,10 +43,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Define the schema for form validation
 const roomFormSchema = z.object({
-  room_number: z.string().min(1, { message: "El número de habitación es obligatorio" }),
+  room_number: z.string().min(1, { message: "El nombre de la cabaña es obligatorio" }),
   status: z.string().min(1, { message: "El estado es obligatorio" }),
-  floor: z.string().optional(),
-  type: z.string().optional(),
+  type: z.string().min(1, { message: "El tipo de cabaña es obligatorio" }),
 });
 
 type RoomFormValues = z.infer<typeof roomFormSchema>;
@@ -73,8 +72,7 @@ const RoomManagement = () => {
     defaultValues: {
       room_number: "",
       status: "available",
-      floor: "",
-      type: "",
+      type: "family",
     },
   });
 
@@ -94,7 +92,7 @@ const RoomManagement = () => {
         console.error("Error fetching rooms:", error);
         toast({
           title: "Error",
-          description: "No se pudieron cargar las habitaciones",
+          description: "No se pudieron cargar las cabañas",
           variant: "destructive",
         });
       } finally {
@@ -121,8 +119,7 @@ const RoomManagement = () => {
     form.reset({
       room_number: "",
       status: "available",
-      floor: "",
-      type: "",
+      type: "family",
     });
     setIsDialogOpen(true);
   };
@@ -133,8 +130,7 @@ const RoomManagement = () => {
     form.reset({
       room_number: room.room_number,
       status: room.status,
-      floor: room.floor || "",
-      type: room.type || "",
+      type: room.type || "family",
     });
     setIsDialogOpen(true);
   };
@@ -149,8 +145,7 @@ const RoomManagement = () => {
           .update({
             room_number: values.room_number,
             status: values.status,
-            floor: values.floor || null,
-            type: values.type || null,
+            type: values.type,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentRoom.id);
@@ -158,8 +153,8 @@ const RoomManagement = () => {
         if (error) throw error;
 
         toast({
-          title: "Habitación actualizada",
-          description: `La habitación ${values.room_number} ha sido actualizada correctamente.`,
+          title: "Cabaña actualizada",
+          description: `La cabaña ${values.room_number} ha sido actualizada correctamente.`,
         });
       } else {
         // Insert new room
@@ -167,16 +162,15 @@ const RoomManagement = () => {
           {
             room_number: values.room_number,
             status: values.status,
-            floor: values.floor || null,
-            type: values.type || null,
+            type: values.type,
           },
         ]);
 
         if (error) throw error;
 
         toast({
-          title: "Habitación creada",
-          description: `La habitación ${values.room_number} ha sido creada correctamente.`,
+          title: "Cabaña creada",
+          description: `La cabaña ${values.room_number} ha sido creada correctamente.`,
         });
       }
 
@@ -185,7 +179,7 @@ const RoomManagement = () => {
       console.error("Error saving room:", error);
       toast({
         title: "Error",
-        description: error.message || "No se pudo guardar la habitación",
+        description: error.message || "No se pudo guardar la cabaña",
         variant: "destructive",
       });
     }
@@ -193,7 +187,7 @@ const RoomManagement = () => {
 
   // Delete room
   const deleteRoom = async (room: Room) => {
-    if (!confirm(`¿Está seguro que desea eliminar la habitación ${room.room_number}?`)) return;
+    if (!confirm(`¿Está seguro que desea eliminar la cabaña ${room.room_number}?`)) return;
 
     try {
       const { error } = await supabase
@@ -204,14 +198,14 @@ const RoomManagement = () => {
       if (error) throw error;
 
       toast({
-        title: "Habitación eliminada",
-        description: `La habitación ${room.room_number} ha sido eliminada correctamente.`,
+        title: "Cabaña eliminada",
+        description: `La cabaña ${room.room_number} ha sido eliminada correctamente.`,
       });
     } catch (error: any) {
       console.error("Error deleting room:", error);
       toast({
         title: "Error",
-        description: error.message || "No se pudo eliminar la habitación",
+        description: error.message || "No se pudo eliminar la cabaña",
         variant: "destructive",
       });
     }
@@ -222,7 +216,6 @@ const RoomManagement = () => {
     const query = searchQuery.toLowerCase();
     return (
       room.room_number.toLowerCase().includes(query) ||
-      (room.floor && room.floor.toLowerCase().includes(query)) ||
       (room.type && room.type.toLowerCase().includes(query)) ||
       room.status.toLowerCase().includes(query)
     );
@@ -268,13 +261,27 @@ const RoomManagement = () => {
     }
   };
 
+  // Get type label
+  const getTypeLabel = (type: string | null) => {
+    if (!type) return "-";
+    
+    switch (type.toLowerCase()) {
+      case "family":
+        return "Familiar";
+      case "couple":
+        return "Pareja";
+      default:
+        return type;
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Gestión de Habitaciones</h2>
+        <h2 className="text-2xl font-bold">Gestión de Cabañas</h2>
         <Button onClick={openNewRoomDialog}>
           <Plus className="h-4 w-4 mr-2" />
-          Nueva Habitación
+          Nueva Cabaña
         </Button>
       </div>
 
@@ -282,7 +289,7 @@ const RoomManagement = () => {
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
           <Input
-            placeholder="Buscar habitaciones..."
+            placeholder="Buscar cabañas..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -295,8 +302,7 @@ const RoomManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Número</TableHead>
-                <TableHead>Piso</TableHead>
+                <TableHead>Nombre</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -305,22 +311,21 @@ const RoomManagement = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4">
+                  <TableCell colSpan={4} className="text-center py-4">
                     Cargando...
                   </TableCell>
                 </TableRow>
               ) : filteredRooms.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4">
-                    No hay habitaciones disponibles
+                  <TableCell colSpan={4} className="text-center py-4">
+                    No hay cabañas disponibles
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredRooms.map((room) => (
                   <TableRow key={room.id}>
                     <TableCell className="font-medium">{room.room_number}</TableCell>
-                    <TableCell>{room.floor || "-"}</TableCell>
-                    <TableCell>{room.type || "-"}</TableCell>
+                    <TableCell>{getTypeLabel(room.type)}</TableCell>
                     <TableCell>{getStatusBadge(room.status)}</TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -350,10 +355,10 @@ const RoomManagement = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {currentRoom ? "Editar Habitación" : "Nueva Habitación"}
+              {currentRoom ? "Editar Cabaña" : "Nueva Cabaña"}
             </DialogTitle>
             <DialogDescription>
-              Complete los detalles de la habitación a continuación.
+              Complete los detalles de la cabaña a continuación.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -363,10 +368,35 @@ const RoomManagement = () => {
                 name="room_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Número de Habitación</FormLabel>
+                    <FormLabel>Nombre de la Cabaña</FormLabel>
                     <FormControl>
-                      <Input placeholder="101" {...field} />
+                      <Input placeholder="Cabaña Azul" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione un tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="family">Familiar</SelectItem>
+                        <SelectItem value="couple">Pareja</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -392,47 +422,6 @@ const RoomManagement = () => {
                         <SelectItem value="occupied">Ocupada</SelectItem>
                         <SelectItem value="maintenance">Mantenimiento</SelectItem>
                         <SelectItem value="cleaning">Limpieza</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="floor"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Piso</FormLabel>
-                    <FormControl>
-                      <Input placeholder="1" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccione un tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="standard">Estándar</SelectItem>
-                        <SelectItem value="suite">Suite</SelectItem>
-                        <SelectItem value="deluxe">Deluxe</SelectItem>
-                        <SelectItem value="family">Familiar</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
