@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -406,6 +405,16 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
     }
   };
 
+  const handleCallGuest = () => {
+    if (selectedGuest && onCallGuest) {
+      onCallGuest({
+        id: selectedGuest.id,
+        name: selectedGuest.name,
+        roomNumber: selectedGuest.room_number
+      });
+    }
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('es', {
@@ -684,7 +693,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
               className="flex flex-col w-full h-full bg-gray-50"
             >
               <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-3 text-white shadow-sm">
-                <div className="flex items-center">
+                <div className="flex items-center justify-between">
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -693,12 +702,21 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
-                  <div>
+                  <div className="flex-grow">
                     <h2 className="text-base font-semibold">{selectedGuest.name}</h2>
                     <p className="text-xs text-white/90">
                       Cabaña {selectedGuest.room_number}
                     </p>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCallGuest}
+                    className="text-white hover:bg-white/20"
+                    title="Llamar a huésped"
+                  >
+                    <Phone className="h-5 w-5" />
+                  </Button>
                 </div>
               </header>
 
@@ -877,6 +895,14 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                     )}
                   </div>
                   <div className="flex space-x-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleCallGuest}
+                      className="bg-white/20 hover:bg-white/30 text-white border-none"
+                    >
+                      <Phone className="h-4 w-4 mr-1" /> Llamar
+                    </Button>
                     <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-none">
                       <Bell className="h-4 w-4 mr-1" /> Notificar
                     </Button>

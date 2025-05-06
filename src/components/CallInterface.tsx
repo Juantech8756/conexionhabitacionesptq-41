@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -26,7 +25,7 @@ const CallInterface = ({
 }: CallInterfaceProps) => {
   const [callState, setCallState] = useState<CallState>("idle");
   const [isMuted, setIsMuted] = useState(false);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(false); // Set default to false for audio-only calls
   const [callDuration, setCallDuration] = useState(0);
   const [peerConnection, setPeerConnection] = useState<RTCPeerConnection | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -171,7 +170,7 @@ const CallInterface = ({
 
   const startCall = async () => {
     try {
-      // Get user media
+      // Get user media - audio-only by default
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: isVideoEnabled, 
         audio: true 
@@ -211,7 +210,7 @@ const CallInterface = ({
       console.error("Error starting call:", error);
       toast({
         title: "Error al iniciar la llamada",
-        description: "No se pudo acceder a la cámara o micrófono",
+        description: "No se pudo acceder al micrófono",
         variant: "destructive"
       });
     }
@@ -219,7 +218,7 @@ const CallInterface = ({
 
   const acceptCall = async () => {
     try {
-      // Get user media
+      // Get user media - audio-only by default
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: isVideoEnabled, 
         audio: true 
@@ -257,7 +256,7 @@ const CallInterface = ({
       console.error("Error accepting call:", error);
       toast({
         title: "Error al aceptar la llamada",
-        description: "No se pudo acceder a la cámara o micrófono",
+        description: "No se pudo acceder al micrófono",
         variant: "destructive"
       });
     }
@@ -323,10 +322,31 @@ const CallInterface = ({
   const toggleVideo = () => {
     if (localStream) {
       const videoTracks = localStream.getVideoTracks();
-      videoTracks.forEach(track => {
-        track.enabled = !track.enabled;
-      });
-      setIsVideoEnabled(!isVideoEnabled);
+      
+      if (videoTracks.length > 0) {
+        videoTracks.forEach(track => {
+          track.enabled = !track.enabled;
+        });
+        setIsVideoEnabled(!isVideoEnabled);
+      } else if (!isVideoEnabled) {
+        // If there are no video tracks and user wants to enable video
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(videoStream => {
+            const videoTrack = videoStream.getVideoTracks()[0];
+            if (peerConnection && videoTrack) {
+              peerConnection.addTrack(videoTrack, localStream as MediaStream);
+              setIsVideoEnabled(true);
+            }
+          })
+          .catch(err => {
+            console.error("Error adding video:", err);
+            toast({
+              title: "Error al habilitar video",
+              description: "No se pudo acceder a la cámara",
+              variant: "destructive"
+            });
+          });
+      }
     }
   };
 
@@ -357,7 +377,7 @@ const CallInterface = ({
           <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black to-transparent p-4">
             <div className="flex items-center justify-between">
               <div className="text-white">
-                {callState === "idle" && "Iniciar llamada"}
+                {callState === "idle" && "Iniciar llamada de voz"}
                 {callState === "calling" && "Llamando..."}
                 {callState === "receiving" && "Llamada entrante..."}
                 {callState === "ongoing" && (
@@ -374,10 +394,10 @@ const CallInterface = ({
             </div>
           </div>
           
-          {/* Video container */}
+          {/* Video container - only shown when video is enabled */}
           <div className="relative h-full">
-            {/* Remote video (full screen) */}
-            {(callState === "ongoing" || callState === "receiving") && (
+            {/* Remote video (full screen) - only shown when in call with video */}
+            {(callState === "ongoing" && isVideoEnabled) && (
               <video
                 ref={remoteVideoRef}
                 autoPlay
@@ -386,8 +406,8 @@ const CallInterface = ({
               />
             )}
             
-            {/* Local video (picture-in-picture) */}
-            {(callState !== "idle") && (
+            {/* Local video (picture-in-picture) - only shown with video */}
+            {(callState !== "idle" && isVideoEnabled) && (
               <div className="absolute bottom-20 right-4 w-1/4 h-1/4 max-w-[200px] max-h-[150px] rounded-lg overflow-hidden border-2 border-white shadow-lg">
                 <video
                   ref={localVideoRef}
@@ -399,30 +419,32 @@ const CallInterface = ({
               </div>
             )}
             
-            {/* Initial state or calling animation */}
-            {callState !== "ongoing" && (
+            {/* Audio-only or initial state UI */}
+            {!isVideoEnabled || callState !== "ongoing" ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 bg-opacity-80">
                 <div className={`rounded-full ${
                   callState === "calling" || callState === "receiving" 
                     ? "animate-ping bg-green-500 h-24 w-24 opacity-75 mb-8" 
-                    : "bg-blue-500 h-20 w-20 mb-6"
+                    : "bg-purple-500 h-20 w-20 mb-6"
                 }`}>
                   <div className="flex items-center justify-center h-full">
                     {callState === "idle" && <Phone className="h-10 w-10 text-white" />}
                   </div>
                 </div>
                 <h3 className="text-xl font-medium text-white mb-2">
-                  {callState === "idle" && "Iniciar una llamada"}
+                  {callState === "idle" && "Iniciar una llamada de voz"}
                   {callState === "calling" && "Llamando..."}
                   {callState === "receiving" && "Llamada entrante"}
+                  {callState === "ongoing" && !isVideoEnabled && "Llamada en curso"}
                 </h3>
                 <p className="text-gray-300 mb-8">
                   {callState === "idle" && `${isGuest ? "Recepción" : `Cabaña ${roomNumber} - ${guestName}`}`}
                   {callState === "calling" && "Espere mientras conectamos su llamada"}
                   {callState === "receiving" && `${isGuest ? "Recepción" : guestName} está llamando`}
+                  {callState === "ongoing" && !isVideoEnabled && formatTime(callDuration)}
                 </p>
               </div>
-            )}
+            ) : null}
           </div>
           
           {/* Call controls */}
@@ -480,7 +502,7 @@ const CallInterface = ({
                   <Button
                     onClick={toggleVideo}
                     size="lg"
-                    className={`rounded-full ${!isVideoEnabled ? "bg-red-500 hover:bg-red-600" : "bg-gray-700 hover:bg-gray-600"} h-12 w-12 p-0`}
+                    className={`rounded-full ${!isVideoEnabled ? "bg-gray-700 hover:bg-gray-600" : "bg-purple-500 hover:bg-purple-600"} h-12 w-12 p-0`}
                   >
                     {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
                   </Button>

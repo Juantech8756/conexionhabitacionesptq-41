@@ -12,6 +12,7 @@ export type Database = {
       guests: {
         Row: {
           created_at: string
+          guest_count: number | null
           id: string
           name: string
           room_id: string | null
@@ -19,6 +20,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          guest_count?: number | null
           id?: string
           name: string
           room_id?: string | null
@@ -26,6 +28,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          guest_count?: number | null
           id?: string
           name?: string
           room_id?: string | null
