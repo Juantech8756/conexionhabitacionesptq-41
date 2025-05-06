@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -320,4 +319,77 @@ button, a, .interactive {
 @keyframes slideToLeft {
   from { transform: translateX(0); }
   to { transform: translateX(-100%); }
+}
+
+/* Audio Player animations and styling */
+.audio-wave {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  gap: 2px;
+}
+
+.audio-wave-bar {
+  width: 3px;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 2px;
+}
+
+.audio-wave-bar-playing {
+  animation: wave-animation 1s infinite alternate;
+}
+
+@keyframes wave-animation {
+  0% {
+    height: 30%;
+  }
+  100% {
+    height: 80%;
+  }
+}
+
+.audio-progress {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  cursor: pointer;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.audio-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 2px;
+}
+
+.audio-progress-fill-animate {
+  animation: pulse-light 1s infinite alternate;
+}
+
+@keyframes pulse-light {
+  0% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Touch-friendly audio controls for mobile */
+@media (max-width: 768px) {
+  .audio-control-button {
+    min-height: 36px;
+    min-width: 36px;
+  }
+  
+  .audio-progress {
+    height: 6px;
+  }
 }

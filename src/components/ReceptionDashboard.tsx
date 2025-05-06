@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile"; 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 
 type Guest = {
   id: string;
@@ -715,19 +716,11 @@ const ReceptionDashboard = () => {
                           }`}
                         >
                           {msg.is_audio ? (
-                            <div className="flex flex-col">
-                              <div className="flex items-center space-x-2">
-                                <Mic className="h-4 w-4" />
-                                <span className="text-sm">{msg.is_guest ? "Audio recibido" : "Audio enviado"}</span>
-                              </div>
-                              <audio 
-                                controls 
-                                src={msg.audio_url} 
-                                className="w-full mt-2 h-10"
-                              >
-                                Su navegador no soporta el elemento de audio.
-                              </audio>
-                            </div>
+                            <AudioMessagePlayer 
+                              audioUrl={msg.audio_url || ''} 
+                              isGuest={!msg.is_guest} 
+                              isDark={!msg.is_guest}
+                            />
                           ) : (
                             <p className="text-sm break-words">{msg.content}</p>
                           )}
@@ -906,15 +899,11 @@ const ReceptionDashboard = () => {
                             }`}
                           >
                             {msg.is_audio ? (
-                              <div className="flex flex-col">
-                                <div className="flex items-center space-x-2">
-                                  <Mic className="h-5 w-5" />
-                                  <span>{msg.is_guest ? "Audio recibido" : "Audio enviado"}</span>
-                                </div>
-                                <audio controls src={msg.audio_url} className="w-full mt-2">
-                                  Su navegador no soporta el elemento de audio.
-                                </audio>
-                              </div>
+                              <AudioMessagePlayer 
+                                audioUrl={msg.audio_url || ''} 
+                                isGuest={!msg.is_guest} 
+                                isDark={!msg.is_guest}
+                              />
                             ) : (
                               <p>{msg.content}</p>
                             )}

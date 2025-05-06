@@ -7,6 +7,7 @@ import { MessageCircle, Mic, MicOff, Send, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
+import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 
 interface GuestChatProps {
   guestName: string;
@@ -290,22 +291,19 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
                 className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]"} p-3 ${
+                  className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]"} ${
+                    msg.is_audio ? '' : 'p-3'
+                  } ${
                     msg.is_guest 
                       ? 'chat-bubble-guest shadow-md' 
                       : 'chat-bubble-staff shadow-sm'
-                  }`}
+                  } ${msg.is_audio ? 'overflow-hidden' : ''}`}
                 >
                   {msg.is_audio ? (
-                    <div className="w-full">
-                      <audio 
-                        controls 
-                        src={msg.audio_url} 
-                        className={`w-full ${isMobile ? "h-10" : ""}`}
-                      >
-                        Su navegador no soporta el elemento de audio.
-                      </audio>
-                    </div>
+                    <AudioMessagePlayer 
+                      audioUrl={msg.audio_url || ''} 
+                      isGuest={msg.is_guest}
+                    />
                   ) : (
                     <p className={isMobile ? "text-sm break-words" : "break-words"}>{msg.content}</p>
                   )}
