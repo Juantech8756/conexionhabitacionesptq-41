@@ -64,11 +64,16 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
                 hotel: {
-                    50: '#f0f9ff',
-                    100: '#e0f2fe',
-                    500: '#3e84f3',
-                    600: '#1a56db',
-                    700: '#1e40af',
+                    50: 'hsl(var(--hotel-50))',
+                    100: 'hsl(var(--hotel-100))',
+                    200: 'hsl(var(--hotel-200))',
+                    300: 'hsl(var(--hotel-300))',
+                    400: 'hsl(var(--hotel-400))',
+                    500: 'hsl(var(--hotel-500))',
+                    600: 'hsl(var(--hotel-600))',
+                    700: 'hsl(var(--hotel-700))',
+                    800: 'hsl(var(--hotel-800))',
+                    900: 'hsl(var(--hotel-900))',
                     gold: '#d4af37'
                 }
 			},

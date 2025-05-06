@@ -75,7 +75,7 @@ const ReceptionDashboardPage = () => {
 
   return (
     <div className="flex flex-col h-screen">
-      <header className="bg-gradient-to-r from-hotel-700 to-hotel-600 text-white p-4 shadow-lg">
+      <header className="gradient-header p-4 shadow-lg">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
             <Hotel className="h-6 w-6 mr-2" />

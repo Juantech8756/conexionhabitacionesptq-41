@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -236,7 +235,7 @@ button, a, .interactive {
 }
 
 .gradient-header-soft {
-  @apply bg-gradient-to-r from-hotel-600/90 to-hotel-400/90 text-white backdrop-blur-sm;
+  @apply bg-gradient-to-r from-hotel-600/90 to-hotel-400 bg-opacity-90 text-white backdrop-blur-sm;
 }
 
 /* Mejora en las tarjetas */

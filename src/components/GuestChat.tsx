@@ -257,7 +257,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-hotel-700 to-hotel-600 text-white p-4 shadow-md">
+      <header className="gradient-header-soft p-4 shadow-md">
         <div className="flex items-center justify-between">
           <motion.button 
             whileHover={{ scale: 1.1 }}
