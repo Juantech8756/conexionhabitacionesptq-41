@@ -896,7 +896,7 @@ const ReceptionDashboard = () => {
                               msg.is_guest 
                                 ? 'bg-white border border-gray-200 text-gray-800' 
                                 : 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white'
-                            }`}
+                            } ${msg.is_audio ? 'overflow-hidden' : ''}`}
                           >
                             {msg.is_audio ? (
                               <AudioMessagePlayer 
