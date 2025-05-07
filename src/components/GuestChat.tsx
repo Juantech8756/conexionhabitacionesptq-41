@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,12 +42,12 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   console.log("GuestChat renderizado con los datos:", {guestName, roomNumber, guestId});
 
-  // Scroll to bottom function with smooth scrolling
+  // Modified: Scroll behavior adjusted for reversed layout
   const scrollToBottom = (smooth = true) => {
     if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current;
-      scrollContainer.scrollTo({
-        top: scrollContainer.scrollHeight,
+      // For a reversed flex layout, we need to scroll to top to see newest messages
+      scrollAreaRef.current.scrollTo({
+        top: 0,
         behavior: smooth ? "smooth" : "auto",
       });
     }
@@ -128,6 +129,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   // Scroll to bottom on new messages
   useEffect(() => {
+    // When using flex-direction: column-reverse, we need to scroll to top (0)
     setTimeout(() => scrollToBottom(), 50);
     setTimeout(() => scrollToBottom(), 300); // Additional attempt for reliability
   }, [messages]);
@@ -315,10 +317,10 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </header>
 
-      {/* Chat messages area with proper scrolling */}
+      {/* Chat messages area with proper scrolling - reversed layout */}
       <div className="chat-scroll-area" ref={scrollAreaRef}>
         <div className="message-container">
-          <div className={`space-y-3 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto p-3`}>
+          <div className={`space-y-3 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto p-3 w-full`}>
             {messages.length === 0 && (
               <div className="empty-chat-message">
                 <p>No hay mensajes aún. ¡Inicia la conversación!</p>
@@ -326,6 +328,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             )}
             
             <AnimatePresence>
+              {/* We don't need to reverse the messages array since the container is already reversed */}
               {messages.map((msg) => (
                 <motion.div
                   key={msg.id}

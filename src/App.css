@@ -1,4 +1,3 @@
-
 /* Reset root styling for full-width mobile-first design */
 #root {
   width: 100%;
@@ -135,7 +134,7 @@
   padding-bottom: 80px; /* Increased space for fixed input area */
   margin-top: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse; /* Changed: Reverse the direction to show messages from bottom */
   z-index: 1;
   height: 100%;
   width: 100%;
@@ -207,4 +206,5 @@
   flex-grow: 1;
   width: 100%;
   min-height: 100%;
+  justify-content: flex-end; /* Changed: Make messages start from the bottom */
 }
