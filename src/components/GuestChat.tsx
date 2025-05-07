@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,13 +35,13 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isCallActive, setIsCallActive] = useState(false);
   
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  console.log("GuestChat rendered with data:", {guestName, roomNumber, guestId});
+  console.log("GuestChat renderizado con los datos:", {guestName, roomNumber, guestId});
 
   // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {
@@ -55,7 +56,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   // Fetch messages on initial load
   useEffect(() => {
     const fetchMessages = async () => {
-      console.log("Fetching messages for guestId:", guestId);
+      console.log("Intentando obtener mensajes para el guestId:", guestId);
       try {
         const { data, error } = await supabase
           .from('messages')
@@ -65,7 +66,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         
         if (error) throw error;
         
-        console.log("Messages retrieved:", data);
+        console.log("Mensajes obtenidos:", data);
         
         if (data.length === 0) {
           // Add welcome message if no messages exist
@@ -84,7 +85,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             
           if (!insertError) {
             setMessages([welcomeMessage]);
-            console.log("Welcome message added");
+            console.log("Mensaje de bienvenida agregado");
           }
         } else {
           setMessages(data);
@@ -114,7 +115,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             filter: `guest_id=eq.${guestId}`
           },
           (payload) => {
-            console.log("New message received:", payload);
+            console.log("Nuevo mensaje recibido:", payload);
             setMessages(prev => [...prev, payload.new as MessageType]);
           }
         )
@@ -128,7 +129,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   // Scroll to bottom on new messages
   useEffect(() => {
-    scrollToBottom();
+    setTimeout(() => scrollToBottom(), 50);
+    setTimeout(() => scrollToBottom(), 300); // Additional attempt for reliability
   }, [messages]);
 
   // Focus input field when component mounts
@@ -288,7 +290,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   return (
     <div className="chat-container">
       {/* Header fixed at top */}
-      <div className="chat-header">
+      <header className="gradient-header-soft p-3 shadow-md chat-header">
         <div className="flex items-center justify-between">
           <motion.button 
             whileHover={{ scale: isMobile ? 1.05 : 1.1 }}
@@ -312,103 +314,97 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             <Phone className="h-5 w-5" />
           </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Scrollable messages area */}
-      <div className="messages-container" ref={messagesContainerRef}>
-        <div className="p-1 md:p-3 w-full">
-          {messages.length === 0 && (
-            <div className="empty-chat-message">
-              <p>No hay mensajes aún. ¡Inicia la conversación!</p>
-            </div>
-          )}
-          
-          <AnimatePresence>
-            {messages.map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.3 }}
-                className={`message-wrapper flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]"} ${
-                    msg.is_audio ? '' : 'p-0'
-                  } ${
-                    msg.is_guest 
-                      ? 'chat-bubble-guest' 
-                      : 'chat-bubble-staff'
-                  } ${msg.is_audio ? 'overflow-hidden' : ''}`}
-                >
-                  {msg.is_audio ? (
-                    <AudioMessagePlayer 
-                      audioUrl={msg.audio_url || ''} 
-                      isGuest={msg.is_guest}
-                    />
-                  ) : (
-                    <p className={isMobile ? "text-sm" : ""}>{msg.content}</p>
-                  )}
-                  <div className="text-right mt-1">
-                    <span className={`text-xs ${msg.is_guest ? 'text-white/70' : 'text-gray-500'}`}>
-                      {formatTime(msg.created_at)}
-                    </span>
-                  </div>
+      {/* Scrollable chat area with simplified layout */}
+      <div className="chat-scroll-area" ref={scrollAreaRef}>
+        <div className="message-container">
+          <div className="message-content-wrapper">
+            <div className={`space-y-3 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto p-3 w-full`}>
+              {messages.length === 0 && (
+                <div className="empty-chat-message">
+                  <p>No hay mensajes aún. ¡Inicia la conversación!</p>
                 </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          <div ref={messagesEndRef} />
+              )}
+              
+              <AnimatePresence>
+                {messages.map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]"} ${
+                        msg.is_audio ? '' : 'p-3'
+                      } ${
+                        msg.is_guest 
+                          ? 'chat-bubble-guest shadow-md' 
+                          : 'chat-bubble-staff shadow-sm'
+                      } ${msg.is_audio ? 'overflow-hidden' : ''}`}
+                    >
+                      {msg.is_audio ? (
+                        <AudioMessagePlayer 
+                          audioUrl={msg.audio_url || ''} 
+                          isGuest={msg.is_guest}
+                        />
+                      ) : (
+                        <p className={isMobile ? "text-sm break-words" : "break-words"}>{msg.content}</p>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Chat input area fixed at bottom */}
+      {/* Fixed input area at bottom */}
       <div className="chat-input-container">
-        <div className={`max-w-3xl mx-auto w-full`}>
-          <div className="flex items-center space-x-2">
+        <div className={`flex items-center space-x-2 w-full ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={toggleRecording}
+            className={`flex-shrink-0 transition-all duration-300 ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
+            disabled={isLoading}
+          >
+            {isRecording ? (
+              <MicOff className="h-5 w-5 recording-animation" />
+            ) : (
+              <Mic className="h-5 w-5" />
+            )}
+          </Button>
+          
+          <Input
+            placeholder="Escriba su mensaje..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+            className="flex-grow shadow-sm focus:ring-2 focus:ring-blue-500/30 transition-all text-sm"
+            disabled={isRecording || isLoading}
+            ref={inputRef}
+          />
+          
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
             <Button
               type="button"
               size="icon"
-              variant={isRecording ? "destructive" : "outline"}
-              onClick={toggleRecording}
-              className="flex-shrink-0 rounded-full h-10 w-10"
-              disabled={isLoading}
+              onClick={sendMessage}
+              disabled={message.trim() === "" || isRecording || isLoading}
+              className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 shadow-sm"
             >
-              {isRecording ? (
-                <MicOff className="h-5 w-5 recording-animation" />
-              ) : (
-                <Mic className="h-5 w-5" />
-              )}
+              <Send className="h-5 w-5" />
             </Button>
-            
-            <div className="flex-grow relative">
-              <Input
-                placeholder="Escriba su mensaje..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                className="rounded-full shadow-sm pr-12 focus:ring-2 focus:ring-blue-500/30"
-                disabled={isRecording || isLoading}
-                ref={inputRef}
-              />
-              
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="absolute right-1 top-1 bottom-1"
-              >
-                <Button
-                  type="button"
-                  size="icon"
-                  onClick={sendMessage}
-                  disabled={message.trim() === "" || isRecording || isLoading}
-                  className="rounded-full h-8 w-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600"
-                >
-                  <Send className="h-4 w-4 text-white" />
-                </Button>
-              </motion.div>
-            </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
