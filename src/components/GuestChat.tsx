@@ -36,14 +36,12 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [isCallActive, setIsCallActive] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesAreaRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  console.log("GuestChat renderizado con los datos:", {guestName, roomNumber, guestId});
-
-  // Función para desplazarse al fondo
+  // Function to scroll to bottom
   const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
@@ -53,10 +51,9 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     }
   };
 
-  // Obtener mensajes al cargar
+  // Fetch messages on load
   useEffect(() => {
     const fetchMessages = async () => {
-      console.log("Intentando obtener mensajes para el guestId:", guestId);
       try {
         const { data, error } = await supabase
           .from('messages')
@@ -66,10 +63,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         
         if (error) throw error;
         
-        console.log("Mensajes obtenidos:", data);
-        
         if (data.length === 0) {
-          // Agregar mensaje de bienvenida si no hay mensajes
+          // Add welcome message if there are no messages
           const welcomeMessage = {
             id: 'welcome',
             guest_id: guestId,
@@ -85,7 +80,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             
           if (!insertError) {
             setMessages([welcomeMessage]);
-            console.log("Mensaje de bienvenida agregado");
           }
         } else {
           setMessages(data);
@@ -103,7 +97,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     if (guestId) {
       fetchMessages();
       
-      // Suscribirse a nuevos mensajes
+      // Subscribe to new messages
       const channel = supabase
         .channel('messages-channel')
         .on(
@@ -115,7 +109,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             filter: `guest_id=eq.${guestId}`
           },
           (payload) => {
-            console.log("Nuevo mensaje recibido:", payload);
             setMessages(prev => [...prev, payload.new as MessageType]);
           }
         )
@@ -127,12 +120,12 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     }
   }, [guestId, guestName, toast]);
 
-  // Desplazarse hacia abajo con nuevos mensajes
+  // Scroll to bottom when messages change
   useEffect(() => {
-    setTimeout(() => scrollToBottom(), 100);
+    setTimeout(scrollToBottom, 100);
   }, [messages]);
 
-  // Enfocar el campo de entrada al montar
+  // Focus input field on mount
   useEffect(() => {
     if (inputRef.current) {
       setTimeout(() => {
@@ -189,7 +182,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         try {
           const audioBlob = new Blob(chunks, { type: "audio/webm" });
           
-          // Subir audio a Supabase Storage
+          // Upload audio to Supabase Storage
           const fileName = `audio_${Date.now()}_${guestId}.webm`;
           const { data: uploadData, error: uploadError } = await supabase
             .storage
@@ -198,13 +191,13 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           
           if (uploadError) throw uploadError;
           
-          // Obtener URL pública para el archivo subido
+          // Get public URL for the uploaded file
           const { data: publicUrlData } = supabase
             .storage
             .from('audio_messages')
             .getPublicUrl(fileName);
           
-          // Insertar mensaje con URL de audio
+          // Insert message with audio URL
           const newAudioMessage = {
             guest_id: guestId,
             content: "Mensaje de voz",
@@ -256,7 +249,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       audioRecorder.stop();
       setIsRecording(false);
       
-      // Detener todas las pistas de audio
+      // Stop all audio tracks
       audioRecorder.stream.getTracks().forEach(track => track.stop());
     }
   };
@@ -279,7 +272,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   return (
     <div className="chat-container">
-      {/* Cabecera */}
+      {/* Header */}
       <div className="chat-header">
         <div className="flex items-center justify-between">
           <motion.button 
@@ -306,54 +299,50 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      {/* Área de mensajes con desplazamiento */}
-      <div className="chat-messages-area" ref={messagesAreaRef}>
-        <div className="message-container">
-          <div className="message-content">
-            {messages.length === 0 && (
-              <div className="empty-chat-message">
-                <p>No hay mensajes aún. ¡Inicia la conversación!</p>
-              </div>
-            )}
-            
-            <AnimatePresence>
-              {messages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'} mb-3`}
+      {/* Messages area */}
+      <div className="messages-container" ref={messagesContainerRef}>
+        <div className="message-wrapper">
+          {messages.length === 0 && (
+            <div className="empty-chat-message">
+              <p>No hay mensajes aún. ¡Inicia la conversación!</p>
+            </div>
+          )}
+          
+          <AnimatePresence>
+            {messages.map((msg) => (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'} mb-3`}
+              >
+                <div
+                  className={`${
+                    msg.is_guest 
+                      ? 'chat-bubble-guest' 
+                      : 'chat-bubble-staff'
+                  } ${msg.is_audio ? 'overflow-hidden p-0' : ''}`}
                 >
-                  <div
-                    className={`${
-                      msg.is_audio ? '' : ''
-                    } ${
-                      msg.is_guest 
-                        ? 'chat-bubble-guest' 
-                        : 'chat-bubble-staff'
-                    } ${msg.is_audio ? 'overflow-hidden p-0' : ''}`}
-                  >
-                    {msg.is_audio ? (
-                      <AudioMessagePlayer 
-                        audioUrl={msg.audio_url || ''} 
-                        isGuest={msg.is_guest}
-                      />
-                    ) : (
-                      <p className={isMobile ? "text-sm break-words" : "break-words"}>{msg.content}</p>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            <div ref={messagesEndRef} />
-          </div>
+                  {msg.is_audio ? (
+                    <AudioMessagePlayer 
+                      audioUrl={msg.audio_url || ''} 
+                      isGuest={msg.is_guest}
+                    />
+                  ) : (
+                    <p className={isMobile ? "text-sm" : ""}>{msg.content}</p>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Área de entrada fija en la parte inferior */}
-      <div className="chat-input-container">
-        <div className="chat-input-wrapper">
+      {/* Input area */}
+      <div className="chat-input-area">
+        <div className="chat-input-container">
           <Button
             type="button"
             size="icon"
@@ -396,7 +385,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      {/* Interfaz de llamada */}
+      {/* Call interface */}
       {isCallActive && (
         <CallInterface 
           isGuest={true}

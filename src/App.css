@@ -43,65 +43,64 @@
   color: #888;
 }
 
-/* -------------- CHAT LAYOUT SYSTEM - REDESIGNED -------------- */
+/* ==================== NEW CHAT LAYOUT SYSTEM ==================== */
 
-/* Chat container - Ocupa toda la pantalla y establece el contexto flex */
+/* Main chat container - sets the boundaries for the entire chat interface */
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  max-height: 100vh;
+  height: 100vh; /* Full viewport height */
+  max-height: 100vh; /* Prevent overflow */
   width: 100%;
-  overflow: hidden;
   position: relative;
-  background-color: #f9f9f9;
+  background-color: #f9fafb;
+  overflow: hidden; /* Prevent scrolling on the body */
 }
 
-/* Header - Fijo en la parte superior */
+/* Header - Fixed at the top */
 .chat-header {
-  flex: 0 0 auto;
-  padding: 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  flex: 0 0 auto; /* Don't grow, don't shrink, fixed height */
+  padding: 14px 16px;
   background: linear-gradient(to right, #4285f4, #34a0f2);
   color: white;
-  z-index: 10;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 10; /* Ensure it stays on top */
+  position: sticky;
+  top: 0;
 }
 
-/* Área de mensajes - Ocupa el espacio restante con scroll */
-.chat-messages-area {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 10px 0;
-  width: 100%;
-  position: relative;
+/* Messages area - Takes all available space with scrolling */
+.messages-container {
+  flex: 1 1 auto; /* Grow and shrink as needed */
+  overflow-y: auto; /* Enable scrolling */
+  padding: 16px 0;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS devices */
 }
 
-/* Contenedor del mensaje para centrar y limitar ancho */
-.message-container {
+/* Message wrapper - Centers messages and sets max width */
+.message-wrapper {
   max-width: 768px;
   margin: 0 auto;
-  padding: 0 10px;
+  padding: 0 16px;
   width: 100%;
 }
 
-/* Contenido del mensaje */
-.message-content {
-  width: 100%;
-}
-
-/* Contenedor de entrada - Fijo en la parte inferior */
-.chat-input-container {
-  flex: 0 0 auto;
-  padding: 10px;
+/* Input area - Fixed at the bottom */
+.chat-input-area {
+  flex: 0 0 auto; /* Don't grow, don't shrink, fixed height */
+  padding: 12px 16px;
   background: white;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #e5e7eb;
+  z-index: 10; /* Ensure it stays on top */
+  position: sticky;
+  bottom: 0;
   width: 100%;
-  z-index: 10;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
 }
 
-/* Wrapper para la entrada - Para posicionar mejor los elementos de entrada */
-.chat-input-wrapper {
+/* Input container - Holds the input field and buttons */
+.chat-input-container {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -110,37 +109,32 @@
   width: 100%;
 }
 
-/* Burbujas de chat */
+/* Chat bubbles */
 .chat-bubble-guest {
   background: linear-gradient(to right, #4285f4, #34a0f2);
   color: white;
   border-radius: 18px 18px 0 18px;
-  margin-bottom: 8px;
   padding: 12px 16px;
+  margin-bottom: 8px;
   max-width: 85%;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
   align-self: flex-end;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  word-break: break-word;
 }
 
 .chat-bubble-staff {
   background: #f0f0f0;
   color: #333;
   border-radius: 18px 18px 18px 0;
-  margin-bottom: 8px;
   padding: 12px 16px;
+  margin-bottom: 8px;
   max-width: 85%;
   align-self: flex-start;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+  word-break: break-word;
 }
 
-/* Contenedor de mensaje de audio */
-.audio-message-container {
-  display: flex;
-  align-items: center;
-  padding: 8px 16px;
-  min-width: 200px;
-}
-
-/* Animación de grabación */
+/* Animation for recording button */
 .recording-animation {
   animation: pulse-recording 1.5s ease-in-out infinite;
 }
@@ -160,21 +154,36 @@
   }
 }
 
-/* Estado de chat vacío */
+/* Empty chat state */
 .empty-chat-message {
   text-align: center;
   color: #888;
-  margin: auto;
+  margin: 2rem auto;
   padding: 20px;
 }
 
-/* Asegurar que el área de entrada permanezca visible en dispositivos móviles */
+/* Improved mobile responsiveness */
 @media (max-width: 768px) {
-  .chat-input-wrapper {
-    padding: 0 5px;
+  .chat-header {
+    padding: 12px;
   }
   
-  .chat-messages-area {
-    padding: 5px 0;
+  .messages-container {
+    padding: 12px 0;
+  }
+  
+  .message-wrapper {
+    padding: 0 12px;
+  }
+  
+  .chat-input-area {
+    padding: 10px 12px;
+  }
+  
+  /* Safe area for iOS devices with notch */
+  @supports (padding: max(0px)) {
+    .chat-input-area {
+      padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+    }
   }
 }
