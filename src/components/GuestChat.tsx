@@ -36,7 +36,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isCallActive, setIsCallActive] = useState(false);
   
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -44,8 +45,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   // Scroll to bottom function with smooth scrolling
   const scrollToBottom = (smooth = true) => {
-    if (scrollContainerRef.current) {
-      const scrollContainer = scrollContainerRef.current;
+    if (scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current;
       scrollContainer.scrollTo({
         top: scrollContainer.scrollHeight,
         behavior: smooth ? "smooth" : "auto",
@@ -132,6 +133,15 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     // Short delay to ensure DOM update is complete
     setTimeout(() => scrollToBottom(), 100);
   }, [messages]);
+
+  // Focus input field when component mounts
+  useEffect(() => {
+    if (inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 500);
+    }
+  }, []);
 
   const sendMessage = async () => {
     if (message.trim() === "" || isLoading) return;
@@ -279,7 +289,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-gray-50">
+    <div className="chat-container">
       <header className="gradient-header-soft p-3 shadow-md">
         <div className="flex items-center justify-between">
           <motion.button 
@@ -306,7 +316,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </header>
 
-      <div className="flex-grow overflow-auto p-3" ref={scrollContainerRef}>
+      <div className="chat-scroll-area p-3" ref={scrollAreaRef}>
         <div className={`space-y-3 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
           <AnimatePresence>
             {messages.map((msg) => (
@@ -341,14 +351,14 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      <div className="p-3 border-t border-gray-200 bg-white shadow-inner">
-        <div className={`flex items-center space-x-2 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
+      <div className="chat-input-container">
+        <div className={`flex items-center space-x-2 w-full ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
           <Button
             type="button"
             size="icon"
             variant="outline"
             onClick={toggleRecording}
-            className={`flex-shrink-0 transition-all duration-300 ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
+            className={`flex-shrink-0 transition-all duration-300 chat-input-button ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
             disabled={isLoading}
           >
             {isRecording ? (
@@ -363,8 +373,9 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-            className="flex-grow shadow-sm focus:ring-2 focus:ring-hotel-600/30 transition-all text-sm"
+            className="flex-grow shadow-sm focus:ring-2 focus:ring-blue-500/30 transition-all text-sm"
             disabled={isRecording || isLoading}
+            ref={inputRef}
           />
           
           <motion.div
@@ -376,7 +387,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
               size="icon"
               onClick={sendMessage}
               disabled={message.trim() === "" || isRecording || isLoading}
-              className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600 transition-all duration-200 shadow-sm"
+              className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 shadow-sm chat-input-button"
             >
               <Send className="h-5 w-5" />
             </Button>

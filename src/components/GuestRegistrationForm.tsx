@@ -30,7 +30,7 @@ type Room = {
   type: string | null;
 };
 
-const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast = true }: GuestRegistrationFormProps) => {
+const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast = false }: GuestRegistrationFormProps) => {
   const [guestName, setGuestName] = useState("");
   const [selectedRoomId, setSelectedRoomId] = useState("");
   const [guestCount, setGuestCount] = useState("1");
@@ -145,7 +145,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
       
       if (error) throw error;
       
-      // Show toast only if requested (to avoid duplicates)
+      // Mostrar toast solo si se solicita explícitamente (para evitar duplicados)
       if (showSuccessToast) {
         toast({
           title: "¡Registro exitoso!",
@@ -192,9 +192,9 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.5, type: "spring" }}
-            className="bg-hotel-50 p-3 rounded-full mb-4"
+            className="bg-blue-50 p-3 rounded-full mb-4"
           >
-            <Hotel className="h-10 w-10 text-hotel-600" />
+            <Hotel className="h-10 w-10 text-blue-600" />
           </motion.div>
           <h1 className="text-2xl font-bold text-center text-gray-800">
             Bienvenido al Parque Temático Quimbaya
@@ -205,11 +205,11 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="mt-5 p-4 bg-hotel-50 border border-hotel-100 rounded-lg w-full text-center"
+              className="mt-5 p-4 bg-blue-50 border border-blue-100 rounded-lg w-full text-center"
             >
-              <h2 className="text-xl font-bold text-hotel-600">Cabaña {preselectedRoom.room_number}</h2>
+              <h2 className="text-xl font-bold text-blue-600">Cabaña {preselectedRoom.room_number}</h2>
               {preselectedRoom.type && (
-                <p className="text-lg text-hotel-700">{getRoomTypeText(preselectedRoom.type)}</p>
+                <p className="text-lg text-blue-700">{getRoomTypeText(preselectedRoom.type)}</p>
               )}
             </motion.div>
           )}
@@ -231,7 +231,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
               placeholder="Ingrese su nombre completo"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
-              className="w-full h-12 rounded-lg focus:ring-hotel-500 focus:border-hotel-500 shadow-sm"
+              className="w-full h-12 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
               disabled={isLoading}
             />
           </div>
@@ -242,7 +242,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
               <Label htmlFor="roomNumber" className="text-gray-700">Seleccione su cabaña</Label>
               {isLoadingRooms ? (
                 <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg">
-                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-hotel-600" />
+                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-blue-600" />
                   <span className="text-sm text-gray-600">Cargando cabañas...</span>
                 </div>
               ) : rooms.length === 0 ? (
@@ -255,7 +255,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
                   onValueChange={setSelectedRoomId}
                   disabled={isLoading}
                 >
-                  <SelectTrigger className="w-full h-12 rounded-lg focus:ring-hotel-500 focus:border-hotel-500 shadow-sm">
+                  <SelectTrigger className="w-full h-12 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
                     <SelectValue placeholder="Seleccione su cabaña" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[50vh]">
@@ -279,7 +279,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
                 onValueChange={setGuestCount}
                 disabled={isLoading}
               >
-                <SelectTrigger className="w-full h-12 rounded-lg focus:ring-hotel-500 focus:border-hotel-500 shadow-sm">
+                <SelectTrigger className="w-full h-12 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
                   <SelectValue placeholder="Seleccione cantidad de hospedados" />
                 </SelectTrigger>
                 <SelectContent>
@@ -300,7 +300,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
           >
             <Button 
               type="submit" 
-              className="w-full h-12 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600 text-white rounded-lg font-medium shadow-md"
+              className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium shadow-md"
               disabled={isLoading || isLoadingRooms || (!selectedRoomId && !preselectedRoom)}
             >
               {isLoading ? (

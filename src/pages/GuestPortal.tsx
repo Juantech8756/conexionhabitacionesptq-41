@@ -86,10 +86,16 @@ const GuestPortal = () => {
     localStorage.setItem("roomNumber", room);
     localStorage.setItem("guestId", id);
     
-    // Importante: actualizar el estado isRegistered al final para asegurar la renderización del chat
-    setIsRegistered(true);
+    // Mostrar una única notificación de éxito
+    toast({
+      title: "¡Registro exitoso!",
+      description: "Ahora puede comunicarse con recepción",
+    });
     
-    // Nota: El toast se mostrará desde GuestRegistrationForm para evitar duplicaciones
+    // Importante: actualizar el estado isRegistered al final para asegurar la renderización del chat
+    setTimeout(() => {
+      setIsRegistered(true);
+    }, 100);
   };
 
   const handleBackToRegistration = () => {
@@ -163,19 +169,17 @@ const GuestPortal = () => {
       </AnimatePresence>
 
       {isRegistered ? (
-        <div className="chat-container">
-          <GuestChat
-            guestName={guestName}
-            roomNumber={roomNumber}
-            guestId={guestId}
-            onBack={handleBackToRegistration}
-          />
-        </div>
+        <GuestChat
+          guestName={guestName}
+          roomNumber={roomNumber}
+          guestId={guestId}
+          onBack={handleBackToRegistration}
+        />
       ) : (
         <GuestRegistrationForm 
           onRegister={handleRegister}
           preselectedRoomId={roomIdFromUrl || undefined}
-          showSuccessToast={true} // Control toast here to avoid duplication
+          showSuccessToast={false} // Desactivamos el toast en el formulario para evitar duplicados
         />
       )}
     </div>
