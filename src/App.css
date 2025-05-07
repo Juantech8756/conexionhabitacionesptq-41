@@ -45,89 +45,81 @@
 
 /* -------------- CHAT LAYOUT SYSTEM - REDESIGNED -------------- */
 
-/* Main chat container - Full height and flex column layout */
+/* Chat container - Ocupa toda la pantalla y establece el contexto flex */
 .chat-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  max-height: 100vh;
   width: 100%;
-  position: relative;
   overflow: hidden;
+  position: relative;
   background-color: #f9f9f9;
 }
 
-/* Header - Fixed at the top */
+/* Header - Fijo en la parte superior */
 .chat-header {
   flex: 0 0 auto;
-  width: 100%;
-  z-index: 30;
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: linear-gradient(to right, #4285f4, #34a0f2);
+  color: white;
+  z-index: 10;
 }
 
-/* Messages area - Scrollable middle section */
+/* Área de mensajes - Ocupa el espacio restante con scroll */
 .chat-messages-area {
   flex: 1 1 auto;
-  width: 100%;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   padding: 10px 0;
+  width: 100%;
+  position: relative;
+  scroll-behavior: smooth;
 }
 
-/* Message container - Content structure */
+/* Contenedor del mensaje para centrar y limitar ancho */
 .message-container {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
   max-width: 768px;
   margin: 0 auto;
   padding: 0 10px;
+  width: 100%;
 }
 
-/* Actual message content */
+/* Contenido del mensaje */
 .message-content {
   width: 100%;
-  height: 100%;
 }
 
-/* Input container - Fixed at the bottom */
+/* Contenedor de entrada - Fijo en la parte inferior */
 .chat-input-container {
   flex: 0 0 auto;
-  width: 100%;
   padding: 10px;
   background: white;
   border-top: 1px solid #e0e0e0;
-  z-index: 30;
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
-}
-
-/* Input wrapper - For better positioning of input elements */
-.chat-input-wrapper {
-  display: flex;
-  align-items: center;
-  max-width: 768px;
-  margin: 0 auto;
-  width: 100%;
-  gap: 8px;
-}
-
-/* Gradient header for chat */
-.gradient-header-soft {
-  background: linear-gradient(to right, #4285f4, #34a0f2);
-  color: white;
   width: 100%;
   z-index: 10;
 }
 
-/* Chat bubble styling */
+/* Wrapper para la entrada - Para posicionar mejor los elementos de entrada */
+.chat-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 768px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Burbujas de chat */
 .chat-bubble-guest {
   background: linear-gradient(to right, #4285f4, #34a0f2);
   color: white;
   border-radius: 18px 18px 0 18px;
   margin-bottom: 8px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
   padding: 12px 16px;
   max-width: 85%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  align-self: flex-end;
 }
 
 .chat-bubble-staff {
@@ -137,9 +129,10 @@
   margin-bottom: 8px;
   padding: 12px 16px;
   max-width: 85%;
+  align-self: flex-start;
 }
 
-/* Audio message styling */
+/* Contenedor de mensaje de audio */
 .audio-message-container {
   display: flex;
   align-items: center;
@@ -147,7 +140,7 @@
   min-width: 200px;
 }
 
-/* Recording animation */
+/* Animación de grabación */
 .recording-animation {
   animation: pulse-recording 1.5s ease-in-out infinite;
 }
@@ -167,16 +160,15 @@
   }
 }
 
-/* Empty chat state */
+/* Estado de chat vacío */
 .empty-chat-message {
   text-align: center;
   color: #888;
-  margin-top: auto;
-  margin-bottom: auto;
+  margin: auto;
   padding: 20px;
 }
 
-/* Ensure input area stays visible on mobile */
+/* Asegurar que el área de entrada permanezca visible en dispositivos móviles */
 @media (max-width: 768px) {
   .chat-input-wrapper {
     padding: 0 5px;
