@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -196,17 +197,20 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId }: GuestRegistrat
           </h1>
           
           {preselectedRoom && (
-            <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg text-sm text-gray-700">
-              <p className="font-medium text-center">Está registrándose en la cabaña: 
-                <span className="font-bold text-green-700 ml-1">
-                  {preselectedRoom.room_number}
-                  {preselectedRoom.type && ` - ${getRoomTypeText(preselectedRoom.type)}`}
-                </span>
-              </p>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="mt-5 p-4 bg-hotel-50 border border-hotel-100 rounded-lg w-full text-center"
+            >
+              <h2 className="text-xl font-bold text-hotel-600">Cabaña {preselectedRoom.room_number}</h2>
+              {preselectedRoom.type && (
+                <p className="text-lg text-hotel-700">{getRoomTypeText(preselectedRoom.type)}</p>
+              )}
+            </motion.div>
           )}
           
-          <p className="text-gray-600 text-center mt-2">
+          <p className="text-gray-600 text-center mt-4">
             Para comunicarse con recepción, por favor ingrese sus datos
           </p>
           <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
@@ -228,48 +232,42 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId }: GuestRegistrat
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="roomNumber" className="text-gray-700">Seleccione su cabaña</Label>
-            {isLoadingRooms ? (
-              <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg">
-                <Loader2 className="h-5 w-5 animate-spin mr-2 text-hotel-600" />
-                <span className="text-sm text-gray-600">Cargando cabañas...</span>
-              </div>
-            ) : rooms.length === 0 && !preselectedRoom ? (
-              <div className="text-center p-4 text-sm text-red-500 bg-red-50 rounded-lg">
-                No hay cabañas disponibles
-              </div>
-            ) : (
-              <Select 
-                value={selectedRoomId} 
-                onValueChange={setSelectedRoomId}
-                disabled={isLoading}
-              >
-                <SelectTrigger className="w-full h-12 rounded-lg focus:ring-hotel-500 focus:border-hotel-500 shadow-sm">
-                  <SelectValue placeholder="Seleccione su cabaña" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[50vh]">
-                  {preselectedRoom && (
-                    <SelectItem key={preselectedRoom.id} value={preselectedRoom.id} className="font-medium">
-                      {preselectedRoom.room_number} 
-                      {preselectedRoom.type && ` - ${getRoomTypeText(preselectedRoom.type)}`}
-                      {preselectedRoom.status !== 'available' && " (Ocupada)"}
-                    </SelectItem>
-                  )}
-                  {rooms
-                    .filter(room => room.id !== preselectedRoom?.id)
-                    .map((room) => (
+          {/* Solo mostrar la selección de cabaña si no hay una preseleccionada */}
+          {!preselectedRoom && (
+            <div className="space-y-2">
+              <Label htmlFor="roomNumber" className="text-gray-700">Seleccione su cabaña</Label>
+              {isLoadingRooms ? (
+                <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg">
+                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-hotel-600" />
+                  <span className="text-sm text-gray-600">Cargando cabañas...</span>
+                </div>
+              ) : rooms.length === 0 ? (
+                <div className="text-center p-4 text-sm text-red-500 bg-red-50 rounded-lg">
+                  No hay cabañas disponibles
+                </div>
+              ) : (
+                <Select 
+                  value={selectedRoomId} 
+                  onValueChange={setSelectedRoomId}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger className="w-full h-12 rounded-lg focus:ring-hotel-500 focus:border-hotel-500 shadow-sm">
+                    <SelectValue placeholder="Seleccione su cabaña" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[50vh]">
+                    {rooms.map((room) => (
                       <SelectItem key={room.id} value={room.id}>
                         {room.room_number} 
                         {room.type && ` - ${getRoomTypeText(room.type)}`}
                       </SelectItem>
                     ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
           
-          {selectedRoomId && (
+          {(selectedRoomId || preselectedRoom) && (
             <div className="space-y-2">
               <Label htmlFor="guestCount" className="text-gray-700">¿Cuántos hospedados hay en la cabaña?</Label>
               <Select 
