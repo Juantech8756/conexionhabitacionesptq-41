@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -315,7 +316,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </header>
 
-      {/* Chat messages area with proper scrolling */}
+      {/* Scrollable chat area with simplified layout */}
       <div className="chat-scroll-area" ref={scrollAreaRef}>
         <div className="message-container">
           <div className="message-content-wrapper">
@@ -336,7 +337,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
                     className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]" } ${
+                      className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]"} ${
                         msg.is_audio ? '' : 'p-3'
                       } ${
                         msg.is_guest 
@@ -362,7 +363,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      {/* Chat input area fixed at bottom with high z-index */}
+      {/* Fixed input area at bottom */}
       <div className="chat-input-container">
         <div className={`flex items-center space-x-2 w-full ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
           <Button
@@ -370,7 +371,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             size="icon"
             variant="outline"
             onClick={toggleRecording}
-            className={`flex-shrink-0 transition-all duration-300 chat-input-button ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
+            className={`flex-shrink-0 transition-all duration-300 ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
             disabled={isLoading}
           >
             {isRecording ? (
@@ -399,7 +400,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
               size="icon"
               onClick={sendMessage}
               disabled={message.trim() === "" || isRecording || isLoading}
-              className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 shadow-sm chat-input-button"
+              className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 shadow-sm"
             >
               <Send className="h-5 w-5" />
             </Button>
