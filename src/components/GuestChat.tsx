@@ -1,8 +1,6 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, Mic, MicOff, Send, ArrowLeft, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -290,7 +288,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   return (
     <div className="chat-container">
-      <header className="gradient-header-soft p-3 shadow-md">
+      {/* Header fixed at top */}
+      <header className="gradient-header-soft p-3 shadow-md chat-header">
         <div className="flex items-center justify-between">
           <motion.button 
             whileHover={{ scale: isMobile ? 1.05 : 1.1 }}
@@ -316,41 +315,51 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </header>
 
-      <div className="chat-scroll-area p-3" ref={scrollAreaRef}>
-        <div className={`space-y-3 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
-          <AnimatePresence>
-            {messages.map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.3 }}
-                className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]" } ${
-                    msg.is_audio ? '' : 'p-3'
-                  } ${
-                    msg.is_guest 
-                      ? 'chat-bubble-guest shadow-md' 
-                      : 'chat-bubble-staff shadow-sm'
-                  } ${msg.is_audio ? 'overflow-hidden' : ''}`}
+      {/* Chat messages area */}
+      <div className="chat-scroll-area" ref={scrollAreaRef}>
+        <div className="message-container">
+          <div className={`space-y-3 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto p-3`}>
+            {messages.length === 0 && (
+              <div className="empty-chat-message">
+                <p>No hay mensajes aún. ¡Inicia la conversación!</p>
+              </div>
+            )}
+            
+            <AnimatePresence>
+              {messages.map((msg) => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
                 >
-                  {msg.is_audio ? (
-                    <AudioMessagePlayer 
-                      audioUrl={msg.audio_url || ''} 
-                      isGuest={msg.is_guest}
-                    />
-                  ) : (
-                    <p className={isMobile ? "text-sm break-words" : "break-words"}>{msg.content}</p>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                  <div
+                    className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]" } ${
+                      msg.is_audio ? '' : 'p-3'
+                    } ${
+                      msg.is_guest 
+                        ? 'chat-bubble-guest shadow-md' 
+                        : 'chat-bubble-staff shadow-sm'
+                    } ${msg.is_audio ? 'overflow-hidden' : ''}`}
+                  >
+                    {msg.is_audio ? (
+                      <AudioMessagePlayer 
+                        audioUrl={msg.audio_url || ''} 
+                        isGuest={msg.is_guest}
+                      />
+                    ) : (
+                      <p className={isMobile ? "text-sm break-words" : "break-words"}>{msg.content}</p>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
+      {/* Chat input area fixed at bottom */}
       <div className="chat-input-container">
         <div className={`flex items-center space-x-2 w-full ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
           <Button
@@ -395,6 +404,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
+      {/* Call interface */}
       {isCallActive && (
         <CallInterface 
           isGuest={true}

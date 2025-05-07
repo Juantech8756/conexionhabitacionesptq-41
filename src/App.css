@@ -63,6 +63,7 @@
   background: linear-gradient(to right, #4285f4, #34a0f2);
   color: white;
   width: 100%;
+  z-index: 10;
 }
 
 /* Chat bubbles styling */
@@ -124,6 +125,7 @@
   border-top: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
+  z-index: 5;
 }
 
 /* Ensure the scroll area doesn't overlap with input */
@@ -131,6 +133,11 @@
   flex: 1;
   overflow-y: auto;
   padding-bottom: 70px; /* Space for fixed input area */
+  margin-top: 0; /* Remove any top margin */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 /* Make sure buttons are clickable */
@@ -149,4 +156,36 @@
   .chat-input-container {
     padding: 8px;
   }
+  
+  /* Ensure message content is visible */
+  .chat-scroll-area {
+    padding-top: 60px; /* Space for header */
+  }
 }
+
+/* Style for empty chat state */
+.empty-chat-message {
+  text-align: center;
+  color: #888;
+  margin-top: auto;
+  margin-bottom: auto;
+  padding: 20px;
+}
+
+/* Ensure header stays at top */
+.chat-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+
+/* Message container should be pushed down below the header */
+.message-container {
+  padding-top: 60px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
