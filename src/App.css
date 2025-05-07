@@ -1,3 +1,4 @@
+
 /* Reset root styling for full-width mobile-first design */
 #root {
   width: 100%;
@@ -54,6 +55,7 @@
   right: 0;
   bottom: 0;
   z-index: 50;
+  overflow: hidden; /* Prevent any overflow issues */
 }
 
 /* Gradient header for chat */
@@ -126,18 +128,19 @@
   z-index: 100; /* Ensure input is above all other content */
 }
 
-/* Ensure the scroll area doesn't overlap with fixed elements */
+/* Ensure the scroll area takes up all available space between header and input */
 .chat-scroll-area {
   flex: 1;
   overflow-y: auto;
   padding-top: 70px; /* Space for header */
   padding-bottom: 80px; /* Increased space for fixed input area */
-  margin-top: 0;
-  display: flex;
-  flex-direction: column-reverse; /* Changed: Reverse the direction to show messages from bottom */
-  z-index: 1;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
+  height: 100%;
 }
 
 /* Make sure buttons are clickable */
@@ -197,14 +200,21 @@
   z-index: 100;
 }
 
-/* Message container should be properly positioned */
+/* Message container should be properly positioned - start from the bottom */
 .message-container {
-  padding-top: 70px; /* Space for header */
-  padding-bottom: 80px; /* Space for fixed input area */
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
   width: 100%;
   min-height: 100%;
-  justify-content: flex-end; /* Changed: Make messages start from the bottom */
+  padding-bottom: 80px; /* Space for fixed input area */
+  padding-top: 70px; /* Space for header */
+  justify-content: flex-end; /* This ensures messages start from the bottom */
+}
+
+/* Message content wrapper */
+.message-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: auto; /* Push content to the bottom */
 }

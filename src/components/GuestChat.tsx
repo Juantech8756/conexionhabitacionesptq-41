@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,18 +36,18 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
   console.log("GuestChat renderizado con los datos:", {guestName, roomNumber, guestId});
 
-  // Modified: Scroll behavior adjusted for reversed layout
+  // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {
-    if (scrollAreaRef.current) {
-      // For a reversed flex layout, we need to scroll to top to see newest messages
-      scrollAreaRef.current.scrollTo({
-        top: 0,
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({
         behavior: smooth ? "smooth" : "auto",
+        block: "end"
       });
     }
   };
@@ -129,7 +128,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   // Scroll to bottom on new messages
   useEffect(() => {
-    // When using flex-direction: column-reverse, we need to scroll to top (0)
     setTimeout(() => scrollToBottom(), 50);
     setTimeout(() => scrollToBottom(), 300); // Additional attempt for reliability
   }, [messages]);
@@ -317,47 +315,49 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </header>
 
-      {/* Chat messages area with proper scrolling - reversed layout */}
+      {/* Chat messages area with proper scrolling */}
       <div className="chat-scroll-area" ref={scrollAreaRef}>
         <div className="message-container">
-          <div className={`space-y-3 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto p-3 w-full`}>
-            {messages.length === 0 && (
-              <div className="empty-chat-message">
-                <p>No hay mensajes aún. ¡Inicia la conversación!</p>
-              </div>
-            )}
-            
-            <AnimatePresence>
-              {/* We don't need to reverse the messages array since the container is already reversed */}
-              {messages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]" } ${
-                      msg.is_audio ? '' : 'p-3'
-                    } ${
-                      msg.is_guest 
-                        ? 'chat-bubble-guest shadow-md' 
-                        : 'chat-bubble-staff shadow-sm'
-                    } ${msg.is_audio ? 'overflow-hidden' : ''}`}
+          <div className="message-content-wrapper">
+            <div className={`space-y-3 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto p-3 w-full`}>
+              {messages.length === 0 && (
+                <div className="empty-chat-message">
+                  <p>No hay mensajes aún. ¡Inicia la conversación!</p>
+                </div>
+              )}
+              
+              <AnimatePresence>
+                {messages.map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
                   >
-                    {msg.is_audio ? (
-                      <AudioMessagePlayer 
-                        audioUrl={msg.audio_url || ''} 
-                        isGuest={msg.is_guest}
-                      />
-                    ) : (
-                      <p className={isMobile ? "text-sm break-words" : "break-words"}>{msg.content}</p>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                    <div
+                      className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]" } ${
+                        msg.is_audio ? '' : 'p-3'
+                      } ${
+                        msg.is_guest 
+                          ? 'chat-bubble-guest shadow-md' 
+                          : 'chat-bubble-staff shadow-sm'
+                      } ${msg.is_audio ? 'overflow-hidden' : ''}`}
+                    >
+                      {msg.is_audio ? (
+                        <AudioMessagePlayer 
+                          audioUrl={msg.audio_url || ''} 
+                          isGuest={msg.is_guest}
+                        />
+                      ) : (
+                        <p className={isMobile ? "text-sm break-words" : "break-words"}>{msg.content}</p>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              <div ref={messagesEndRef} />
+            </div>
           </div>
         </div>
       </div>
