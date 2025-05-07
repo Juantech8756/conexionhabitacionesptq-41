@@ -43,84 +43,72 @@
   color: #888;
 }
 
-/* -------------- CHAT LAYOUT SYSTEM -------------- */
+/* -------------- CHAT LAYOUT SYSTEM - REDESIGNED -------------- */
 
-/* Main chat container with full height and width */
+/* Main chat container - Full height and flex column layout */
 .chat-container {
   display: flex;
   flex-direction: column;
-  position: relative;
   height: 100vh;
   width: 100%;
-  overflow: hidden; /* Prevent whole page scrolling */
+  position: relative;
+  overflow: hidden;
+  background-color: #f9f9f9;
 }
 
-/* Fixed header on top */
+/* Header - Fixed at the top */
 .chat-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-}
-
-/* Fixed input bar on bottom */
-.chat-input-container {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
-  border-top: 1px solid #e0e0e0;
-  padding: 10px;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-}
-
-/* Scrolling content area between fixed elements */
-.chat-scroll-area {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  overflow-y: auto;
-  padding-top: 65px; /* Height of header */
-  padding-bottom: 65px; /* Height of input container */
+  flex: 0 0 auto;
   width: 100%;
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  z-index: 30;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Message list container */
+/* Messages area - Scrollable middle section */
+.chat-messages-area {
+  flex: 1 1 auto;
+  width: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 0;
+}
+
+/* Message container - Content structure */
 .message-container {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
   width: 100%;
-  padding: 5px;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 0 10px;
 }
 
-/* Adjusting message content wrapper */
-.message-content-wrapper {
+/* Actual message content */
+.message-content {
+  width: 100%;
+  height: 100%;
+}
+
+/* Input container - Fixed at the bottom */
+.chat-input-container {
+  flex: 0 0 auto;
+  width: 100%;
+  padding: 10px;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+  z-index: 30;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Input wrapper - For better positioning of input elements */
+.chat-input-wrapper {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  max-width: 768px;
+  margin: 0 auto;
   width: 100%;
-  margin-top: auto; /* Push content to bottom when messages don't fill screen */
-  overflow-anchor: none; /* Prevent scroll jumping */
-}
-
-/* Adjustments for mobile */
-@media (max-width: 768px) {
-  .chat-header,
-  .chat-input-container {
-    padding: 8px;
-  }
-  
-  .chat-scroll-area {
-    padding-top: 60px; /* Slightly smaller for mobile */
-    padding-bottom: 60px;
-  }
+  gap: 8px;
 }
 
 /* Gradient header for chat */
@@ -186,4 +174,15 @@
   margin-top: auto;
   margin-bottom: auto;
   padding: 20px;
+}
+
+/* Ensure input area stays visible on mobile */
+@media (max-width: 768px) {
+  .chat-input-wrapper {
+    padding: 0 5px;
+  }
+  
+  .chat-messages-area {
+    padding: 5px 0;
+  }
 }
