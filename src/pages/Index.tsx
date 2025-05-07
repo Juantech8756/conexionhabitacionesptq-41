@@ -39,13 +39,13 @@ const Index = () => {
             <div className="bg-blue-100 p-3 rounded-full mb-4">
               <MessageCircle className="h-8 w-8 text-hotel-600" />
             </div>
-            <h2 className="text-xl font-semibold mb-3">Código QR</h2>
+            <h2 className="text-xl font-semibold mb-3">Códigos QR</h2>
             <p className="text-gray-600 mb-6">
-              Visualice el código QR para imprimir y colocar en cada cabaña del parque temático.
+              Gestione los códigos QR para cada cabaña. Genere, visualice y descargue para imprimir.
             </p>
             <Link to="/qr-code" className="mt-auto">
               <Button className="w-full bg-hotel-600 hover:bg-hotel-700">
-                Ver Código QR
+                Gestionar Códigos
               </Button>
             </Link>
           </div>
@@ -82,7 +82,7 @@ const Index = () => {
                 <span className="text-hotel-700 font-bold text-xl">2</span>
               </div>
               <p className="text-gray-700">
-                Ingresa su nombre y número de cabaña
+                Ingresa su nombre y se registra (la cabaña ya está preseleccionada)
               </p>
             </div>
             <div>

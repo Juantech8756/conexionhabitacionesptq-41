@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import GuestRegistrationForm from "@/components/GuestRegistrationForm";
 import GuestChat from "@/components/GuestChat";
 import { useToast } from "@/components/ui/use-toast";
@@ -13,6 +14,8 @@ const GuestPortal = () => {
   const [guestId, setGuestId] = useState("");
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
+  const roomIdFromUrl = searchParams.get('room');
 
   // Check if the user has registered previously
   useEffect(() => {
@@ -58,7 +61,10 @@ const GuestPortal = () => {
           onBack={handleBackToRegistration}
         />
       ) : (
-        <GuestRegistrationForm onRegister={handleRegister} />
+        <GuestRegistrationForm 
+          onRegister={handleRegister}
+          preselectedRoomId={roomIdFromUrl || undefined}
+        />
       )}
     </div>
   );

@@ -11,6 +11,7 @@ import GuestPortal from "./pages/GuestPortal";
 import ReceptionLogin from "./pages/ReceptionLogin";
 import ReceptionDashboardPage from "./pages/ReceptionDashboardPage";
 import QrCodeDisplay from "./components/QrCodeDisplay";
+import QrCodeAdminPage from "./pages/QrCodeAdminPage";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -27,7 +28,8 @@ const App = () => (
             <Route path="/guest" element={<GuestPortal />} />
             <Route path="/reception" element={<ReceptionLogin />} />
             <Route path="/reception/dashboard" element={<ReceptionDashboardPage />} />
-            <Route path="/qr-code" element={<QrCodeDisplay />} />
+            <Route path="/qr-code" element={<QrCodeAdminPage />} />
+            <Route path="/qr-code/:roomId" element={<QrCodeDisplay />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

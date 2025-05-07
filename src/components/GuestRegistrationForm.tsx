@@ -17,6 +17,7 @@ import {
 
 interface GuestRegistrationFormProps {
   onRegister: (guestName: string, roomNumber: string, guestId: string) => void;
+  preselectedRoomId?: string;
 }
 
 type Room = {
@@ -27,7 +28,7 @@ type Room = {
   type: string | null;
 };
 
-const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
+const GuestRegistrationForm = ({ onRegister, preselectedRoomId }: GuestRegistrationFormProps) => {
   const [guestName, setGuestName] = useState("");
   const [selectedRoomId, setSelectedRoomId] = useState("");
   const [guestCount, setGuestCount] = useState("1");
@@ -36,6 +37,7 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [preselectedRoom, setPreselectedRoom] = useState<Room | null>(null);
 
   // Fetch available rooms
   useEffect(() => {
@@ -50,6 +52,30 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
 
         if (error) throw error;
         setRooms(data || []);
+
+        // If we have a preselectedRoomId, try to find it
+        if (preselectedRoomId) {
+          // Also fetch the specific room if it's not in the available rooms
+          const { data: roomData, error: roomError } = await supabase
+            .from('rooms')
+            .select('*')
+            .eq('id', preselectedRoomId)
+            .single();
+
+          if (!roomError && roomData) {
+            setSelectedRoomId(roomData.id);
+            setPreselectedRoom(roomData);
+            
+            // If the room isn't available, show a message
+            if (roomData.status !== 'available') {
+              toast({
+                title: "Atención",
+                description: `La cabaña ${roomData.room_number} está marcada como ${roomData.status === 'occupied' ? 'ocupada' : roomData.status}. Por favor seleccione otra cabaña si es necesario.`,
+                variant: "default",
+              });
+            }
+          }
+        }
       } catch (error) {
         console.error("Error fetching rooms:", error);
         toast({
@@ -63,7 +89,7 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
     };
 
     fetchRooms();
-  }, [toast]);
+  }, [toast, preselectedRoomId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +116,7 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
     
     try {
       // Find room number from selected room id
-      const selectedRoom = rooms.find(room => room.id === selectedRoomId);
+      const selectedRoom = preselectedRoom || rooms.find(room => room.id === selectedRoomId);
       if (!selectedRoom) throw new Error("Cabaña no encontrada");
 
       // Update the selected room to occupied status
@@ -135,6 +161,19 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
     }
   };
 
+  // Get room type display name
+  const getRoomTypeText = (type: string | null) => {
+    if (!type) return "";
+    switch (type.toLowerCase()) {
+      case "family":
+        return "Familiar";
+      case "couple":
+        return "Pareja";
+      default:
+        return type;
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
       <motion.div 
@@ -155,6 +194,18 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
           <h1 className="text-2xl font-bold text-center text-gray-800">
             Bienvenido al Parque Temático Quimbaya
           </h1>
+          
+          {preselectedRoom && (
+            <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg text-sm text-gray-700">
+              <p className="font-medium text-center">Está registrándose en la cabaña: 
+                <span className="font-bold text-green-700 ml-1">
+                  {preselectedRoom.room_number}
+                  {preselectedRoom.type && ` - ${getRoomTypeText(preselectedRoom.type)}`}
+                </span>
+              </p>
+            </div>
+          )}
+          
           <p className="text-gray-600 text-center mt-2">
             Para comunicarse con recepción, por favor ingrese sus datos
           </p>
@@ -184,7 +235,7 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
                 <Loader2 className="h-5 w-5 animate-spin mr-2 text-hotel-600" />
                 <span className="text-sm text-gray-600">Cargando cabañas...</span>
               </div>
-            ) : rooms.length === 0 ? (
+            ) : rooms.length === 0 && !preselectedRoom ? (
               <div className="text-center p-4 text-sm text-red-500 bg-red-50 rounded-lg">
                 No hay cabañas disponibles
               </div>
@@ -198,12 +249,21 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
                   <SelectValue placeholder="Seleccione su cabaña" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[50vh]">
-                  {rooms.map((room) => (
-                    <SelectItem key={room.id} value={room.id}>
-                      {room.room_number} 
-                      {room.type && ` - ${room.type === 'family' ? 'Familiar' : room.type === 'couple' ? 'Pareja' : room.type}`}
+                  {preselectedRoom && (
+                    <SelectItem key={preselectedRoom.id} value={preselectedRoom.id} className="font-medium">
+                      {preselectedRoom.room_number} 
+                      {preselectedRoom.type && ` - ${getRoomTypeText(preselectedRoom.type)}`}
+                      {preselectedRoom.status !== 'available' && " (Ocupada)"}
                     </SelectItem>
-                  ))}
+                  )}
+                  {rooms
+                    .filter(room => room.id !== preselectedRoom?.id)
+                    .map((room) => (
+                      <SelectItem key={room.id} value={room.id}>
+                        {room.room_number} 
+                        {room.type && ` - ${getRoomTypeText(room.type)}`}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             )}
@@ -239,7 +299,7 @@ const GuestRegistrationForm = ({ onRegister }: GuestRegistrationFormProps) => {
             <Button 
               type="submit" 
               className="w-full h-12 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600 text-white rounded-lg font-medium shadow-md"
-              disabled={isLoading || isLoadingRooms}
+              disabled={isLoading || isLoadingRooms || (!selectedRoomId && !preselectedRoom)}
             >
               {isLoading ? (
                 <span className="flex items-center">
