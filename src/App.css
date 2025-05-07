@@ -43,18 +43,13 @@
   color: #888;
 }
 
-/* Chat container styles with absolute positioning to fill the entire screen */
+/* Chat container styles with relative positioning to serve as the positioning context */
 .chat-container {
   height: 100vh;
   width: 100%;
   display: flex;
   flex-direction: column;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 50;
+  position: relative;
   overflow: hidden; /* Prevent any overflow issues */
 }
 
@@ -128,19 +123,14 @@
   z-index: 100; /* Ensure input is above all other content */
 }
 
-/* Ensure the scroll area takes up all available space between header and input */
+/* Ensure the scroll area takes up all available space between header and input with flexbox */
 .chat-scroll-area {
   flex: 1;
   overflow-y: auto;
-  padding-top: 70px; /* Space for header */
-  padding-bottom: 80px; /* Increased space for fixed input area */
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  padding-top: 70px; /* Space for fixed header */
+  padding-bottom: 70px; /* Space for fixed input area */
   width: 100%;
-  height: 100%;
+  height: auto; /* Let flexbox control height */
 }
 
 /* Make sure buttons are clickable */
@@ -168,17 +158,7 @@
   /* Ensure message content is visible */
   .chat-scroll-area {
     padding-top: 70px; /* Space for header */
-    padding-bottom: 80px; /* Increased space for fixed input area */
-    height: 100%;
-  }
-  
-  /* Message container with correct spacing */
-  .message-container {
-    flex: 1;
-    padding-top: 70px; /* Space for header */
-    padding-bottom: 80px; /* Increased space for input */
-    width: 100%;
-    height: 100%;
+    padding-bottom: 70px; /* Space for fixed input area */
   }
 }
 
@@ -206,8 +186,6 @@
   flex-direction: column;
   width: 100%;
   min-height: 100%;
-  padding-bottom: 80px; /* Space for fixed input area */
-  padding-top: 70px; /* Space for header */
   justify-content: flex-end; /* This ensures messages start from the bottom */
 }
 
