@@ -128,8 +128,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   // Scroll to bottom on new messages
   useEffect(() => {
-    // Short delay to ensure DOM update is complete
-    setTimeout(() => scrollToBottom(), 100);
+    setTimeout(() => scrollToBottom(), 50);
+    setTimeout(() => scrollToBottom(), 300); // Additional attempt for reliability
   }, [messages]);
 
   // Focus input field when component mounts
@@ -315,7 +315,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </header>
 
-      {/* Chat messages area */}
+      {/* Chat messages area with proper scrolling */}
       <div className="chat-scroll-area" ref={scrollAreaRef}>
         <div className="message-container">
           <div className={`space-y-3 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto p-3`}>
@@ -359,7 +359,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      {/* Chat input area fixed at bottom */}
+      {/* Chat input area fixed at bottom with high z-index */}
       <div className="chat-input-container">
         <div className={`flex items-center space-x-2 w-full ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
           <Button

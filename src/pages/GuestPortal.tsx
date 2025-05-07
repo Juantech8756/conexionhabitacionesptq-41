@@ -86,14 +86,16 @@ const GuestPortal = () => {
     localStorage.setItem("roomNumber", room);
     localStorage.setItem("guestId", id);
     
-    // Mostrar una única notificación de éxito
+    // Mostrar toast solo si no hay duplicado
     toast({
       title: "¡Registro exitoso!",
       description: "Ahora puede comunicarse con recepción",
-      duration: 3000, // Duración reducida a 3 segundos
+      duration: 3000,
+      // Add an id to prevent duplicates
+      id: "registration-success"
     });
     
-    // Importante: actualizar el estado isRegistered al final para asegurar la renderización del chat
+    // Actualizar el estado isRegistered inmediatamente
     setIsRegistered(true);
   };
 
@@ -178,7 +180,7 @@ const GuestPortal = () => {
         <GuestRegistrationForm 
           onRegister={handleRegister}
           preselectedRoomId={roomIdFromUrl || undefined}
-          showSuccessToast={false} // Desactivamos el toast en el formulario para evitar duplicados
+          showSuccessToast={false} // Mantenemos en false para evitar duplicados
         />
       )}
     </div>

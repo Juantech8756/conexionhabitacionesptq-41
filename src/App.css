@@ -43,13 +43,13 @@
   color: #888;
 }
 
-/* Chat container styles - optimized for mobile with fixed layout */
+/* Chat container styles with absolute positioning to fill the entire screen */
 .chat-container {
   height: 100vh;
   width: 100%;
   display: flex;
   flex-direction: column;
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
@@ -113,7 +113,7 @@
   }
 }
 
-/* Chat input area fixed to bottom */
+/* Chat input area with correct fixed positioning */
 .chat-input-container {
   position: fixed;
   bottom: 0;
@@ -124,24 +124,26 @@
   border-top: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
-  z-index: 5;
+  z-index: 100; /* Ensure input is above all other content */
 }
 
-/* Ensure the scroll area doesn't overlap with input */
+/* Ensure the scroll area doesn't overlap with fixed elements */
 .chat-scroll-area {
   flex: 1;
   overflow-y: auto;
-  padding-top: 60px; /* Space for header */
-  padding-bottom: 70px; /* Space for fixed input area */
-  margin-top: 0; /* Remove any top margin */
+  padding-top: 70px; /* Space for header */
+  padding-bottom: 80px; /* Increased space for fixed input area */
+  margin-top: 0;
   display: flex;
   flex-direction: column;
   z-index: 1;
+  height: 100%;
+  width: 100%;
 }
 
 /* Make sure buttons are clickable */
 .chat-input-button {
-  z-index: 5;
+  z-index: 101; /* Higher than the container */
 }
 
 /* Fix for mobile devices */
@@ -158,19 +160,23 @@
     position: fixed;
     left: 0;
     right: 0;
+    z-index: 100;
   }
   
   /* Ensure message content is visible */
   .chat-scroll-area {
-    padding-top: 60px; /* Space for header */
-    padding-bottom: 70px; /* Space for fixed input area */
+    padding-top: 70px; /* Space for header */
+    padding-bottom: 80px; /* Increased space for fixed input area */
+    height: 100%;
   }
   
-  /* Explicitly set the input container to be at the bottom */
+  /* Message container with correct spacing */
   .message-container {
     flex: 1;
-    padding-top: 60px; /* Space for header */
-    padding-bottom: 70px; /* Space for input */
+    padding-top: 70px; /* Space for header */
+    padding-bottom: 80px; /* Increased space for input */
+    width: 100%;
+    height: 100%;
   }
 }
 
@@ -189,15 +195,16 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 10;
+  z-index: 100;
 }
 
-/* Message container should be pushed down below the header */
+/* Message container should be properly positioned */
 .message-container {
-  padding-top: 60px; /* Space for header */
-  padding-bottom: 70px; /* Space for fixed input area */
+  padding-top: 70px; /* Space for header */
+  padding-bottom: 80px; /* Space for fixed input area */
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   width: 100%;
+  min-height: 100%;
 }
