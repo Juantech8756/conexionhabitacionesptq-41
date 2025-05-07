@@ -94,7 +94,6 @@ const GuestPortal = () => {
         title: "¡Registro exitoso!",
         description: "Ahora puede comunicarse con recepción",
         duration: 3000,
-        // Remove the 'id' property as it's not allowed in the Toast type
       });
       setHasShownRegistrationToast(true);
     }
@@ -125,7 +124,7 @@ const GuestPortal = () => {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-hidden bg-gray-50">
+    <div className="min-h-screen w-full overflow-auto bg-gray-50">
       <AnimatePresence>
         {showWelcome && roomData && (
           <motion.div
@@ -185,7 +184,7 @@ const GuestPortal = () => {
         <GuestRegistrationForm 
           onRegister={handleRegister}
           preselectedRoomId={roomIdFromUrl || undefined}
-          showSuccessToast={false} // Mantenemos en false para evitar duplicados
+          showSuccessToast={false} 
         />
       )}
     </div>

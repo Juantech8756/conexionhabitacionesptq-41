@@ -45,118 +45,116 @@
 
 /* -------------- CHAT LAYOUT SYSTEM -------------- */
 
-/* Main chat container with full height and width */
+/* Chat Container - Full viewport height with display flex */
 .chat-container {
   display: flex;
   flex-direction: column;
-  position: relative;
   height: 100vh;
   width: 100%;
-  overflow: hidden; /* Prevent whole page scrolling */
+  position: relative;
+  overflow: hidden;
+  background-color: #f0f2f5;
 }
 
-/* Fixed header on top */
+/* Fixed Header - Always on top */
 .chat-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 50;
+  height: 60px;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-/* Fixed input bar on bottom */
+/* Message Area - Takes available space between header and input */
+.chat-messages-container {
+  flex: 1;
+  padding-top: 70px; /* Space for fixed header */
+  padding-bottom: 70px; /* Space for fixed input */
+  overflow-y: auto;
+  width: 100%;
+  height: 100vh;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Fixed Input Area - Always at bottom */
 .chat-input-container {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background: white;
-  border-top: 1px solid #e0e0e0;
   padding: 10px;
-  z-index: 50;
-  display: flex;
-  align-items: center;
+  background: white;
+  z-index: 100;
+  border-top: 1px solid #e0e0e0;
+  box-shadow: 0 -1px 5px rgba(0,0,0,0.05);
 }
 
-/* Scrolling content area between fixed elements */
-.chat-scroll-area {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  overflow-y: auto;
-  padding-top: 65px; /* Height of header */
-  padding-bottom: 65px; /* Height of input container */
-  width: 100%;
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-}
-
-/* Message list container */
+/* Messages Wrapper */
 .message-container {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
   width: 100%;
-  padding: 5px;
+  padding: 10px;
 }
 
-/* Adjusting message content wrapper */
-.message-content-wrapper {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  margin-top: auto; /* Push content to bottom when messages don't fill screen */
-  overflow-anchor: none; /* Prevent scroll jumping */
-}
-
-/* Adjustments for mobile */
-@media (max-width: 768px) {
-  .chat-header,
-  .chat-input-container {
-    padding: 8px;
-  }
-  
-  .chat-scroll-area {
-    padding-top: 60px; /* Slightly smaller for mobile */
-    padding-bottom: 60px;
-  }
-}
-
-/* Gradient header for chat */
-.gradient-header-soft {
-  background: linear-gradient(to right, #4285f4, #34a0f2);
-  color: white;
-  width: 100%;
-  z-index: 10;
-}
-
-/* Chat bubble styling */
+/* WhatsApp/Telegram style bubbles */
 .chat-bubble-guest {
   background: linear-gradient(to right, #4285f4, #34a0f2);
   color: white;
   border-radius: 18px 18px 0 18px;
+  padding: 10px 15px;
   margin-bottom: 8px;
+  max-width: 75%;
+  word-break: break-word;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  padding: 12px 16px;
-  max-width: 85%;
+  align-self: flex-end;
 }
 
 .chat-bubble-staff {
-  background: #f0f0f0;
+  background: #ffffff;
   color: #333;
   border-radius: 18px 18px 18px 0;
+  padding: 10px 15px;
   margin-bottom: 8px;
-  padding: 12px 16px;
-  max-width: 85%;
+  max-width: 75%;
+  word-break: break-word;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  align-self: flex-start;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chat-bubble-guest,
+  .chat-bubble-staff {
+    max-width: 85%;
+  }
+  
+  .chat-header {
+    height: 55px;
+  }
+  
+  .chat-messages-container {
+    padding-top: 65px;
+    padding-bottom: 65px;
+  }
+}
+
+/* Header gradient */
+.gradient-header-soft {
+  background: linear-gradient(to right, #4285f4, #34a0f2);
+  color: white;
 }
 
 /* Audio message styling */
 .audio-message-container {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
   min-width: 200px;
+  padding: 8px;
+  border-radius: 18px;
 }
 
 /* Recording animation */
@@ -183,7 +181,49 @@
 .empty-chat-message {
   text-align: center;
   color: #888;
-  margin-top: auto;
-  margin-bottom: auto;
+  margin-top: 20px;
   padding: 20px;
+}
+
+/* Global scrolling fix for all pages */
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Enable scrolling on all main containers */
+.min-h-screen {
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+/* Ensure content doesn't get cut off */
+.p-4, .p-6, .p-8 {
+  padding-bottom: 80px !important;
+}
+
+/* Fix for message scroll areas */
+.chat-scroll-area {
+  position: relative !important;
+  height: auto !important;
+  min-height: calc(100vh - 130px);
+  width: 100%;
+  overflow-y: auto;
+  padding-bottom: 70px;
+  padding-top: 70px;
+}
+
+/* Message alignment fixes */
+.justify-end {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.justify-start {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
 }
