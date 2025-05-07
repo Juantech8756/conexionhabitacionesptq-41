@@ -1,4 +1,3 @@
-
 /* Reset root styling for full-width mobile-first design */
 #root {
   width: 100%;
@@ -43,98 +42,53 @@
   color: #888;
 }
 
-/* ==================== NEW CHAT LAYOUT SYSTEM ==================== */
-
-/* Main chat container - sets the boundaries for the entire chat interface */
+/* Chat container styles with relative positioning */
 .chat-container {
+  height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Full viewport height */
-  max-height: 100vh; /* Prevent overflow */
-  width: 100%;
   position: relative;
-  background-color: #f9fafb;
-  overflow: hidden; /* Prevent scrolling on the body */
+  overflow: visible; /* Cambiado de hidden a visible para que los elementos fixed no se recorten */
 }
 
-/* Header - Fixed at the top */
-.chat-header {
-  flex: 0 0 auto; /* Don't grow, don't shrink, fixed height */
-  padding: 14px 16px;
+/* Gradient header for chat */
+.gradient-header-soft {
   background: linear-gradient(to right, #4285f4, #34a0f2);
   color: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  z-index: 10; /* Ensure it stays on top */
-  position: sticky;
-  top: 0;
-}
-
-/* Messages area - Takes all available space with scrolling */
-.messages-container {
-  flex: 1 1 auto; /* Grow and shrink as needed */
-  overflow-y: auto; /* Enable scrolling */
-  padding: 16px 0;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS devices */
-}
-
-/* Message wrapper - Centers messages and sets max width */
-.message-wrapper {
-  max-width: 768px;
-  margin: 0 auto;
-  padding: 0 16px;
   width: 100%;
+  z-index: 10;
 }
 
-/* Input area - Fixed at the bottom */
-.chat-input-area {
-  flex: 0 0 auto; /* Don't grow, don't shrink, fixed height */
-  padding: 12px 16px;
-  background: white;
-  border-top: 1px solid #e5e7eb;
-  z-index: 10; /* Ensure it stays on top */
-  position: sticky;
-  bottom: 0;
-  width: 100%;
-  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
-}
-
-/* Input container - Holds the input field and buttons */
-.chat-input-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 768px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* Chat bubbles */
+/* Chat bubbles styling */
 .chat-bubble-guest {
   background: linear-gradient(to right, #4285f4, #34a0f2);
   color: white;
   border-radius: 18px 18px 0 18px;
-  padding: 12px 16px;
   margin-bottom: 8px;
-  max-width: 85%;
-  align-self: flex-end;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  word-break: break-word;
+  padding: 12px 16px;
+  max-width: 85%;
 }
 
 .chat-bubble-staff {
   background: #f0f0f0;
   color: #333;
   border-radius: 18px 18px 18px 0;
-  padding: 12px 16px;
   margin-bottom: 8px;
+  padding: 12px 16px;
   max-width: 85%;
-  align-self: flex-start;
-  box-shadow: 0 1px 1px rgba(0,0,0,0.05);
-  word-break: break-word;
 }
 
-/* Animation for recording button */
+/* Audio message styling */
+.audio-message-container {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  min-width: 200px;
+}
+
+/* Recording animation */
 .recording-animation {
   animation: pulse-recording 1.5s ease-in-out infinite;
 }
@@ -154,36 +108,84 @@
   }
 }
 
-/* Empty chat state */
+/* Chat input area con z-index aumentado */
+.chat-input-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  z-index: 200; /* Aumentado de 100 a 200 para asegurar que esté por encima de todo */
+}
+
+/* Área de scroll simplificada, removiendo paddings y tamaños fijos */
+.chat-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+}
+
+/* Ensure the header stays at top */
+.chat-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+/* Message container con márgenes para evitar que el contenido quede bajo header e input */
+.message-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
+  justify-content: flex-end; /* Esto asegura que los mensajes empiecen desde abajo */
+  margin-top: 70px; /* Espacio para el header */
+  margin-bottom: 70px; /* Espacio para el input */
+}
+
+/* Message content wrapper */
+.message-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: auto; /* Push content to the bottom */
+}
+
+/* Fix for mobile devices */
+@media (max-width: 768px) {
+  .chat-container {
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+  }
+  
+  .chat-input-container {
+    padding: 8px;
+    bottom: 0;
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 200; /* Aumentado para consistencia con la regla principal */
+  }
+  
+  /* Ajuste de márgenes para dispositivos móviles */
+  .message-container {
+    margin-top: 70px; /* Espacio para el header en móvil */
+    margin-bottom: 70px; /* Espacio para el input en móvil */
+  }
+}
+
+/* Style for empty chat state */
 .empty-chat-message {
   text-align: center;
   color: #888;
-  margin: 2rem auto;
+  margin-top: auto;
+  margin-bottom: auto;
   padding: 20px;
-}
-
-/* Improved mobile responsiveness */
-@media (max-width: 768px) {
-  .chat-header {
-    padding: 12px;
-  }
-  
-  .messages-container {
-    padding: 12px 0;
-  }
-  
-  .message-wrapper {
-    padding: 0 12px;
-  }
-  
-  .chat-input-area {
-    padding: 10px 12px;
-  }
-  
-  /* Safe area for iOS devices with notch */
-  @supports (padding: max(0px)) {
-    .chat-input-area {
-      padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
-    }
-  }
 }

@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,13 +34,15 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isCallActive, setIsCallActive] = useState(false);
   
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // Function to scroll to bottom
+  console.log("GuestChat renderizado con los datos:", {guestName, roomNumber, guestId});
+
+  // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
@@ -51,9 +52,10 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     }
   };
 
-  // Fetch messages on load
+  // Fetch messages on initial load
   useEffect(() => {
     const fetchMessages = async () => {
+      console.log("Intentando obtener mensajes para el guestId:", guestId);
       try {
         const { data, error } = await supabase
           .from('messages')
@@ -63,8 +65,10 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         
         if (error) throw error;
         
+        console.log("Mensajes obtenidos:", data);
+        
         if (data.length === 0) {
-          // Add welcome message if there are no messages
+          // Add welcome message if no messages exist
           const welcomeMessage = {
             id: 'welcome',
             guest_id: guestId,
@@ -80,6 +84,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             
           if (!insertError) {
             setMessages([welcomeMessage]);
+            console.log("Mensaje de bienvenida agregado");
           }
         } else {
           setMessages(data);
@@ -109,6 +114,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             filter: `guest_id=eq.${guestId}`
           },
           (payload) => {
+            console.log("Nuevo mensaje recibido:", payload);
             setMessages(prev => [...prev, payload.new as MessageType]);
           }
         )
@@ -120,12 +126,13 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     }
   }, [guestId, guestName, toast]);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom on new messages
   useEffect(() => {
-    setTimeout(scrollToBottom, 100);
+    setTimeout(() => scrollToBottom(), 50);
+    setTimeout(() => scrollToBottom(), 300); // Additional attempt for reliability
   }, [messages]);
 
-  // Focus input field on mount
+  // Focus input field when component mounts
   useEffect(() => {
     if (inputRef.current) {
       setTimeout(() => {
@@ -270,10 +277,19 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     setIsCallActive(false);
   };
 
+  // Keep this function for other formatting needs
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('es', {
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
+
   return (
     <div className="chat-container">
-      {/* Header */}
-      <div className="chat-header">
+      {/* Header fixed at top */}
+      <header className="gradient-header-soft p-3 shadow-md chat-header">
         <div className="flex items-center justify-between">
           <motion.button 
             whileHover={{ scale: isMobile ? 1.05 : 1.1 }}
@@ -297,58 +313,64 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             <Phone className="h-5 w-5" />
           </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Messages area */}
-      <div className="messages-container" ref={messagesContainerRef}>
-        <div className="message-wrapper">
-          {messages.length === 0 && (
-            <div className="empty-chat-message">
-              <p>No hay mensajes aún. ¡Inicia la conversación!</p>
-            </div>
-          )}
-          
-          <AnimatePresence>
-            {messages.map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.3 }}
-                className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'} mb-3`}
-              >
-                <div
-                  className={`${
-                    msg.is_guest 
-                      ? 'chat-bubble-guest' 
-                      : 'chat-bubble-staff'
-                  } ${msg.is_audio ? 'overflow-hidden p-0' : ''}`}
-                >
-                  {msg.is_audio ? (
-                    <AudioMessagePlayer 
-                      audioUrl={msg.audio_url || ''} 
-                      isGuest={msg.is_guest}
-                    />
-                  ) : (
-                    <p className={isMobile ? "text-sm" : ""}>{msg.content}</p>
-                  )}
+      {/* Chat messages area with proper scrolling */}
+      <div className="chat-scroll-area" ref={scrollAreaRef}>
+        <div className="message-container">
+          <div className="message-content-wrapper">
+            <div className={`space-y-3 ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto p-3 w-full`}>
+              {messages.length === 0 && (
+                <div className="empty-chat-message">
+                  <p>No hay mensajes aún. ¡Inicia la conversación!</p>
                 </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          <div ref={messagesEndRef} />
+              )}
+              
+              <AnimatePresence>
+                {messages.map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`${isMobile ? "max-w-[85%]" : "max-w-[80%]" } ${
+                        msg.is_audio ? '' : 'p-3'
+                      } ${
+                        msg.is_guest 
+                          ? 'chat-bubble-guest shadow-md' 
+                          : 'chat-bubble-staff shadow-sm'
+                      } ${msg.is_audio ? 'overflow-hidden' : ''}`}
+                    >
+                      {msg.is_audio ? (
+                        <AudioMessagePlayer 
+                          audioUrl={msg.audio_url || ''} 
+                          isGuest={msg.is_guest}
+                        />
+                      ) : (
+                        <p className={isMobile ? "text-sm break-words" : "break-words"}>{msg.content}</p>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Input area */}
-      <div className="chat-input-area">
-        <div className="chat-input-container">
+      {/* Chat input area fixed at bottom with high z-index */}
+      <div className="chat-input-container">
+        <div className={`flex items-center space-x-2 w-full ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
           <Button
             type="button"
             size="icon"
             variant="outline"
             onClick={toggleRecording}
-            className={`flex-shrink-0 transition-all duration-300 ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
+            className={`flex-shrink-0 transition-all duration-300 chat-input-button ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
             disabled={isLoading}
           >
             {isRecording ? (
@@ -377,7 +399,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
               size="icon"
               onClick={sendMessage}
               disabled={message.trim() === "" || isRecording || isLoading}
-              className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 shadow-sm"
+              className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 shadow-sm chat-input-button"
             >
               <Send className="h-5 w-5" />
             </Button>
