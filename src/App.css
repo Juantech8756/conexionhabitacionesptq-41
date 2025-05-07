@@ -43,14 +43,14 @@
   color: #888;
 }
 
-/* Chat container styles with relative positioning to serve as the positioning context */
+/* Chat container styles with relative positioning */
 .chat-container {
   height: 100vh;
   width: 100%;
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden; /* Prevent any overflow issues */
+  overflow: hidden;
 }
 
 /* Gradient header for chat */
