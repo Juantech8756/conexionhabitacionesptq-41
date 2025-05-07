@@ -1,8 +1,9 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, Mic, MicOff, Send, ArrowLeft, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -278,7 +279,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-gray-50 overflow-hidden">
+    <div className="flex flex-col h-screen w-full bg-gray-50">
       <header className="gradient-header-soft p-3 shadow-md">
         <div className="flex items-center justify-between">
           <motion.button 
@@ -288,11 +289,11 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             className="mr-2 p-2 rounded-full hover:bg-white/10 transition-colors" 
             aria-label="Volver"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 text-white" />
           </motion.button>
           <div className="flex-grow">
-            <h1 className="text-lg font-semibold">Recepción</h1>
-            <p className="text-sm opacity-90">Cabaña {roomNumber} - {guestName}</p>
+            <h1 className="text-lg font-semibold text-white">Recepción</h1>
+            <p className="text-sm opacity-90 text-white">Cabaña {roomNumber} - {guestName}</p>
           </div>
           <Button 
             variant="ghost" 

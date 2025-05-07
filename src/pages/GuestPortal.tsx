@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import GuestRegistrationForm from "@/components/GuestRegistrationForm";
 import GuestChat from "@/components/GuestChat";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -89,10 +89,7 @@ const GuestPortal = () => {
     // Importante: actualizar el estado isRegistered al final para asegurar la renderización del chat
     setIsRegistered(true);
     
-    toast({
-      title: "¡Registro exitoso!",
-      description: "Ahora puede comunicarse con recepción",
-    });
+    // Nota: El toast se mostrará desde GuestRegistrationForm para evitar duplicaciones
   };
 
   const handleBackToRegistration = () => {
@@ -116,7 +113,7 @@ const GuestPortal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 w-full overflow-hidden">
+    <div className="min-h-screen w-full overflow-hidden bg-gray-50">
       <AnimatePresence>
         {showWelcome && roomData && (
           <motion.div
@@ -178,6 +175,7 @@ const GuestPortal = () => {
         <GuestRegistrationForm 
           onRegister={handleRegister}
           preselectedRoomId={roomIdFromUrl || undefined}
+          showSuccessToast={true} // Control toast here to avoid duplication
         />
       )}
     </div>

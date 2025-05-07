@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Hotel, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -19,6 +19,7 @@ import {
 interface GuestRegistrationFormProps {
   onRegister: (guestName: string, roomNumber: string, guestId: string) => void;
   preselectedRoomId?: string;
+  showSuccessToast?: boolean;
 }
 
 type Room = {
@@ -29,7 +30,7 @@ type Room = {
   type: string | null;
 };
 
-const GuestRegistrationForm = ({ onRegister, preselectedRoomId }: GuestRegistrationFormProps) => {
+const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast = true }: GuestRegistrationFormProps) => {
   const [guestName, setGuestName] = useState("");
   const [selectedRoomId, setSelectedRoomId] = useState("");
   const [guestCount, setGuestCount] = useState("1");
@@ -144,12 +145,15 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId }: GuestRegistrat
       
       if (error) throw error;
       
-      onRegister(guestName, selectedRoom.room_number, guest.id);
+      // Show toast only if requested (to avoid duplicates)
+      if (showSuccessToast) {
+        toast({
+          title: "¡Registro exitoso!",
+          description: "Ahora puede comunicarse con recepción",
+        });
+      }
       
-      toast({
-        title: "¡Registro exitoso!",
-        description: "Ahora puede comunicarse con recepción",
-      });
+      onRegister(guestName, selectedRoom.room_number, guest.id);
     } catch (error) {
       console.error("Error registering guest:", error);
       toast({

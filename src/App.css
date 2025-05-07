@@ -1,8 +1,9 @@
 
-/* Eliminamos las restricciones de ancho, padding y alineación que podrían afectar la visualización del chat */
+/* Reset root styling for full-width mobile-first design */
 #root {
   width: 100%;
-  margin: 0 auto;
+  margin: 0;
+  padding: 0;
   text-align: left;
 }
 
@@ -42,19 +43,75 @@
   color: #888;
 }
 
-/* Estilos para asegurar la visualización correcta del chat */
+/* Chat container styles - optimized for mobile */
 .chat-container {
   height: 100vh;
   width: 100%;
-  max-width: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-/* Optimizaciones para móvil */
+/* Gradient header for chat */
+.gradient-header-soft {
+  background: linear-gradient(to right, #7E69AB, #9b87f5);
+  color: white;
+}
+
+/* Chat bubbles styling */
+.chat-bubble-guest {
+  background: linear-gradient(to right, #7E69AB, #9b87f5);
+  color: white;
+  border-radius: 18px 18px 0 18px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.chat-bubble-staff {
+  background: #f0f0f0;
+  color: #333;
+  border-radius: 18px 18px 18px 0;
+  margin-bottom: 8px;
+}
+
+/* Audio message styling */
+.audio-message-container {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  min-width: 200px;
+}
+
+/* Recording animation */
+.recording-animation {
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-recording {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Optimizations for mobile - make it fully responsive */
 @media (max-width: 768px) {
   .chat-container {
     padding: 0;
     height: 100vh;
+    width: 100vw;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
 }
