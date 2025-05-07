@@ -39,6 +39,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
+  console.log("GuestChat renderizado con los datos:", {guestName, roomNumber, guestId});
+
   // Scroll to bottom function with smooth scrolling
   const scrollToBottom = (smooth = true) => {
     if (scrollContainerRef.current) {
@@ -53,6 +55,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   // Fetch messages on initial load
   useEffect(() => {
     const fetchMessages = async () => {
+      console.log("Intentando obtener mensajes para el guestId:", guestId);
       try {
         const { data, error } = await supabase
           .from('messages')
@@ -61,6 +64,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           .order('created_at', { ascending: true });
         
         if (error) throw error;
+        
+        console.log("Mensajes obtenidos:", data);
         
         if (data.length === 0) {
           // Add welcome message if no messages exist
@@ -79,6 +84,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             
           if (!insertError) {
             setMessages([welcomeMessage]);
+            console.log("Mensaje de bienvenida agregado");
           }
         } else {
           setMessages(data);
@@ -93,28 +99,31 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       }
     };
     
-    fetchMessages();
-    
-    // Subscribe to new messages
-    const channel = supabase
-      .channel('messages-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `guest_id=eq.${guestId}`
-        },
-        (payload) => {
-          setMessages(prev => [...prev, payload.new as MessageType]);
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    if (guestId) {
+      fetchMessages();
+      
+      // Subscribe to new messages
+      const channel = supabase
+        .channel('messages-channel')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `guest_id=eq.${guestId}`
+          },
+          (payload) => {
+            console.log("Nuevo mensaje recibido:", payload);
+            setMessages(prev => [...prev, payload.new as MessageType]);
+          }
+        )
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [guestId, guestName, toast]);
 
   // Scroll to bottom on new messages
@@ -269,7 +278,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen w-full bg-gray-50 overflow-hidden">
       <header className="gradient-header-soft p-3 shadow-md">
         <div className="flex items-center justify-between">
           <motion.button 

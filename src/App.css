@@ -1,8 +1,9 @@
+
+/* Eliminamos las restricciones de ancho, padding y alineación que podrían afectar la visualización del chat */
 #root {
-  max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  text-align: left;
 }
 
 .logo {
@@ -39,4 +40,21 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Estilos para asegurar la visualización correcta del chat */
+.chat-container {
+  height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Optimizaciones para móvil */
+@media (max-width: 768px) {
+  .chat-container {
+    padding: 0;
+    height: 100vh;
+  }
 }

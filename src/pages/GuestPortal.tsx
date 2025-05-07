@@ -25,16 +25,23 @@ const GuestPortal = () => {
 
   // Check if the user has registered previously
   useEffect(() => {
-    const savedName = localStorage.getItem("guestName");
-    const savedRoom = localStorage.getItem("roomNumber");
-    const savedId = localStorage.getItem("guestId");
+    const checkLocalStorage = () => {
+      const savedName = localStorage.getItem("guestName");
+      const savedRoom = localStorage.getItem("roomNumber");
+      const savedId = localStorage.getItem("guestId");
+      
+      if (savedName && savedRoom && savedId) {
+        setGuestName(savedName);
+        setRoomNumber(savedRoom);
+        setGuestId(savedId);
+        setIsRegistered(true);
+        console.log("Usuario encontrado en localStorage, cargando chat...");
+      } else {
+        console.log("No se encontró información de usuario en localStorage");
+      }
+    };
     
-    if (savedName && savedRoom && savedId) {
-      setGuestName(savedName);
-      setRoomNumber(savedRoom);
-      setGuestId(savedId);
-      setIsRegistered(true);
-    }
+    checkLocalStorage();
   }, []);
 
   // Get room information if roomIdFromUrl is provided
@@ -68,15 +75,24 @@ const GuestPortal = () => {
   }, [roomIdFromUrl]);
 
   const handleRegister = async (name: string, room: string, id: string) => {
+    console.log("Registro exitoso, configurando chat...", {name, room, id});
+    // Guardar información de usuario
     setGuestName(name);
     setRoomNumber(room);
     setGuestId(id);
-    setIsRegistered(true);
     
-    // Save to localStorage for future visits
+    // Guardar en localStorage para futuras visitas
     localStorage.setItem("guestName", name);
     localStorage.setItem("roomNumber", room);
     localStorage.setItem("guestId", id);
+    
+    // Importante: actualizar el estado isRegistered al final para asegurar la renderización del chat
+    setIsRegistered(true);
+    
+    toast({
+      title: "¡Registro exitoso!",
+      description: "Ahora puede comunicarse con recepción",
+    });
   };
 
   const handleBackToRegistration = () => {
@@ -100,7 +116,7 @@ const GuestPortal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 w-full overflow-hidden">
       <AnimatePresence>
         {showWelcome && roomData && (
           <motion.div
@@ -150,12 +166,14 @@ const GuestPortal = () => {
       </AnimatePresence>
 
       {isRegistered ? (
-        <GuestChat
-          guestName={guestName}
-          roomNumber={roomNumber}
-          guestId={guestId}
-          onBack={handleBackToRegistration}
-        />
+        <div className="chat-container">
+          <GuestChat
+            guestName={guestName}
+            roomNumber={roomNumber}
+            guestId={guestId}
+            onBack={handleBackToRegistration}
+          />
+        </div>
       ) : (
         <GuestRegistrationForm 
           onRegister={handleRegister}
