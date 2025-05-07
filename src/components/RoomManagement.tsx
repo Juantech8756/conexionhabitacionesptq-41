@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,12 +33,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Edit, Trash, Search, CircleCheck, CircleX } from "lucide-react";
+import { Plus, Edit, Trash, Search, CircleCheck, CircleX, QrCode } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Link } from "react-router-dom";
 
 // Define the schema for form validation
 const roomFormSchema = z.object({
@@ -158,19 +158,26 @@ const RoomManagement = () => {
         });
       } else {
         // Insert new room
-        const { error } = await supabase.from("rooms").insert([
+        const { data, error } = await supabase.from("rooms").insert([
           {
             room_number: values.room_number,
             status: values.status,
             type: values.type,
           },
-        ]);
+        ]).select("id");
 
         if (error) throw error;
 
         toast({
           title: "Cabaña creada",
-          description: `La cabaña ${values.room_number} ha sido creada correctamente.`,
+          description: (
+            <div>
+              <p>La cabaña {values.room_number} ha sido creada correctamente.</p>
+              <Link to={`/qr-code/${data[0].id}`} className="text-hotel-600 hover:underline flex items-center mt-2">
+                <QrCode className="h-4 w-4 mr-1" /> Ver código QR
+              </Link>
+            </div>
+          ),
         });
       }
 
@@ -328,20 +335,31 @@ const RoomManagement = () => {
                     <TableCell>{getTypeLabel(room.type)}</TableCell>
                     <TableCell>{getStatusBadge(room.status)}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditRoomDialog(room)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteRoom(room)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end items-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditRoomDialog(room)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteRoom(room)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                        <Link to={`/qr-code/${room.id}`}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Ver código QR"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

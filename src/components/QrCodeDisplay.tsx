@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Hotel, ArrowLeft, Download } from "lucide-react";
+import { Hotel, ArrowLeft, Download, QrCode } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { motion } from "framer-motion";
 
 const QrCodeDisplay = () => {
   const [roomData, setRoomData] = useState<{id: string; room_number: string; type: string | null} | null>(null);
@@ -51,24 +52,52 @@ const QrCodeDisplay = () => {
     const svg = document.getElementById("qr-code");
     if (!svg) return;
 
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
+    try {
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        throw new Error("Could not get canvas context");
+      }
       
-      const pngFile = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.download = `qr-code-${roomData?.room_number || "guest"}.png`;
-      downloadLink.href = pngFile;
-      downloadLink.click();
-    };
-    
-    img.src = `data:image/svg+xml;base64,${btoa(svgData)}`;
+      const img = new Image();
+      
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        
+        try {
+          const pngFile = canvas.toDataURL("image/png");
+          const downloadLink = document.createElement("a");
+          downloadLink.download = `qr-cabaña-${roomData?.room_number || "guest"}.png`;
+          downloadLink.href = pngFile;
+          downloadLink.click();
+        } catch (e) {
+          console.error("Error generating PNG:", e);
+          toast({
+            title: "Error",
+            description: "No se pudo generar el archivo PNG",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      // Fix for encoding SVG with special characters
+      const encodedData = encodeURIComponent(svgData)
+        .replace(/'/g, '%27')
+        .replace(/"/g, '%22');
+        
+      img.src = `data:image/svg+xml;charset=utf-8,${encodedData}`;
+      
+    } catch (error) {
+      console.error("Error downloading QR code:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo descargar el código QR",
+        variant: "destructive",
+      });
+    }
   };
 
   const goBack = () => {
@@ -89,54 +118,76 @@ const QrCodeDisplay = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center mb-2">
-            <Hotel className="h-8 w-8 text-hotel-600 mr-2" />
-            <CardTitle className="text-2xl font-bold">
-              Hotel Connect
-            </CardTitle>
-          </div>
-          <CardDescription>
-            {roomId && roomData ? (
-              <>
-                Código QR para la cabaña: <span className="font-semibold">{roomData.room_number}</span>
-                {roomData.type && ` - ${getRoomTypeText(roomData.type)}`}
-              </>
-            ) : (
-              "Escanee este código QR para comunicarse con recepción"
-            )}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex justify-center p-6">
-          <div className="border-2 border-dashed border-gray-300 p-8 rounded-lg bg-white">
-            <QRCodeSVG
-              id="qr-code"
-              value={qrUrl}
-              size={192}
-              bgColor={"#ffffff"}
-              fgColor={"#000000"}
-              level={"H"}
-              className="mx-auto"
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col items-center gap-3">
-          <p className="text-sm text-gray-500 text-center mb-4">
-            Escanee con la cámara de su teléfono para acceder al portal de comunicación
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={goBack} className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Volver
-            </Button>
-            <Button className="bg-hotel-600 hover:bg-hotel-700 flex items-center gap-2" onClick={handleDownload}>
-              <Download className="h-4 w-4" />
-              Descargar QR
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md mx-auto"
+      >
+        <Card className="shadow-lg">
+          <CardHeader className="text-center bg-gradient-to-r from-hotel-700 to-hotel-600 text-white rounded-t-lg">
+            <div className="flex items-center justify-center mb-2">
+              <Hotel className="h-10 w-10 text-white mr-2" />
+              <CardTitle className="text-2xl font-bold">
+                Parque Temático Quimbaya
+              </CardTitle>
+            </div>
+            <CardDescription className="text-white/90 text-lg">
+              {roomId && roomData ? (
+                <>
+                  <span className="font-bold text-2xl block mt-2 mb-1">
+                    Cabaña {roomData.room_number}
+                  </span>
+                  {roomData.type && (
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                      {getRoomTypeText(roomData.type)}
+                    </span>
+                  )}
+                </>
+              ) : (
+                "Escanee este código QR para comunicarse con recepción"
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center p-8 bg-white">
+            <div className="border-8 border-hotel-100 p-3 rounded-lg bg-white shadow-inner relative">
+              <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                <Hotel className="w-32 h-32 text-hotel-300" />
+              </div>
+              <QRCodeSVG
+                id="qr-code"
+                value={qrUrl}
+                size={220}
+                bgColor={"#ffffff"}
+                fgColor={"#000000"}
+                level={"H"}
+                includeMargin={true}
+                className="mx-auto"
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col items-center gap-3 bg-gray-50 rounded-b-lg p-6">
+            <div className="text-center text-sm text-gray-600 mb-4 max-w-xs">
+              <p className="mb-2">
+                <span className="font-medium">Instrucciones:</span> Escanee este código con la cámara de su teléfono para conectarse directamente con recepción desde su cabaña.
+              </p>
+              <p className="text-xs italic">
+                El código QR lo conectará automáticamente con su habitación sin necesidad de seleccionarla manualmente.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={goBack} className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Volver
+              </Button>
+              <Button className="bg-hotel-600 hover:bg-hotel-700 flex items-center gap-2" onClick={handleDownload}>
+                <Download className="h-4 w-4" />
+                Descargar QR
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
+      </motion.div>
     </div>
   );
 };
