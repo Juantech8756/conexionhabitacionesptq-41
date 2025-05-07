@@ -69,6 +69,10 @@ const ReceptionDashboardPage = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente."
+      });
       navigate("/reception");
     } catch (error) {
       console.error("Error signing out:", error);
