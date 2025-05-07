@@ -43,13 +43,12 @@
   color: #888;
 }
 
-/* Chat container styles - optimized for mobile */
+/* Chat container styles - optimized for mobile with fixed layout */
 .chat-container {
   height: 100vh;
   width: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   position: fixed;
   top: 0;
   left: 0;
@@ -132,11 +131,11 @@
 .chat-scroll-area {
   flex: 1;
   overflow-y: auto;
+  padding-top: 60px; /* Space for header */
   padding-bottom: 70px; /* Space for fixed input area */
   margin-top: 0; /* Remove any top margin */
   display: flex;
   flex-direction: column;
-  position: relative;
   z-index: 1;
 }
 
@@ -155,11 +154,23 @@
   
   .chat-input-container {
     padding: 8px;
+    bottom: 0;
+    position: fixed;
+    left: 0;
+    right: 0;
   }
   
   /* Ensure message content is visible */
   .chat-scroll-area {
     padding-top: 60px; /* Space for header */
+    padding-bottom: 70px; /* Space for fixed input area */
+  }
+  
+  /* Explicitly set the input container to be at the bottom */
+  .message-container {
+    flex: 1;
+    padding-top: 60px; /* Space for header */
+    padding-bottom: 70px; /* Space for input */
   }
 }
 
@@ -183,9 +194,10 @@
 
 /* Message container should be pushed down below the header */
 .message-container {
-  padding-top: 60px;
+  padding-top: 60px; /* Space for header */
+  padding-bottom: 70px; /* Space for fixed input area */
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  width: 100%;
 }
-

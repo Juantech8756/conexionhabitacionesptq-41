@@ -74,6 +74,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
                 title: "Atención",
                 description: `La cabaña ${roomData.room_number} está marcada como ${roomData.status === 'occupied' ? 'ocupada' : roomData.status}. Por favor seleccione otra cabaña si es necesario.`,
                 variant: "default",
+                duration: 5000,
               });
             }
           }
@@ -84,6 +85,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
           title: "Error",
           description: "No se pudieron cargar las cabañas",
           variant: "destructive",
+          duration: 3000,
         });
       } finally {
         setIsLoadingRooms(false);
@@ -101,6 +103,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         title: "Nombre requerido",
         description: "Por favor ingrese su nombre",
         variant: "destructive",
+        duration: 3000,
       });
       return;
     }
@@ -110,6 +113,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         title: "Cabaña requerida",
         description: "Por favor seleccione su cabaña",
         variant: "destructive",
+        duration: 3000,
       });
       return;
     }
@@ -145,14 +149,16 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
       
       if (error) throw error;
       
-      // Mostrar toast solo si se solicita explícitamente (para evitar duplicados)
+      // Solo mostrar toast si se solicita explícitamente (para evitar duplicados)
       if (showSuccessToast) {
         toast({
           title: "¡Registro exitoso!",
           description: "Ahora puede comunicarse con recepción",
+          duration: 3000,
         });
       }
       
+      // Limpiar cualquier toast previo de error que pudiera estar visible
       onRegister(guestName, selectedRoom.room_number, guest.id);
     } catch (error) {
       console.error("Error registering guest:", error);
@@ -160,6 +166,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         title: "Error de registro",
         description: "No se pudo completar el registro. Por favor intente nuevamente.",
         variant: "destructive",
+        duration: 4000,
       });
     } finally {
       setIsLoading(false);

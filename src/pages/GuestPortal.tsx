@@ -90,12 +90,11 @@ const GuestPortal = () => {
     toast({
       title: "¡Registro exitoso!",
       description: "Ahora puede comunicarse con recepción",
+      duration: 3000, // Duración reducida a 3 segundos
     });
     
     // Importante: actualizar el estado isRegistered al final para asegurar la renderización del chat
-    setTimeout(() => {
-      setIsRegistered(true);
-    }, 100);
+    setIsRegistered(true);
   };
 
   const handleBackToRegistration = () => {
