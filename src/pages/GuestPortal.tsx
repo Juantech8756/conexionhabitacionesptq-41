@@ -22,6 +22,8 @@ const GuestPortal = () => {
   // States for welcome animation
   const [showWelcome, setShowWelcome] = useState(false);
   const [roomData, setRoomData] = useState<{room_number: string, type: string | null} | null>(null);
+  // Flag to prevent duplicate toasts
+  const [hasShownRegistrationToast, setHasShownRegistrationToast] = useState(false);
 
   // Check if the user has registered previously
   useEffect(() => {
@@ -86,14 +88,16 @@ const GuestPortal = () => {
     localStorage.setItem("roomNumber", room);
     localStorage.setItem("guestId", id);
     
-    // Mostrar toast solo si no hay duplicado
-    toast({
-      title: "¡Registro exitoso!",
-      description: "Ahora puede comunicarse con recepción",
-      duration: 3000,
-      // Add an id to prevent duplicates
-      id: "registration-success"
-    });
+    // Mostrar toast solo si no se ha mostrado antes
+    if (!hasShownRegistrationToast) {
+      toast({
+        title: "¡Registro exitoso!",
+        description: "Ahora puede comunicarse con recepción",
+        duration: 3000,
+        // Remove the 'id' property as it's not allowed in the Toast type
+      });
+      setHasShownRegistrationToast(true);
+    }
     
     // Actualizar el estado isRegistered inmediatamente
     setIsRegistered(true);
@@ -105,6 +109,7 @@ const GuestPortal = () => {
     localStorage.removeItem("guestName");
     localStorage.removeItem("roomNumber");
     localStorage.removeItem("guestId");
+    setHasShownRegistrationToast(false);
   };
 
   const getRoomTypeText = (type: string | null) => {
