@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface DeleteChatDialogProps {
   isOpen: boolean;
@@ -28,6 +29,11 @@ const DeleteChatDialog = ({
   onCancel,
   isDeleting,
 }: DeleteChatDialogProps) => {
+  const handleConfirm = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await onConfirm();
+  };
+
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
       <AlertDialogContent>
@@ -52,11 +58,8 @@ const DeleteChatDialog = ({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault();
-              onConfirm();
-            }}
+          <Button
+            onClick={handleConfirm}
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
@@ -68,7 +71,7 @@ const DeleteChatDialog = ({
             ) : (
               "Sí, eliminar chat"
             )}
-          </AlertDialogAction>
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
