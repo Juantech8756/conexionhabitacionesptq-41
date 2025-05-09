@@ -30,7 +30,7 @@ const ReceptionDashboardPage = () => {
   
   const isMobile = useIsMobile();
 
-  // Comprobar autenticación con Supabase Auth
+  // Check authentication with Supabase Auth
   useEffect(() => {
     const getSession = async () => {
       try {
@@ -65,6 +65,40 @@ const ReceptionDashboardPage = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
+
+  // Set up real-time subscription for notifications
+  useEffect(() => {
+    // Create a subscription for new messages to show notifications
+    const messagesChannel = supabase
+      .channel("new-message-notifications")
+      .on(
+        "postgres_changes",
+        { 
+          event: "INSERT", 
+          schema: "public", 
+          table: "messages",
+          filter: "is_guest=eq.true"
+        },
+        (payload) => {
+          // Show notification for new guest message
+          toast({
+            title: "Nuevo mensaje",
+            description: "Has recibido un nuevo mensaje de un huésped.",
+            variant: "default",
+          });
+          
+          // If not on messages tab, add a visual indication
+          if (activeTab !== "messages") {
+            // Add visual indication here if needed
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [toast, activeTab]);
 
   const handleLogout = async () => {
     try {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -105,9 +104,36 @@ const DashboardStats = () => {
 
     fetchStats();
 
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
+    // Set up real-time subscription for messages table to update stats
+    const messagesChannel = supabase
+      .channel("messages-stats-changes")
+      .on(
+        "postgres_changes", 
+        { event: "*", schema: "public", table: "messages" },
+        () => {
+          console.log("Messages changed, refreshing statistics");
+          fetchStats();
+        }
+      )
+      .subscribe();
+
+    // Set up real-time subscription for guests table to update stats
+    const guestsChannel = supabase
+      .channel("guests-stats-changes")
+      .on(
+        "postgres_changes", 
+        { event: "*", schema: "public", table: "guests" },
+        () => {
+          console.log("Guests changed, refreshing statistics");
+          fetchStats();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(guestsChannel);
+    };
   }, [toast]);
 
   // Prepare data for chart

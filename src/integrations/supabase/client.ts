@@ -9,7 +9,13 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
+});
 
 // Check and create necessary storage buckets
 (async function initializeStorage() {
@@ -35,6 +41,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       
       if (error) {
         console.error('Error creating chat_media bucket:', error);
+        
+        // If the error is due to RLS policy, we can't do much client-side
+        if (error.message.includes('row-level security policy')) {
+          console.warn('Unable to create bucket due to Row Level Security policy. This might need to be created in the Supabase dashboard.');
+        }
       } else {
         console.log('Created chat_media bucket successfully');
       }

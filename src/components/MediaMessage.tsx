@@ -14,8 +14,10 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
   const [imageError, setImageError] = useState(false);
   const [videoError, setVideoError] = useState(false);
 
-  // Log the media URL when component mounts
+  // Reset error state when mediaUrl changes
   useEffect(() => {
+    setImageError(false);
+    setVideoError(false);
     console.log(`MediaMessage rendering with URL: ${mediaUrl} and type: ${mediaType}`);
   }, [mediaUrl, mediaType]);
 

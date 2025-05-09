@@ -76,7 +76,7 @@ const RoomManagement = () => {
     },
   });
 
-  // Fetch rooms
+  // Fetch rooms and set up real-time subscription
   useEffect(() => {
     const fetchRooms = async () => {
       setIsLoading(true);
@@ -100,14 +100,37 @@ const RoomManagement = () => {
       }
     };
 
+    // Initial fetch
     fetchRooms();
 
-    // Subscribe to changes
+    // Set up real-time subscription for all room changes
     const channel = supabase
-      .channel("public:rooms")
-      .on("postgres_changes", { event: "*", schema: "public", table: "rooms" }, fetchRooms)
+      .channel("rooms-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "rooms" },
+        (payload) => {
+          console.log("Real-time update received:", payload);
+          
+          // Handle different types of changes
+          if (payload.eventType === "INSERT") {
+            setRooms((currentRooms) => [...currentRooms, payload.new as Room]);
+          } else if (payload.eventType === "UPDATE") {
+            setRooms((currentRooms) =>
+              currentRooms.map((room) =>
+                room.id === payload.new.id ? (payload.new as Room) : room
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            setRooms((currentRooms) =>
+              currentRooms.filter((room) => room.id !== payload.old.id)
+            );
+          }
+        }
+      )
       .subscribe();
 
+    // Cleanup subscription
     return () => {
       supabase.removeChannel(channel);
     };
