@@ -103,10 +103,15 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             .insert([welcomeMessage]);
             
           if (!insertError) {
-            setMessages([welcomeMessage]);
+            setMessages([welcomeMessage as MessageType]);
           }
         } else {
-          setMessages(data);
+          // Cast data to ensure it matches MessageType
+          const typedMessages = data.map(msg => ({
+            ...msg,
+            media_type: msg.media_type as 'image' | 'video' | undefined
+          }));
+          setMessages(typedMessages as MessageType[]);
         }
       } catch (error) {
         console.error("Error fetching messages:", error);

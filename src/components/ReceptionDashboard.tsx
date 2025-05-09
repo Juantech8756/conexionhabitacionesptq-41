@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,8 @@ type Message = {
   audio_url?: string;
   created_at: string;
   responded_at: string | null;
+  response_time: number | null;
+  is_media?: boolean;
   media_url?: string;
   media_type?: 'image' | 'video';
 };
@@ -274,9 +277,15 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
         
         if (error) throw error;
         
+        // Cast data to ensure it matches Message type
+        const typedMessages = data.map(msg => ({
+          ...msg,
+          media_type: msg.media_type as 'image' | 'video' | undefined
+        }));
+        
         setMessages(prev => ({
           ...prev,
-          [selectedGuest.id]: data
+          [selectedGuest.id]: typedMessages as Message[]
         }));
 
         // Scroll to bottom after messages are loaded - use a delay to ensure DOM is updated
