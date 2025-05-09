@@ -189,7 +189,7 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
             toast({
               title: "Cabaña actualizada",
               description: `La cabaña ${values.room_number} ha sido actualizada, pero ocurrió un error al limpiar los registros anteriores.`,
-              variant: "warning",
+              variant: "destructive",
             });
           }
         } else {
