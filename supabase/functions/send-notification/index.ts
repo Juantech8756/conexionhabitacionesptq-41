@@ -44,13 +44,13 @@ serve(async (req) => {
       );
     }
 
-    // Get subscriptions based on target type
+    // Get subscriptions based on target type - use lowercase column names to match the database
     let subscriptions;
     if (targetType === 'guest' && targetId) {
       const { data, error } = await supabaseClient
         .from('notification_subscriptions')
         .select('*')
-        .eq('guestId', targetId);
+        .eq('guestid', targetId); // Changed from guestId to guestid to match DB schema
       
       if (error) throw error;
       subscriptions = data;
@@ -58,7 +58,7 @@ serve(async (req) => {
       const { data, error } = await supabaseClient
         .from('notification_subscriptions')
         .select('*')
-        .not('userId', 'is', null);
+        .not('userid', 'is', null); // Changed from userId to userid to match DB schema
       
       if (error) throw error;
       subscriptions = data;
@@ -76,6 +76,9 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
+
+    // Log subscription details for debugging
+    console.log(`Found ${subscriptions.length} subscriptions for ${targetType}${targetId ? ' with ID ' + targetId : ''}`);
 
     // Send notification to each subscription
     const notificationPromises = subscriptions.map(async (sub) => {
