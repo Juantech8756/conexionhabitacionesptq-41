@@ -129,7 +129,7 @@ const DashboardStats = () => {
           
           <ConnectionStatusIndicator className="order-1 sm:order-2" />
           
-          <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isRefreshing} className="flex items-center gap-1 ml-auto sm:ml-0 order-3 py-[7px] px-[27px] my-[13px] mx-[102px]">
+          <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isRefreshing} className="flex items-center gap-1 ml-auto sm:ml-0 order-3 py-[6px] px-[30px] my-[13px] mx-[96px]">
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span>Actualizar</span>
           </Button>
