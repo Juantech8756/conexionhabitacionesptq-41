@@ -40,6 +40,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isCallActive, setIsCallActive] = useState(false);
   const [hasShownWelcomeMessage, setHasShownWelcomeMessage] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -259,6 +260,10 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleFileSelect = (file: File | null) => {
+    setSelectedFile(file);
   };
 
   const startRecording = async () => {
@@ -491,6 +496,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             guestId={guestId} 
             onUploadComplete={handleMediaUpload} 
             disabled={isRecording || isLoading}
+            onFileSelect={handleFileSelect}
+            selectedFile={selectedFile}
           />
           
           <Input

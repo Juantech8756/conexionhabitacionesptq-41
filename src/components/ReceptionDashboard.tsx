@@ -910,8 +910,9 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                             />
                           ) : msg.is_media ? (
                             <MediaMessage 
-                              url={msg.media_url || ''} 
-                              type={msg.media_type || 'image'} 
+                              mediaUrl={msg.media_url || ''} 
+                              mediaType={msg.media_type || 'image'} 
+                              isGuest={msg.is_guest}
                             />
                           ) : (
                             <p className="text-sm break-words">{msg.content}</p>
@@ -1091,8 +1092,9 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                           />
                         ) : msg.is_media ? (
                           <MediaMessage 
-                            url={msg.media_url || ''} 
-                            type={msg.media_type || 'image'} 
+                            mediaUrl={msg.media_url || ''} 
+                            mediaType={msg.media_type || 'image'} 
+                            isGuest={msg.is_guest}
                           />
                         ) : (
                           <p className="text-sm break-words">{msg.content}</p>
