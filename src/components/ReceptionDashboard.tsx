@@ -25,6 +25,7 @@ type Guest = {
   last_activity: string;
   unread_messages: number;
   wait_time_minutes: number | null;
+  guest_count: number | null;
 };
 type Room = {
   id: string;
@@ -249,7 +250,8 @@ const ReceptionDashboard = ({
           ...guest,
           last_activity: latestMessage?.created_at || guest.created_at,
           unread_messages: guestStats.pending_messages || 0,
-          wait_time_minutes: guestStats.wait_time_minutes || 0
+          wait_time_minutes: guestStats.wait_time_minutes || 0,
+          guest_count: guestStats.guest_count || null
         };
       }));
 
@@ -805,7 +807,8 @@ const ReceptionDashboard = ({
       return <div className="flex flex-col mt-1">
           <div className="text-xs text-gray-500">
             {room.type && <span className="mr-2">{room.type === 'family' ? 'Cabaña familiar' : room.type === 'couple' ? 'Cabaña pareja' : room.type}</span>}
-            {room.floor && <span>Piso {room.floor}</span>}
+            {room.floor && <span className="mr-2">Piso {room.floor}</span>}
+            {guest.guest_count && <span className="font-medium text-hotel-600">{guest.guest_count} {guest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}</span>}
           </div>
         </div>;
     }
@@ -895,8 +898,13 @@ const ReceptionDashboard = ({
                   </Button>
                   <div className="flex-grow">
                     <h2 className="text-base font-semibold">{selectedGuest.name}</h2>
-                    <p className="text-xs text-white/90">
-                      Cabaña {selectedGuest.room_number}
+                    <p className="text-xs text-white/90 flex items-center">
+                      <span>Cabaña {selectedGuest.room_number}</span>
+                      {selectedGuest.guest_count && 
+                        <span className="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
+                          {selectedGuest.guest_count} {selectedGuest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
+                        </span>
+                      }
                     </p>
                   </div>
                   <Button variant="ghost" size="icon" onClick={handleCallGuest} className="text-white hover:bg-white/20" title="Llamar a huésped">
@@ -1023,10 +1031,17 @@ const ReceptionDashboard = ({
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-semibold">{selectedGuest.name}</h2>
-                  <p className="text-sm text-gray-500">
-                    Cabaña {selectedGuest.room_number}
+                  <p className="text-sm text-gray-500 flex flex-wrap items-center gap-2">
+                    <span>Cabaña {selectedGuest.room_number}</span>
+                    
+                    {selectedGuest.guest_count && 
+                      <span className="bg-blue-50 text-hotel-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                        {selectedGuest.guest_count} {selectedGuest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
+                      </span>
+                    }
+                    
                     {selectedGuest.wait_time_minutes && selectedGuest.wait_time_minutes > 0 ? (
-                      <span className="ml-2 text-amber-600">
+                      <span className="text-amber-600">
                         Esperando respuesta: {selectedGuest.wait_time_minutes} min
                       </span>
                     ) : null}

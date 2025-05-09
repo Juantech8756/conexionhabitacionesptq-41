@@ -40,6 +40,63 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [preselectedRoom, setPreselectedRoom] = useState<Room | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+
+  // Generate or retrieve device ID for persistency
+  useEffect(() => {
+    // Check if a device ID already exists in localStorage
+    let storedDeviceId = localStorage.getItem('device_id');
+    
+    // If no device ID exists, generate a new one
+    if (!storedDeviceId) {
+      storedDeviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('device_id', storedDeviceId);
+    }
+    
+    setDeviceId(storedDeviceId);
+    
+    // Check if this device already registered a room
+    const checkExistingRegistration = async () => {
+      // Skip if no device ID
+      if (!storedDeviceId) return;
+      
+      try {
+        // Check if this device is already registered with a room
+        const { data: existingGuest, error } = await supabase
+          .from('guests')
+          .select('id, name, room_number, room_id')
+          .eq('device_id', storedDeviceId)
+          .maybeSingle();
+          
+        if (error) throw error;
+        
+        // If device is already registered
+        if (existingGuest) {
+          // Get room details
+          const { data: roomData } = await supabase
+            .from('rooms')
+            .select('*')
+            .eq('id', existingGuest.room_id)
+            .single();
+            
+          // Automatically log them in
+          toast({
+            title: "Ya has registrado esta cabaña",
+            description: `Continúas como ${existingGuest.name} en la cabaña ${existingGuest.room_number}`,
+            duration: 5000,
+          });
+          
+          // Redirect to chat
+          onRegister(existingGuest.name, existingGuest.room_number, existingGuest.id);
+        }
+        
+      } catch (error) {
+        console.error("Error checking existing registration:", error);
+      }
+    };
+    
+    checkExistingRegistration();
+  }, [onRegister, toast]);
 
   // Fetch available rooms
   useEffect(() => {
@@ -133,7 +190,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         
       if (updateError) throw updateError;
 
-      // Insert guest into Supabase
+      // Insert guest into Supabase with device ID
       const { data: guest, error } = await supabase
         .from('guests')
         .insert([
@@ -141,7 +198,8 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
             name: guestName, 
             room_number: selectedRoom.room_number, 
             room_id: selectedRoomId,
-            guest_count: parseInt(guestCount)
+            guest_count: parseInt(guestCount),
+            device_id: deviceId // Store device ID to identify this device in the future
           }
         ])
         .select('id')
@@ -156,6 +214,11 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
           description: "Ahora puede comunicarse con recepción",
           duration: 3000,
         });
+      }
+      
+      // Store the guest ID in localStorage for persistence
+      if (guest && guest.id) {
+        localStorage.setItem('guest_id', guest.id);
       }
       
       // Limpiar cualquier toast previo de error que pudiera estar visible

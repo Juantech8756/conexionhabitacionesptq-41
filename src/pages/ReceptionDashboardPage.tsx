@@ -371,7 +371,7 @@ const ReceptionDashboardPage = () => {
               <DashboardStats />
             </TabsContent>
             <TabsContent value="rooms" className="h-full m-0 p-0 data-[state=active]:fade-in">
-              <RoomManagement />
+              <RoomManagement showGuestCount={true} />
             </TabsContent>
           </div>
         </Tabs>
