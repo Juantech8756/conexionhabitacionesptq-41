@@ -6,7 +6,7 @@ import GuestChat from "@/components/GuestChat";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Hotel } from "lucide-react";
 import { showGlobalAlert } from "@/hooks/use-alerts";
 
@@ -47,7 +47,7 @@ const GuestPortal = () => {
     checkLocalStorage();
   }, []);
 
-  // Get room information if roomIdFromUrl is provided - with shorter animation time
+  // Get room information if roomIdFromUrl is provided
   useEffect(() => {
     const fetchRoomData = async () => {
       if (roomIdFromUrl) {
@@ -63,17 +63,16 @@ const GuestPortal = () => {
             setRoomData(data);
             setShowWelcome(true);
             
-            // Hide welcome message after 1s
+            // Show welcome animation for 1.5s
             setTimeout(() => {
               setShowWelcome(false);
-            }, 1000);
+            }, 1500);
             
             // Only show this banner if the cabin is occupied
             if (data.status === 'occupied') {
               // Add a small timeout to avoid alert flashing too quickly with welcome animation
               setTimeout(() => {
                 // Use an ID that persists across sessions to prevent duplicate alerts
-                const alertId = `cabin-occupied-${data.room_number}-${Date.now().toString().substring(0, 10)}`;
                 const alertKey = `cabin-alert-Cabaña no disponible-La cabaña ${data.room_number} está ocupada.`;
                 
                 // Only show if we haven't shown this alert in this session
@@ -85,7 +84,7 @@ const GuestPortal = () => {
                     duration: 6000
                   });
                 }
-              }, 1500);
+              }, 2000);
             }
           }
         } catch (error) {
@@ -150,62 +149,95 @@ const GuestPortal = () => {
     }
   };
 
-  // Simplified welcome screen that's only shown briefly
   return (
-    <div className="min-h-screen w-full bg-gray-50">
-      {showWelcome && roomData && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-hotel-600 bg-opacity-95 text-white p-6"
-        >
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white rounded-full p-5 mb-4"
-          >
-            <Hotel className="h-12 w-12 text-hotel-600" />
-          </motion.div>
-          
-          <motion.h1
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-3xl md:text-4xl font-bold text-center mb-2"
-          >
-            Cabaña {roomData.room_number}
-          </motion.h1>
-          
-          <motion.p
+    <div className="min-h-screen w-full bg-gray-50 overflow-x-hidden">
+      {/* Enhanced welcome animation with staggered elements */}
+      <AnimatePresence>
+        {showWelcome && roomData && (
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-2 text-sm text-white/80"
+            exit={{ opacity: 0, transition: { duration: 0.3 } }}
+            transition={{ duration: 0.4 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-hotel-700 to-hotel-500 bg-opacity-95 text-white p-6"
           >
-            {roomData.type && `${getRoomTypeText(roomData.type)}`}
-          </motion.p>
-        </motion.div>
-      )}
-
-      <div className="h-full">
-        {isRegistered ? (
-          <GuestChat
-            guestName={guestName}
-            roomNumber={roomNumber}
-            guestId={guestId}
-            onBack={handleBackToRegistration}
-          />
-        ) : (
-          <GuestRegistrationForm 
-            onRegister={handleRegister}
-            preselectedRoomId={roomIdFromUrl || undefined}
-            showSuccessToast={false} 
-          />
+            <motion.div 
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 15 }}
+              className="bg-white rounded-full p-5 mb-4 shadow-lg"
+            >
+              <motion.div
+                animate={{ 
+                  rotate: [0, 10, 0, -10, 0],
+                  scale: [1, 1.05, 1, 1.05, 1]
+                }}
+                transition={{ duration: 1.5, ease: "easeInOut", times: [0, 0.2, 0.5, 0.8, 1] }}
+              >
+                <Hotel className="h-12 w-12 text-hotel-600" />
+              </motion.div>
+            </motion.div>
+            
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.25, type: "spring", stiffness: 300, damping: 15 }}
+              className="text-center"
+            >
+              <motion.h1
+                className="text-3xl md:text-4xl font-bold mb-1"
+                animate={{ scale: [0.9, 1.05, 1] }}
+                transition={{ delay: 0.4, duration: 0.7, ease: "easeOut" }}
+              >
+                Cabaña {roomData.room_number}
+              </motion.h1>
+              
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="mt-2 text-sm text-white/90 font-medium"
+              >
+                {roomData.type && `${getRoomTypeText(roomData.type)}`}
+              </motion.p>
+              
+              <motion.div 
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="w-16 h-1 bg-white/50 rounded-full mx-auto mt-4"
+              />
+            </motion.div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
+
+      {/* Main content with smooth transitions */}
+      <AnimatePresence mode="wait">
+        <motion.div 
+          key={isRegistered ? "chat" : "registration"}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+          className="h-full"
+        >
+          {isRegistered ? (
+            <GuestChat
+              guestName={guestName}
+              roomNumber={roomNumber}
+              guestId={guestId}
+              onBack={handleBackToRegistration}
+            />
+          ) : (
+            <GuestRegistrationForm 
+              onRegister={handleRegister}
+              preselectedRoomId={roomIdFromUrl || undefined}
+              showSuccessToast={false} 
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };

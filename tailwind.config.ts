@@ -85,6 +85,7 @@ export default {
             borderWidth: {
                 'thin': '1px',
                 'hair': '0.5px',
+                'hairline': '0.25px',
             },
 			keyframes: {
 				'accordion-down': {
@@ -106,15 +107,53 @@ export default {
                 'pulse-light': {
                     '0%, 100%': { opacity: '1' },
                     '50%': { opacity: '0.7' }
+                },
+                'float': {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-5px)' }
+                },
+                'wiggle': {
+                    '0%, 100%': { transform: 'rotate(-3deg)' },
+                    '50%': { transform: 'rotate(3deg)' }
+                },
+                'scale-gentle': {
+                    '0%, 100%': { transform: 'scale(1)' },
+                    '50%': { transform: 'scale(1.05)' }
+                },
+                'fade-in-up': {
+                    '0%': { opacity: '0', transform: 'translateY(10px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' }
+                },
+                'fade-in-down': {
+                    '0%': { opacity: '0', transform: 'translateY(-10px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' }
+                },
+                'fade-in-left': {
+                    '0%': { opacity: '0', transform: 'translateX(10px)' },
+                    '100%': { opacity: '1', transform: 'translateX(0)' }
+                },
+                'fade-in-right': {
+                    '0%': { opacity: '0', transform: 'translateX(-10px)' },
+                    '100%': { opacity: '1', transform: 'translateX(0)' }
                 }
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-                'pulse-light': 'pulse-light 1.5s ease-in-out infinite'
+                'pulse-light': 'pulse-light 1.5s ease-in-out infinite',
+                'float': 'float 3s ease-in-out infinite',
+                'wiggle': 'wiggle 1s ease-in-out infinite',
+                'scale-gentle': 'scale-gentle 2s ease-in-out infinite',
+                'fade-in-up': 'fade-in-up 0.5s ease-out',
+                'fade-in-down': 'fade-in-down 0.5s ease-out',
+                'fade-in-left': 'fade-in-left 0.5s ease-out',
+                'fade-in-right': 'fade-in-right 0.5s ease-out'
 			},
             fontFamily: {
-                sans: ['Inter var', 'sans-serif'],
+                sans: ['Inter var', 'system-ui', 'sans-serif'],
+            },
+            transitionTimingFunction: {
+                'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)'
             }
 		}
 	},

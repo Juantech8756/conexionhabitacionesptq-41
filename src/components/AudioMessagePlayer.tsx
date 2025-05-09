@@ -69,7 +69,7 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  // Dynamic background color based on props
+  // Enhanced background with subtle gradient
   const bgColorClass = isDark 
     ? "bg-gradient-to-r from-hotel-700 to-hotel-600" 
     : isGuest 
@@ -79,22 +79,27 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
   // Dynamic text color based on props
   const textColorClass = isDark || isGuest ? "text-white" : "text-gray-700";
   
-  // Use an even thinner border (0.25px) with lower opacity
+  // Use a hairline border with proper opacity
   const borderClass = isDark || isGuest 
     ? "" 
-    : "border-[0.25px] border-gray-200/30";
+    : "border-hair border-gray-200/30";
   
   return (
-    <div className={`rounded-lg shadow-sm overflow-hidden ${bgColorClass} ${borderClass} ${isMobile ? 'p-3' : 'p-4'}`}>
+    <motion.div 
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`rounded-lg shadow-sm overflow-hidden ${bgColorClass} ${borderClass} ${isMobile ? 'p-2.5' : 'p-3.5'}`}
+    >
       {/* Hidden audio element */}
       <audio ref={audioRef} src={audioUrl} preload="metadata" />
       
-      <div className="flex items-center gap-3">
-        {/* Play/Pause button */}
+      <div className="flex items-center gap-2.5">
+        {/* Play/Pause button with animation */}
         <motion.button 
           onClick={togglePlayPause}
-          whileTap={{ scale: 0.95 }}
-          className={`flex-shrink-0 rounded-full ${isDark || isGuest ? 'bg-white/20 hover:bg-white/30' : 'bg-hotel-100 hover:bg-hotel-200'} p-2.5 transition-colors`}
+          whileTap={{ scale: 0.92 }}
+          className={`flex-shrink-0 rounded-full ${isDark || isGuest ? 'bg-white/20 hover:bg-white/30' : 'bg-hotel-100 hover:bg-hotel-200'} p-2 transition-all duration-200`}
           aria-label={isPlaying ? "Pausar" : "Reproducir"}
         >
           {isPlaying ? (
@@ -104,15 +109,15 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
           )}
         </motion.button>
 
-        {/* New wave visualization */}
-        <div className="flex-grow relative h-12 mx-1">
+        {/* Enhanced wave visualization */}
+        <div className="flex-grow relative h-10 mx-1">
           <div className="absolute inset-0 flex items-center justify-center">
             {Array.from({ length: 12 }).map((_, i) => {
               // Create different wave patterns based on position
               const isEven = i % 2 === 0;
               const amplitude = isEven ? 20 : 30;
-              const speed = 2 + (i % 3) * 0.5;
-              const delay = i * 0.15;
+              const speed = 1.8 + (i % 3) * 0.4;
+              const delay = i * 0.1;
               
               return (
                 <motion.div
@@ -142,42 +147,58 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
             })}
           </div>
           
-          {/* Floating particles - adds dynamic feeling */}
-          {isPlaying && Array.from({ length: 5 }).map((_, i) => (
+          {/* Animated floating particles - adds dynamic feeling */}
+          {isPlaying && Array.from({ length: 4 }).map((_, i) => (
             <motion.div
               key={`particle-${i}`}
               className={`absolute rounded-full ${isDark || isGuest ? 'bg-white/30' : 'bg-hotel-300/30'}`}
               style={{
-                width: 3 + (i % 3),
-                height: 3 + (i % 3),
-                left: `${15 + (i * 15)}%`,
+                width: 2 + (i % 2),
+                height: 2 + (i % 2),
+                left: `${15 + (i * 18)}%`,
               }}
               animate={{
-                y: [0, -15, 0],
-                opacity: [0, 1, 0],
+                y: [0, -12, 0],
+                opacity: [0, 0.8, 0],
               }}
               transition={{
-                duration: 2 + i,
+                duration: 1.5 + i * 0.5,
                 repeat: Infinity,
-                delay: i * 0.5,
+                delay: i * 0.3,
                 ease: "easeInOut",
               }}
             />
           ))}
+          
+          {/* Playback progress indicator */}
+          <motion.div 
+            className={`absolute bottom-0 left-0 h-1 ${isDark || isGuest ? 'bg-white/40' : 'bg-hotel-500/40'} rounded-full`}
+            initial={{ width: '0%' }}
+            animate={{ width: `${(currentTime / duration) * 100}%` }}
+            transition={{ duration: 0.1 }}
+          />
         </div>
         
-        {/* Time display */}
-        <div className={`text-xs font-medium ${textColorClass} min-w-[38px] text-right`}>
+        {/* Time display with animation */}
+        <motion.div 
+          animate={{ opacity: isLoaded ? 1 : 0.5 }}
+          className={`text-xs font-medium ${textColorClass} min-w-[36px] text-right`}
+        >
           {formatTime(currentTime)}
-        </div>
+        </motion.div>
       </div>
       
-      {/* Audio info */}
-      <div className={`flex items-center justify-center mt-3 text-xs ${textColorClass} opacity-70`}>
+      {/* Audio info with subtle fade-in */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.8 }}
+        transition={{ delay: 0.3 }}
+        className={`flex items-center justify-center mt-2 text-xs ${textColorClass}`}
+      >
         <AudioWaveform className="h-3 w-3 mr-1.5" />
         <span>{isLoaded ? "Mensaje de voz" : "Cargando..."}</span>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

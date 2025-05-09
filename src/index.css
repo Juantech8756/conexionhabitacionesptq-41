@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -85,22 +86,23 @@
     @apply bg-background text-foreground overflow-x-hidden overflow-y-auto;
     touch-action: manipulation; /* Improve touch experience */
     -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11"; /* Improved font rendering */
   }
   
-  /* Mejoras para el scroll */
+  /* Enhanced scrollbar styling */
   ::-webkit-scrollbar {
-    @apply w-2 h-2;
+    @apply w-1.5 h-1.5;
   }
   
   ::-webkit-scrollbar-track {
-    @apply bg-gray-100;
+    @apply bg-gray-100/80 rounded-full;
   }
   
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
+    @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-all;
   }
 
-  /* Optimizaciones para mobile */
+  /* Mobile optimizations */
   @media (max-width: 768px) {
     ::-webkit-scrollbar {
       @apply w-1 h-1;
@@ -113,71 +115,84 @@
 
     /* Increase tap target sizes */
     .tap-target {
-      @apply min-h-10 min-w-10;
+      @apply min-h-12 min-w-12;
+    }
+    
+    /* Ensure buttons have proper hit areas */
+    button, .button, [type="button"], [type="submit"] {
+      @apply min-h-[42px] py-2;
+    }
+    
+    /* Optimize anchor tag tap targets for mobile */
+    a {
+      @apply py-1 px-1;
     }
   }
 }
 
-/* Media message thin borders */
+/* Media message thin borders - enhanced with reduced opacity */
 .media-message-image {
-  @apply border-[0.5px] border-opacity-50;
+  @apply border-hair border-opacity-40 shadow-sm rounded-lg overflow-hidden;
 }
 
 .media-message-guest {
-  @apply border-gray-300;
+  @apply border-gray-300/60;
 }
 
 .media-message-staff {
-  @apply border-hotel-400;
+  @apply border-hotel-400/40;
 }
 
-/* Audio player enhanced styling */
+/* Enhanced audio player styling */
 .audio-player {
-  @apply overflow-hidden;
+  @apply overflow-hidden rounded-lg;
 }
 
 .audio-player-guest, .audio-player-staff {
-  @apply border-[0.5px];
+  @apply border-hair;
 }
 
 .audio-player-guest {
-  @apply border-white/10;
+  @apply border-white/10 shadow-lg;
 }
 
 .audio-player-staff {
-  @apply border-gray-200/50;
+  @apply border-gray-200/30 shadow-sm;
 }
 
-/* Chat bubbles - optimized for mobile */
+/* Enhanced chat bubbles - optimized for mobile with better gradients */
 .chat-bubble-guest {
-  @apply bg-gradient-to-r from-hotel-600 to-hotel-500 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl shadow-md;
+  @apply bg-gradient-to-br from-hotel-600 to-hotel-500 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl shadow-md;
 }
 
 .chat-bubble-staff {
-  @apply bg-gray-100 text-gray-800 rounded-tr-2xl rounded-tl-2xl rounded-br-2xl border border-gray-200/50 shadow-sm;
+  @apply bg-gradient-to-b from-white to-gray-50 text-gray-800 rounded-tr-2xl rounded-tl-2xl rounded-br-2xl border-hair border-gray-200/50 shadow-sm;
 }
 
-/* Recording animation */
+/* Enhanced recording animation */
 .recording-animation {
-  animation: pulse 1.5s infinite;
+  animation: pulse-recording 1.5s infinite;
 }
 
-@keyframes pulse {
+@keyframes pulse-recording {
   0% {
     opacity: 1;
     transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
   }
   50% {
-    opacity: 0.5;
+    opacity: 0.8;
     transform: scale(1.05);
+    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
   }
   100% {
     opacity: 1;
     transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
 }
 
-/* Fade in animation */
+/* Enhanced fade in animation */
 @keyframes fadeIn {
   0% {
     opacity: 0;
@@ -190,13 +205,13 @@
 }
 
 .fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
+  animation: fadeIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-/* Slide in animation */
+/* Enhanced slide in animation */
 @keyframes slideIn {
   0% {
-    transform: translateX(-20px);
+    transform: translateX(-15px);
     opacity: 0;
   }
   100% {
@@ -206,13 +221,13 @@
 }
 
 .slide-in {
-  animation: slideIn 0.3s ease-out forwards;
+  animation: slideIn 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-/* Scale animation */
+/* Enhanced scale animation */
 @keyframes scaleIn {
   0% {
-    transform: scale(0.9);
+    transform: scale(0.95);
     opacity: 0;
   }
   100% {
@@ -222,16 +237,16 @@
 }
 
 .scale-in {
-  animation: scaleIn 0.2s ease-out forwards;
+  animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-/* Additional hover effects */
+/* Improved hover effects */
 .hover-scale {
   @apply transition-transform duration-200;
 }
 
 .hover-scale:hover {
-  transform: scale(1.05);
+  transform: scale(1.03);
 }
 
 .hover-shadow {
@@ -242,26 +257,22 @@
   @apply shadow-md;
 }
 
-/* Enhanced scroll behavior */
+/* Better scroll behavior */
 .smooth-scroll {
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Asegurar que los contenedores con scroll tengan la altura completa */
-.overflow-auto, .overflow-y-auto, .overflow-x-auto, .overflow-scroll, .overflow-y-scroll, .overflow-x-scroll {
-  @apply h-full;
-}
-
-/* Mejoras en animaciones de mensajes */
+/* Enhanced animations for messages */
 .message-animation-enter {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(15px);
 }
 
 .message-animation-enter-active {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 300ms, transform 300ms;
+  transition: opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .message-animation-exit {
@@ -270,88 +281,96 @@
 
 .message-animation-exit-active {
   opacity: 0;
-  transition: opacity 300ms;
+  transition: opacity 200ms;
 }
 
-/* Mejoras de diseño para elementos interactivos */
+/* Enhanced interactive elements */
 button, a, .interactive {
-  @apply transition-all duration-200;
+  @apply transition-all duration-200 outline-none focus:ring-2 focus:ring-hotel-400/50 focus:ring-offset-2 focus:ring-offset-white;
 }
 
 /* Mobile optimized touch targets */
 @media (max-width: 768px) {
   button, a, .interactive {
-    @apply touch-manipulation;
+    @apply touch-manipulation active:scale-95;
   }
   
-  /* Optimizar audio controls para mobile */
+  /* Optimized audio controls for mobile */
   audio {
     @apply max-h-10;
   }
   
-  /* Aumentar el tamaño minimo de elementos interactivos en mobile */
+  /* Increased minimum size of interactive elements on mobile */
   .interactive-mobile {
     @apply min-h-[44px] min-w-[44px];
   }
+  
+  /* Ensure all buttons have good hit areas */
+  button:not(.small-button), 
+  .button:not(.small-button), 
+  [type="button"]:not(.small-button), 
+  [type="submit"]:not(.small-button) {
+    @apply min-h-[44px] px-3;
+  }
 }
 
-/* Gradientes para cabeceras */
+/* Enhanced gradients for headers */
 .gradient-header {
-  @apply bg-gradient-to-r from-hotel-700 to-hotel-500 text-white shadow-md;
+  @apply bg-gradient-to-r from-hotel-700 via-hotel-600 to-hotel-500 text-white shadow-md;
 }
 
 .gradient-header-soft {
-  @apply bg-gradient-to-r from-hotel-600/90 to-hotel-400 bg-opacity-90 text-white backdrop-blur-sm;
+  @apply bg-gradient-to-r from-hotel-600/95 to-hotel-400 bg-opacity-95 text-white backdrop-blur-sm;
 }
 
-/* Mejora en las tarjetas */
+/* Enhanced cards */
 .enhanced-card {
-  @apply bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100;
+  @apply bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border-hair border-gray-100;
 }
 
-/* Badge con gradiente */
+/* Enhanced badges with gradient */
 .gradient-badge {
   @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gradient-to-r from-hotel-500 to-hotel-400 text-white shadow-sm;
 }
 
-/* Mobile slide transitions */
+/* Enhanced mobile slide transitions */
 .slide-from-right {
-  animation: slideFromRight 0.3s forwards;
+  animation: slideFromRight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .slide-to-right {
-  animation: slideToRight 0.3s forwards;
+  animation: slideToRight 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 .slide-from-left {
-  animation: slideFromLeft 0.3s forwards;
+  animation: slideFromLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .slide-to-left {
-  animation: slideToLeft 0.3s forwards;
+  animation: slideToLeft 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 @keyframes slideFromRight {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes slideToRight {
-  from { transform: translateX(0); }
-  to { transform: translateX(100%); }
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
 }
 
 @keyframes slideFromLeft {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes slideToLeft {
-  from { transform: translateX(0); }
-  to { transform: translateX(-100%); }
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(-100%); opacity: 0; }
 }
 
-/* Audio Player animations and styling */
+/* Enhanced audio wave animation */
 .audio-wave {
   display: flex;
   align-items: center;
@@ -360,34 +379,42 @@ button, a, .interactive {
 }
 
 .audio-wave-bar {
-  width: 3px;
+  width: 2px;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.7);
   border-radius: 2px;
 }
 
 .audio-wave-bar-playing {
-  animation: wave-animation 1s infinite alternate;
+  animation: wave-animation 1s infinite alternate cubic-bezier(0.455, 0.03, 0.515, 0.955);
 }
 
 @keyframes wave-animation {
   0% {
-    height: 30%;
+    height: 25%;
+    opacity: 0.7;
   }
   100% {
-    height: 80%;
+    height: 85%;
+    opacity: 0.9;
   }
 }
 
+/* Enhanced audio progress bar */
 .audio-progress {
   position: relative;
   width: 100%;
   height: 4px;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
   cursor: pointer;
   overflow: hidden;
   margin-top: 8px;
+  transition: height 0.2s ease;
+}
+
+.audio-progress:hover {
+  height: 6px;
 }
 
 .audio-progress-fill {
@@ -396,30 +423,110 @@ button, a, .interactive {
   left: 0;
   height: 100%;
   background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 2px;
+  border-radius: 4px;
+  transition: width 0.1s linear;
 }
 
 .audio-progress-fill-animate {
-  animation: pulse-light 1s infinite alternate;
+  animation: pulse-light 1s infinite alternate cubic-bezier(0.455, 0.03, 0.515, 0.955);
 }
 
 @keyframes pulse-light {
   0% {
-    opacity: 0.7;
+    opacity: 0.8;
   }
   100% {
     opacity: 1;
   }
 }
 
-/* Touch-friendly audio controls for mobile */
+/* Enhanced touch-friendly audio controls for mobile */
 @media (max-width: 768px) {
   .audio-control-button {
     min-height: 36px;
     min-width: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .audio-progress {
     height: 6px;
   }
+  
+  .audio-progress:active {
+    height: 8px;
+  }
+}
+
+/* Extra utility classes for mobile optimizations */
+.mobile-touch-feedback:active {
+  @apply bg-gray-100/80;
+}
+
+/* Add hairline border */
+.border-hair {
+  @apply border-[0.5px];
+}
+
+/* New micro-interactions and visual effects */
+.pulse-on-hover:hover {
+  animation: pulse-gentle 2s infinite;
+}
+
+@keyframes pulse-gentle {
+  0% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.2);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(79, 70, 229, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+  }
+}
+
+/* Improved mobile button feedback */
+.btn-mobile-feedback {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-mobile-feedback::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.4);
+  opacity: 0;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: opacity 0.3s, transform 0.5s;
+}
+
+.btn-mobile-feedback:active::after {
+  opacity: 1;
+  transform: scale(300);
+  transition: transform 0.7s;
+}
+
+/* Enhanced loading spinner */
+.loading-spinner {
+  @apply relative h-6 w-6;
+}
+
+.loading-spinner::before, 
+.loading-spinner::after {
+  content: '';
+  @apply absolute inset-0 rounded-full;
+}
+
+.loading-spinner::before {
+  @apply border-2 border-gray-200;
+}
+
+.loading-spinner::after {
+  @apply border-2 border-transparent border-t-hotel-500 animate-spin;
 }

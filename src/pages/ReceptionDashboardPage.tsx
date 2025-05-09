@@ -6,13 +6,13 @@ import RoomManagement from "@/components/RoomManagement";
 import DashboardStats from "@/components/DashboardStats";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Hotel, LogOut, MessageSquare, BarChart, Bed, Menu } from "lucide-react";
+import { Hotel, LogOut, MessageSquare, BarChart, Bed, Menu, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import CallInterface from "@/components/CallInterface";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 
@@ -148,9 +148,15 @@ const ReceptionDashboardPage = () => {
 
   return (
     <div className="flex flex-col h-screen">
-      <header className="gradient-header p-4 shadow-lg">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center">
+      {/* Enhanced header with gradient and animation */}
+      <header className="bg-gradient-to-r from-hotel-700 to-hotel-500 shadow-lg relative z-10">
+        <div className="container mx-auto py-3 px-4 flex justify-between items-center">
+          <motion.div 
+            className="flex items-center"
+            initial={{ x: -10, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
             {isMobile && (
               <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                 <SheetTrigger asChild>
@@ -159,63 +165,124 @@ const ReceptionDashboardPage = () => {
                     <span className="sr-only">Menú</span>
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="p-0 w-[85vw] max-w-[300px]">
-                  <div className="bg-hotel-700 text-white p-4 flex items-center justify-between">
+                <SheetContent 
+                  side="left" 
+                  className="p-0 border-r-0 w-[250px] shadow-xl"
+                >
+                  <div className="bg-gradient-to-r from-hotel-800 to-hotel-600 text-white p-5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Hotel className="h-5 w-5" />
+                      <motion.div
+                        initial={{ scale: 0.9, rotate: -5 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <Hotel className="h-5 w-5" />
+                      </motion.div>
                       <h2 className="text-lg font-medium">Parque Temático Quimbaya</h2>
                     </div>
-                    <ConnectionStatusIndicator className="bg-white/10" />
+                    <SheetClose className="rounded-full w-7 h-7 bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
+                      <X className="h-4 w-4" />
+                    </SheetClose>
                   </div>
-                  <nav className="p-4">
-                    <ul className="space-y-2">
-                      <li>
-                        <Button 
-                          variant="ghost" 
-                          className="w-full justify-start text-gray-700"
-                          onClick={() => {
-                            setActiveTab("messages");
-                            setSidebarOpen(false);
-                          }}
+                  <nav className="p-0">
+                    <div className="py-2">
+                      {user && (
+                        <div className="px-4 py-3 border-b border-gray-100">
+                          <p className="text-sm text-gray-500">Conectado como:</p>
+                          <p className="font-medium truncate">{user.email}</p>
+                        </div>
+                      )}
+                      <ul className="space-y-1 mt-2">
+                        <motion.li
+                          whileHover={{ x: 3 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Mensajes
-                        </Button>
-                      </li>
-                      <li>
-                        <Button 
-                          variant="ghost" 
-                          className="w-full justify-start text-gray-700"
-                          onClick={() => {
-                            setActiveTab("stats");
-                            setSidebarOpen(false);
-                          }}
+                          <Button 
+                            variant="ghost" 
+                            className={`w-full justify-start text-gray-700 rounded-none border-l-2 ${
+                              activeTab === "messages" ? "border-hotel-600 bg-hotel-50/50" : "border-transparent"
+                            }`}
+                            onClick={() => {
+                              setActiveTab("messages");
+                              setSidebarOpen(false);
+                            }}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Mensajes
+                          </Button>
+                        </motion.li>
+                        <motion.li
+                          whileHover={{ x: 3 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
-                          <BarChart className="h-4 w-4 mr-2" />
-                          Estadísticas
-                        </Button>
-                      </li>
-                      <li>
-                        <Button 
-                          variant="ghost" 
-                          className="w-full justify-start text-gray-700"
-                          onClick={() => {
-                            setActiveTab("rooms");
-                            setSidebarOpen(false);
-                          }}
+                          <Button 
+                            variant="ghost" 
+                            className={`w-full justify-start text-gray-700 rounded-none border-l-2 ${
+                              activeTab === "stats" ? "border-hotel-600 bg-hotel-50/50" : "border-transparent"
+                            }`}
+                            onClick={() => {
+                              setActiveTab("stats");
+                              setSidebarOpen(false);
+                            }}
+                          >
+                            <BarChart className="h-4 w-4 mr-2" />
+                            Estadísticas
+                          </Button>
+                        </motion.li>
+                        <motion.li
+                          whileHover={{ x: 3 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
-                          <Bed className="h-4 w-4 mr-2" />
-                          Cabañas
-                        </Button>
-                      </li>
-                    </ul>
+                          <Button 
+                            variant="ghost" 
+                            className={`w-full justify-start text-gray-700 rounded-none border-l-2 ${
+                              activeTab === "rooms" ? "border-hotel-600 bg-hotel-50/50" : "border-transparent"
+                            }`}
+                            onClick={() => {
+                              setActiveTab("rooms");
+                              setSidebarOpen(false);
+                            }}
+                          >
+                            <Bed className="h-4 w-4 mr-2" />
+                            Cabañas
+                          </Button>
+                        </motion.li>
+                      </ul>
+                    </div>
+                    
+                    <div className="border-t mt-4 pt-2 px-4">
+                      <ConnectionStatusIndicator className="mb-4 mt-2" />
+                      
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start" 
+                        onClick={() => {
+                          setSidebarOpen(false);
+                          handleLogout();
+                        }}
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Cerrar sesión
+                      </Button>
+                    </div>
                   </nav>
                 </SheetContent>
               </Sheet>
             )}
-            <Hotel className="h-6 w-6 mr-2" />
-            <h1 className={`font-bold ${isMobile ? "text-lg" : "text-xl"}`}>Dashboard de Recepción</h1>
-          </div>
+            
+            <motion.div 
+              className="flex items-center"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <Hotel className="h-6 w-6 mr-2" />
+              <h1 className={`font-bold ${isMobile ? "text-lg" : "text-xl"} text-white`}>
+                Dashboard de Recepción
+              </h1>
+            </motion.div>
+          </motion.div>
+          
           <div className="flex items-center space-x-2">
             {!isMobile && <ConnectionStatusIndicator className="bg-white/10" />}
             
@@ -224,11 +291,12 @@ const ReceptionDashboardPage = () => {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
-                className="text-sm bg-white/10 px-3 py-1 rounded-full"
+                className="text-sm bg-white/10 px-3 py-1 rounded-full text-white"
               >
                 {user.email}
               </motion.span>
             )}
+            
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -250,7 +318,7 @@ const ReceptionDashboardPage = () => {
       <div className="flex-grow overflow-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           {!isMobile && (
-            <div className="bg-white border-b shadow-sm">
+            <div className="bg-white border-b shadow-sm sticky top-0 z-10">
               <div className="container mx-auto">
                 <TabsList className="h-14">
                   <TabsTrigger value="messages" className="flex items-center gap-2 relative transition-all duration-300">
@@ -311,15 +379,25 @@ const ReceptionDashboardPage = () => {
         </Tabs>
       </div>
 
-      {isCallActive && selectedGuest && (
-        <CallInterface 
-          isGuest={false}
-          guestId={selectedGuest.id}
-          roomNumber={selectedGuest.roomNumber}
-          guestName={selectedGuest.name}
-          onClose={handleEndCall}
-        />
-      )}
+      {/* Animated call interface */}
+      <AnimatePresence>
+        {isCallActive && selectedGuest && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ type: "spring", damping: 25, stiffness: 500 }}
+          >
+            <CallInterface 
+              isGuest={false}
+              guestId={selectedGuest.id}
+              roomNumber={selectedGuest.roomNumber}
+              guestName={selectedGuest.name}
+              onClose={handleEndCall}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
