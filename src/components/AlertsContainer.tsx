@@ -39,15 +39,16 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
     const now = Date.now();
     const duration = alert.duration || DEFAULT_DURATION;
     
-    // Super aggressive duplicate prevention - check for exact matches or even contains
+    // Super aggressive duplicate prevention with a unique key based on content
     setAlerts((prev) => {
-      // Check if there's an existing alert with same title OR description
-      const existingSimilar = prev.find(
-        existingAlert => 
-          (alert.title && existingAlert.title === alert.title) || 
-          (alert.description && existingAlert.description.includes(alert.description)) ||
-          (alert.description && alert.description.includes(existingAlert.description))
-      );
+      // Create a unique key for this alert
+      const alertKey = `${alert.title || ""}-${alert.description}`;
+      
+      // Check if there's an existing alert with same key
+      const existingSimilar = prev.find(existingAlert => {
+        const existingKey = `${existingAlert.title || ""}-${existingAlert.description}`;
+        return existingKey === alertKey;
+      });
       
       // Don't add duplicates
       if (existingSimilar) {

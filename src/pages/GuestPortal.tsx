@@ -25,9 +25,6 @@ const GuestPortal = () => {
   const [roomData, setRoomData] = useState<{room_number: string, type: string | null, status: string | null} | null>(null);
   // Flag to prevent duplicate toasts
   const [hasShownRegistrationToast, setHasShownRegistrationToast] = useState(false);
-  
-  // Completely remove this flag since we'll control the alert display differently
-  // const [hasShownOccupiedAlert, setHasShownOccupiedAlert] = useState(false);
 
   // Check if the user has registered previously
   useEffect(() => {
@@ -71,26 +68,22 @@ const GuestPortal = () => {
               setShowWelcome(false);
             }, 1000);
             
-            // Remove the duplicate banner logic completely - we'll let the general alert system handle this without special flags
-            // Only show this banner if the cabin is occupied - but no flags to track display state
+            // Only show this banner if the cabin is occupied
             if (data.status === 'occupied') {
               // Add a small timeout to avoid alert flashing too quickly with welcome animation
               setTimeout(() => {
-                // Use a descriptive ID to prevent duplicate alerts
-                const alertId = `cabin-occupied-${data.room_number}`;
-                const alertStorage = sessionStorage.getItem(alertId);
+                // Use an ID that persists across sessions to prevent duplicate alerts
+                const alertId = `cabin-occupied-${data.room_number}-${Date.now().toString().substring(0, 10)}`;
+                const alertKey = `cabin-alert-Cabaña no disponible-La cabaña ${data.room_number} está ocupada.`;
                 
                 // Only show if we haven't shown this alert in this session
-                if (!alertStorage) {
+                if (!sessionStorage.getItem(alertKey)) {
                   showGlobalAlert({
                     title: "Cabaña no disponible",
                     description: `La cabaña ${data.room_number} está ocupada. Por favor seleccione otra cabaña.`,
                     variant: "destructive",
                     duration: 6000
                   });
-                  
-                  // Mark this alert as shown in the session storage
-                  sessionStorage.setItem(alertId, "shown");
                 }
               }, 1500);
             }
@@ -140,7 +133,8 @@ const GuestPortal = () => {
     
     // Clear any session storage markers for alerts
     if (roomData) {
-      sessionStorage.removeItem(`cabin-occupied-${roomData.room_number}`);
+      const alertKey = `cabin-alert-Cabaña no disponible-La cabaña ${roomData.room_number} está ocupada.`;
+      sessionStorage.removeItem(alertKey);
     }
   };
 

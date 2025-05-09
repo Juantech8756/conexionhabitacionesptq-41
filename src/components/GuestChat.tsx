@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
+import MediaMessage from "@/components/MediaMessage";
+import MediaUploader from "@/components/MediaUploader";
 import CallInterface from "@/components/CallInterface";
 import { showGlobalAlert } from "@/hooks/use-alerts";
 
@@ -23,6 +26,9 @@ type MessageType = {
   is_guest: boolean;
   is_audio: boolean;
   audio_url?: string;
+  is_media?: boolean;
+  media_url?: string;
+  media_type?: 'image' | 'video';
   created_at: string;
 };
 
@@ -88,6 +94,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             content: `¡Hola ${guestName}! Bienvenido/a al Parque Temático Quimbaya. ¿En qué podemos ayudarte?`,
             is_guest: false,
             is_audio: false,
+            is_media: false,
             created_at: new Date().toISOString()
           };
           
@@ -170,7 +177,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         guest_id: guestId,
         content: message,
         is_guest: true,
-        is_audio: false
+        is_audio: false,
+        is_media: false
       };
       
       const { error } = await supabase
@@ -186,6 +194,39 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       toast({
         title: "Error",
         description: "No se pudo enviar el mensaje",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMediaUpload = async (mediaUrl: string, mediaType: 'image' | 'video') => {
+    setIsLoading(true);
+    
+    try {
+      const newMessage = {
+        guest_id: guestId,
+        content: mediaType === 'image' ? "Imagen compartida" : "Video compartido",
+        is_guest: true,
+        is_audio: false,
+        is_media: true,
+        media_url: mediaUrl,
+        media_type: mediaType
+      };
+      
+      const { error } = await supabase
+        .from('messages')
+        .insert([newMessage]);
+      
+      if (error) throw error;
+      
+      scrollToBottom(false);
+    } catch (error) {
+      console.error("Error sending media message:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el archivo",
         variant: "destructive",
       });
     } finally {
@@ -364,13 +405,19 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
                       msg.is_guest 
                         ? 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white rounded-tr-none' 
                         : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
-                    } ${msg.is_audio ? 'p-0 overflow-hidden' : 'p-3'}`}
+                    } ${msg.is_audio || msg.is_media ? 'p-0 overflow-hidden' : 'p-3'}`}
                   >
                     {msg.is_audio ? (
                       <AudioMessagePlayer 
                         audioUrl={msg.audio_url || ''} 
-                        isGuest={!msg.is_guest}
+                        isGuest={msg.is_guest}
                         isDark={msg.is_guest}
+                      />
+                    ) : msg.is_media ? (
+                      <MediaMessage
+                        mediaUrl={msg.media_url || ''}
+                        mediaType={msg.media_type as 'image' | 'video'}
+                        isGuest={msg.is_guest}
                       />
                     ) : (
                       <p className="text-sm break-words">{msg.content}</p>
@@ -412,6 +459,12 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
               <Mic className="h-4 w-4" />
             )}
           </Button>
+          
+          <MediaUploader 
+            guestId={guestId} 
+            onUploadComplete={handleMediaUpload} 
+            disabled={isRecording || isLoading}
+          />
           
           <Input
             placeholder="Escriba su mensaje..."

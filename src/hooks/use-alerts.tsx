@@ -53,7 +53,19 @@ export const useAlerts = () => {
   const showAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
     // Global level alert deduplication
     const alertKey = `${alert.title || ""}-${alert.description}`;
-    if (recentAlertDescriptions.has(alertKey)) {
+    
+    // Special handling for cabin occupied alerts
+    if (alertKey.includes("Cabaña") && alertKey.includes("ocupada")) {
+      // Only show once per session by storing in sessionStorage
+      const sessionKey = `cabin-alert-${alertKey}`;
+      if (sessionStorage.getItem(sessionKey)) {
+        console.log("Preventing duplicate cabin alert:", alertKey);
+        return "";
+      }
+      sessionStorage.setItem(sessionKey, "shown");
+    }
+    // Regular deduplication for other alerts
+    else if (recentAlertDescriptions.has(alertKey)) {
       console.log("Preventing duplicate alert:", alertKey);
       return "";
     }
@@ -92,7 +104,19 @@ export const showGlobalAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
   if (typeof window !== "undefined") {
     // Global level alert deduplication
     const alertKey = `${alert.title || ""}-${alert.description}`;
-    if (recentAlertDescriptions.has(alertKey)) {
+    
+    // Special handling for cabin occupied alerts
+    if (alertKey.includes("Cabaña") && alertKey.includes("ocupada")) {
+      // Only show once per session by storing in sessionStorage
+      const sessionKey = `cabin-alert-${alertKey}`;
+      if (sessionStorage.getItem(sessionKey)) {
+        console.log("Preventing duplicate cabin alert:", alertKey);
+        return;
+      }
+      sessionStorage.setItem(sessionKey, "shown");
+    }
+    // Regular deduplication for other alerts
+    else if (recentAlertDescriptions.has(alertKey)) {
       console.log("Preventing duplicate global alert:", alertKey);
       return;
     }
