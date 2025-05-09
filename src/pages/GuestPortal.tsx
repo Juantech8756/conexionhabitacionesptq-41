@@ -8,6 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Hotel } from "lucide-react";
+import { showGlobalAlert } from "@/hooks/use-alerts";
 
 const GuestPortal = () => {
   const [isRegistered, setIsRegistered] = useState(false);
@@ -21,7 +22,7 @@ const GuestPortal = () => {
   
   // States for welcome animation
   const [showWelcome, setShowWelcome] = useState(false);
-  const [roomData, setRoomData] = useState<{room_number: string, type: string | null} | null>(null);
+  const [roomData, setRoomData] = useState<{room_number: string, type: string | null, status: string | null} | null>(null);
   // Flag to prevent duplicate toasts
   const [hasShownRegistrationToast, setHasShownRegistrationToast] = useState(false);
 
@@ -53,7 +54,7 @@ const GuestPortal = () => {
         try {
           const { data, error } = await supabase
             .from('rooms')
-            .select('room_number, type')
+            .select('room_number, type, status')
             .eq('id', roomIdFromUrl)
             .single();
           
@@ -66,6 +67,18 @@ const GuestPortal = () => {
             setTimeout(() => {
               setShowWelcome(false);
             }, 1000);
+            
+            // Mostrar alerta temporal si la cabaña está ocupada
+            if (data.status === 'occupied') {
+              setTimeout(() => {
+                showGlobalAlert({
+                  title: "Cabaña no disponible",
+                  description: `La cabaña ${data.room_number} está ocupada. Por favor seleccione otra cabaña.`,
+                  variant: "destructive",
+                  duration: 6000
+                });
+              }, 1500);
+            }
           }
         } catch (error) {
           console.error("Error fetching room data:", error);

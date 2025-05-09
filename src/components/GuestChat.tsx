@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 import CallInterface from "@/components/CallInterface";
+import { showGlobalAlert } from "@/hooks/use-alerts";
 
 interface GuestChatProps {
   guestName: string;
@@ -40,6 +40,19 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  // Al iniciar el chat, mostrar una alerta de bienvenida
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      showGlobalAlert({
+        title: "¡Bienvenido al chat de soporte!",
+        description: "Estamos aquí para ayudarte con cualquier consulta durante tu estancia.",
+        duration: 5000
+      });
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {
@@ -110,6 +123,15 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           },
           (payload) => {
             setMessages(prev => [...prev, payload.new as MessageType]);
+            
+            // Si recibimos un nuevo mensaje de recepción, mostrar alerta
+            if (!payload.new.is_guest) {
+              showGlobalAlert({
+                title: "Nuevo mensaje de recepción",
+                description: "Has recibido un nuevo mensaje de nuestro equipo.",
+                duration: 3000
+              });
+            }
           }
         )
         .subscribe();
@@ -294,7 +316,15 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           <Button
             variant="ghost"
             size="icon"
-            onClick={startCall}
+            onClick={() => {
+              startCall();
+              // Mostrar alerta sobre la llamada
+              showGlobalAlert({
+                title: "Llamada a recepción",
+                description: "Conectando con recepción. Por favor espere...",
+                duration: 3000
+              });
+            }}
             className="text-white hover:bg-white/20"
             title="Llamar a recepción"
           >
@@ -357,7 +387,18 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             type="button"
             size="icon"
             variant="outline"
-            onClick={toggleRecording}
+            onClick={() => {
+              toggleRecording();
+              if (!isRecording) {
+                // Mostrar alerta sobre grabación de audio
+                showGlobalAlert({
+                  title: "Grabando mensaje de voz",
+                  description: "Presione el mismo botón para detener la grabación.",
+                  variant: "default",
+                  duration: 5000
+                });
+              }
+            }}
             className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`}
             disabled={isLoading}
           >
@@ -397,7 +438,15 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           guestId={guestId}
           roomNumber={roomNumber}
           guestName={guestName}
-          onClose={endCall}
+          onClose={() => {
+            endCall();
+            // Mostrar alerta sobre finalización de llamada
+            showGlobalAlert({
+              title: "Llamada finalizada",
+              description: "La llamada con recepción ha terminado.",
+              duration: 3000
+            });
+          }}
         />
       )}
     </div>

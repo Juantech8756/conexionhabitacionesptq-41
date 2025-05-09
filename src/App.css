@@ -93,3 +93,20 @@ body, html {
   padding-bottom: 80px;
   padding-top: 70px;
 }
+
+/* Alert animation */
+@keyframes alert-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) translateX(-50%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+  }
+}
+
+.temporary-alert {
+  animation: alert-slide-in 0.3s ease-out forwards;
+}
+
