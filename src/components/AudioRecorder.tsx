@@ -11,7 +11,7 @@ interface AudioRecorderProps {
   isGuest?: boolean;
   isDark?: boolean;
   disabled?: boolean;
-  title?: string;  // Added title prop
+  title?: string;
 }
 
 const AudioRecorder = ({ 
@@ -103,43 +103,47 @@ const AudioRecorder = ({
     onCancel();
   };
 
+  // Solo mostrar el botón cuando no hay una vista previa
+  if (!audioUrl) {
+    return (
+      <Button
+        type="button"
+        size="icon"
+        variant="outline"
+        onClick={toggleRecording}
+        className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`}
+        disabled={disabled}
+        title={title || (isRecording ? "Detener grabación" : "Grabar mensaje de voz")}
+      >
+        {isRecording ? (
+          <MicOff className="h-4 w-4" />
+        ) : (
+          <Mic className="h-4 w-4" />
+        )}
+      </Button>
+    );
+  }
+
+  // Mostrar la vista previa del audio
   return (
-    <div className="w-full">
-      {audioUrl ? (
-        <div className="relative">
-          <AudioMessagePlayer 
-            audioUrl={audioUrl} 
-            isGuest={isGuest}
-            isDark={isDark}
-            isPreview={true}
-            onSend={handleSendAudio}
-          />
-          <Button 
-            onClick={handleCancel} 
-            variant="ghost" 
-            size="icon" 
-            className="absolute top-2 right-2 rounded-full bg-black/40 hover:bg-black/60 text-white"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      ) : (
-        <Button
-          type="button"
-          size="icon"
-          variant="outline"
-          onClick={toggleRecording}
-          className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`}
-          disabled={disabled}
-          title={title || (isRecording ? "Detener grabación" : "Grabar mensaje de voz")}
+    <div className="absolute bottom-full mb-2 w-[calc(100%-1rem)] mx-auto left-0 right-0 z-10">
+      <div className="relative shadow-lg rounded-md">
+        <AudioMessagePlayer 
+          audioUrl={audioUrl} 
+          isGuest={isGuest}
+          isDark={isDark}
+          isPreview={true}
+          onSend={handleSendAudio}
+        />
+        <Button 
+          onClick={handleCancel} 
+          variant="ghost" 
+          size="icon" 
+          className="absolute top-2 right-2 rounded-full bg-black/40 hover:bg-black/60 text-white"
         >
-          {isRecording ? (
-            <MicOff className="h-4 w-4" />
-          ) : (
-            <Mic className="h-4 w-4" />
-          )}
+          <X className="h-4 w-4" />
         </Button>
-      )}
+      </div>
     </div>
   );
 };
