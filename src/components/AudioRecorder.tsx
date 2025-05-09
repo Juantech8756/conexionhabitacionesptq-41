@@ -127,7 +127,7 @@ const AudioRecorder = ({
   // Mostrar la vista previa del audio
   return (
     <div className="absolute bottom-full mb-2 w-[calc(100%-1rem)] mx-auto left-0 right-0 z-10">
-      <div className="relative shadow-lg rounded-md">
+      <div className="relative shadow-lg rounded-md bg-white">
         <AudioMessagePlayer 
           audioUrl={audioUrl} 
           isGuest={isGuest}
