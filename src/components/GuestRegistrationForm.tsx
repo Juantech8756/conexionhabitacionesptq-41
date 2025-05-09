@@ -72,13 +72,6 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         
         // If device is already registered
         if (existingGuest) {
-          // Get room details
-          const { data: roomData } = await supabase
-            .from('rooms')
-            .select('*')
-            .eq('id', existingGuest.room_id)
-            .single();
-            
           // Automatically log them in
           toast({
             title: "Ya has registrado esta cabaña",

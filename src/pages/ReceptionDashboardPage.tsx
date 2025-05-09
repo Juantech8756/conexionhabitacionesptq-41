@@ -14,6 +14,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import CallInterface from "@/components/CallInterface";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
+import type { RoomManagementProps } from "@/components/RoomManagementProps";
+
 const ReceptionDashboardPage = () => {
   const navigate = useNavigate();
   const {
