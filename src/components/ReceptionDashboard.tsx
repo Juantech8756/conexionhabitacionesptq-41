@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { User, MessageCircle, Mic, MicOff, Send, Bell, ArrowLeft, Menu, Phone, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -73,6 +73,7 @@ const ReceptionDashboard = ({
   const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState<number>(Date.now());
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [guestToDelete, setGuestToDelete] = useState<Guest | null>(null);
   const {
     toast
   } = useToast();
@@ -419,6 +420,14 @@ const ReceptionDashboard = ({
       setSelectedGuest(null);
     }
   };
+
+  // Handle delete guest action
+  const handleDeleteGuestClick = (e: React.MouseEvent, guest: Guest) => {
+    e.stopPropagation(); // Prevent selecting the guest when clicking delete
+    setGuestToDelete(guest);
+    setIsDeleteDialogOpen(true);
+  };
+
   const handleCallGuest = () => {
     if (selectedGuest && onCallGuest) {
       onCallGuest({
@@ -820,13 +829,14 @@ const ReceptionDashboard = ({
 
   // Delete chat and all associated messages and files
   const deleteChat = async () => {
-    if (!selectedGuest) return;
+    const guestToRemove = guestToDelete || selectedGuest;
+    if (!guestToRemove) return;
     
     setIsDeleting(true);
     try {
       showGlobalAlert({
         title: "Eliminando conversación",
-        description: `Eliminando todos los mensajes con ${selectedGuest.name}...`,
+        description: `Eliminando todos los mensajes con ${guestToRemove.name}...`,
         duration: 3000
       });
       
@@ -834,7 +844,7 @@ const ReceptionDashboard = ({
       const { data: messagesToDelete, error: msgFetchError } = await supabase
         .from('messages')
         .select('*')
-        .eq('guest_id', selectedGuest.id);
+        .eq('guest_id', guestToRemove.id);
         
       if (msgFetchError) throw msgFetchError;
       
@@ -864,7 +874,7 @@ const ReceptionDashboard = ({
       const { error: deleteMessagesError } = await supabase
         .from('messages')
         .delete()
-        .eq('guest_id', selectedGuest.id);
+        .eq('guest_id', guestToRemove.id);
         
       if (deleteMessagesError) throw deleteMessagesError;
       
@@ -898,7 +908,7 @@ const ReceptionDashboard = ({
       const { error: statsDeleteError } = await supabase
         .from('response_statistics')
         .delete()
-        .eq('guest_id', selectedGuest.id);
+        .eq('guest_id', guestToRemove.id);
         
       if (statsDeleteError) {
         console.error("Error deleting response statistics:", statsDeleteError);
@@ -908,24 +918,21 @@ const ReceptionDashboard = ({
       // Clear messages from local state
       setMessages(prev => {
         const newMessages = { ...prev };
-        delete newMessages[selectedGuest.id];
+        delete newMessages[guestToRemove.id];
         return newMessages;
       });
       
-      // Reset the selected guest's stats
-      setGuests(prevGuests => prevGuests.map(g => {
-        if (g.id === selectedGuest.id) {
-          return {
-            ...g,
-            unread_messages: 0,
-            wait_time_minutes: 0
-          };
-        }
-        return g;
-      }));
+      // If the deleted guest is the currently selected guest, deselect it
+      if (selectedGuest && selectedGuest.id === guestToRemove.id) {
+        setSelectedGuest(null);
+      }
+      
+      // Remove the guest from the guests list
+      setGuests(prevGuests => prevGuests.filter(g => g.id !== guestToRemove.id));
       
       // Close the delete dialog
       setIsDeleteDialogOpen(false);
+      setGuestToDelete(null);
       
       // Force refresh guests list
       refreshGuestsList();
@@ -1073,29 +1080,47 @@ const ReceptionDashboard = ({
                 y: 0
               }} transition={{
                 duration: 0.2
-              }} className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${selectedGuest?.id === guest.id ? "bg-blue-50 border-l-4 border-l-hotel-600" : ""}`} onClick={() => selectGuest(guest)}>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium flex items-center flex-wrap">
-                              {guest.name} 
-                              <span className="ml-2 text-sm text-gray-500">
-                                Cabaña {guest.room_number}
-                              </span>
-                            </p>
-                            {getRoomInfo(guest)}
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formatLastActivity(guest.last_activity)}
-                            </p>
-                          </div>
-                          {guest.unread_messages > 0 && <motion.div initial={{
-                    scale: 0.8
-                  }} animate={{
-                    scale: 1
-                  }} className="bg-hotel-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow-md">
-                              {guest.unread_messages}
-                            </motion.div>}
+              }} className="p-4 border-b hover:bg-gray-50 transition-colors duration-200 relative">
+                      <div 
+                        className="flex justify-between items-start cursor-pointer" 
+                        onClick={() => selectGuest(guest)}
+                      >
+                        <div>
+                          <p className="font-medium flex items-center flex-wrap">
+                            {guest.name} 
+                            <span className="ml-2 text-sm text-gray-500">
+                              Cabaña {guest.room_number}
+                            </span>
+                          </p>
+                          {getRoomInfo(guest)}
+                          <p className="text-xs text-gray-500 mt-1">
+                            {formatLastActivity(guest.last_activity)}
+                          </p>
                         </div>
-                      </motion.div>)}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-100"
+                            onClick={(e) => handleDeleteGuestClick(e, guest)}
+                            title="Eliminar conversación"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Eliminar</span>
+                          </Button>
+                          
+                          {guest.unread_messages > 0 && (
+                            <motion.div 
+                              initial={{ scale: 0.8 }}
+                              animate={{ scale: 1 }}
+                              className="bg-hotel-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow-md ml-1"
+                            >
+                              {guest.unread_messages}
+                            </motion.div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>)}
                 </AnimatePresence>
               </ScrollArea>
             </motion.div> : <motion.div key="chat-view" initial={{
@@ -1151,17 +1176,18 @@ const ReceptionDashboard = ({
             </motion.div>}
         </AnimatePresence>
         
-        {/* Add DeleteChatDialog here */}
-        {selectedGuest && (
-          <DeleteChatDialog
-            isOpen={isDeleteDialogOpen}
-            guestName={selectedGuest.name}
-            roomNumber={selectedGuest.room_number}
-            onConfirm={deleteChat}
-            onCancel={() => setIsDeleteDialogOpen(false)}
-            isDeleting={isDeleting}
-          />
-        )}
+        {/* Delete chat dialog - works for both selected guest and list deletion */}
+        <DeleteChatDialog
+          isOpen={isDeleteDialogOpen}
+          guestName={(guestToDelete || selectedGuest)?.name || ""}
+          roomNumber={(guestToDelete || selectedGuest)?.room_number || ""}
+          onConfirm={deleteChat}
+          onCancel={() => {
+            setIsDeleteDialogOpen(false);
+            setGuestToDelete(null);
+          }}
+          isDeleting={isDeleting}
+        />
       </div>;
   }
 
@@ -1200,15 +1226,17 @@ const ReceptionDashboard = ({
                     duration: 0.2,
                     backgroundColor: { duration: 1 }
                   }}
-                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${
+                  className={`p-4 border-b hover:bg-gray-50 transition-colors duration-200 ${
                     selectedGuest?.id === guest.id 
                       ? "bg-blue-50 border-l-4 border-l-hotel-600" 
                       : ""
                   }`}
-                  onClick={() => selectGuest(guest)}
                 >
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div 
+                      className="cursor-pointer flex-grow" 
+                      onClick={() => selectGuest(guest)}
+                    >
                       <p className="font-medium flex items-center flex-wrap">
                         {guest.name} 
                         <span className="ml-2 text-sm text-gray-500">
@@ -1223,10 +1251,23 @@ const ReceptionDashboard = ({
                       </p>
                     </div>
                     
-                    <MessageNotificationBadge 
-                      count={guest.unread_messages}
-                      waitTime={guest.wait_time_minutes} 
-                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-100"
+                        onClick={(e) => handleDeleteGuestClick(e, guest)}
+                        title="Eliminar conversación"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Eliminar</span>
+                      </Button>
+                      
+                      <MessageNotificationBadge 
+                        count={guest.unread_messages}
+                        waitTime={guest.wait_time_minutes} 
+                      />
+                    </div>
                   </div>
                 </motion.div>
               ))
@@ -1336,6 +1377,19 @@ const ReceptionDashboard = ({
           </div>
         )}
       </div>
+      
+      {/* Delete chat dialog - works for both selected guest and list deletion */}
+      <DeleteChatDialog
+        isOpen={isDeleteDialogOpen}
+        guestName={(guestToDelete || selectedGuest)?.name || ""}
+        roomNumber={(guestToDelete || selectedGuest)?.room_number || ""}
+        onConfirm={deleteChat}
+        onCancel={() => {
+          setIsDeleteDialogOpen(false);
+          setGuestToDelete(null);
+        }}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 };

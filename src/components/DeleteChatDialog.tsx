@@ -38,7 +38,7 @@ const DeleteChatDialog = ({
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar este chat?</AlertDialogTitle>
+          <AlertDialogTitle>¿Eliminar esta conversación?</AlertDialogTitle>
           <AlertDialogDescription>
             Estás por eliminar todas las conversaciones con{" "}
             <strong>{guestName}</strong> de la cabaña{" "}
