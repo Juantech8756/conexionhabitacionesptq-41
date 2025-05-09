@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 import MediaMessage from "@/components/MediaMessage";
+import MediaUploader from "@/components/MediaUploader";
 
 type Guest = {
   id: string;
@@ -607,6 +607,54 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
     }
   };
 
+  // Handle media upload completion
+  const handleMediaUploadComplete = async (mediaUrl: string, mediaType: 'image' | 'video') => {
+    if (!selectedGuest) return;
+    
+    try {
+      // Create a new media message
+      const newMessage = {
+        guest_id: selectedGuest.id,
+        content: mediaType === 'image' ? "Imagen compartida" : "Video compartido",
+        is_guest: false,
+        is_audio: false,
+        is_media: true,
+        media_url: mediaUrl,
+        media_type: mediaType
+      };
+      
+      const { error } = await supabase
+        .from('messages')
+        .insert([newMessage]);
+      
+      if (error) throw error;
+      
+      // Mark all pending messages as responded
+      await updateResponseStatus(selectedGuest.id);
+      
+      // Reset wait time in the UI for better UX feedback
+      setSelectedGuest(prev => prev ? { ...prev, wait_time_minutes: 0 } : null);
+      
+      setGuests(prevGuests => 
+        prevGuests.map(g => 
+          g.id === selectedGuest.id ? { ...g, wait_time_minutes: 0 } : g
+        )
+      );
+
+      // Force refresh guest statistics
+      setTimeout(() => {
+        refreshGuestStatistics();
+      }, 500);
+    } catch (error) {
+      console.error("Error sending media message:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el mensaje multimedia",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Get room info if available
   const getRoomInfo = (guest: Guest) => {
     if (guest.room_id && rooms[guest.room_id]) {
@@ -784,6 +832,12 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                     )}
                   </Button>
                   
+                  <MediaUploader 
+                    guestId={selectedGuest.id} 
+                    onUploadComplete={handleMediaUploadComplete} 
+                    disabled={isRecording || isLoading} 
+                  />
+                  
                   <Input
                     placeholder="Escriba su respuesta..."
                     value={replyText}
@@ -944,14 +998,14 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                             {msg.is_audio ? (
                               <AudioMessagePlayer 
                                 audioUrl={msg.audio_url || ''} 
-                                isGuest={!msg.is_guest} 
+                                isGuest={msg.is_guest} 
                                 isDark={!msg.is_guest}
                               />
                             ) : msg.is_media ? (
                               <MediaMessage
                                 mediaUrl={msg.media_url || ''}
-                                mediaType={msg.media_type as 'image' | 'video'}
-                                isGuest={!msg.is_guest}
+                                mediaType={msg.media_type || 'image'}
+                                isGuest={msg.is_guest}
                               />
                             ) : (
                               <p>{msg.content}</p>
@@ -981,6 +1035,12 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                       <Mic className="h-5 w-5" />
                     )}
                   </Button>
+                  
+                  <MediaUploader 
+                    guestId={selectedGuest.id} 
+                    onUploadComplete={handleMediaUploadComplete} 
+                    disabled={isRecording || isLoading} 
+                  />
                   
                   <Input
                     placeholder="Escriba su respuesta..."

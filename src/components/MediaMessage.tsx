@@ -23,6 +23,15 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
     setIsOpen(true);
   };
 
+  // Style based on whether it's a guest or staff message
+  const messageStyle = isGuest 
+    ? "bg-white border border-gray-200 text-gray-800" 
+    : "bg-gradient-to-r from-hotel-600 to-hotel-500 text-white";
+
+  const imageLabelStyle = isGuest
+    ? "bg-black bg-opacity-50 text-white"
+    : "bg-white bg-opacity-50 text-black";
+
   return (
     <>
       {mediaType === 'image' ? (
@@ -39,12 +48,12 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
               }}
             />
           ) : (
-            <div className="bg-gray-100 rounded p-3 flex items-center justify-center min-h-[100px] min-w-[150px]">
+            <div className={`bg-gray-100 rounded p-3 flex items-center justify-center min-h-[100px] min-w-[150px] ${messageStyle}`}>
               <FileImage className="h-10 w-10 text-gray-400 mr-2" />
               <span className="text-sm text-gray-500">Error al cargar imagen</span>
             </div>
           )}
-          <div className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+          <div className={`absolute bottom-1 right-1 ${imageLabelStyle} text-xs px-2 py-1 rounded`}>
             Imagen
           </div>
         </div>
@@ -70,7 +79,7 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
             <div className="absolute inset-0 flex items-center justify-center">
               <FileVideo className="h-10 w-10 text-white opacity-70" />
             </div>
-            <div className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+            <div className={`absolute bottom-1 right-1 ${imageLabelStyle} text-xs px-2 py-1 rounded`}>
               Video
             </div>
           </div>

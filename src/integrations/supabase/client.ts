@@ -13,31 +13,36 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 // Check and create necessary storage buckets
 (async function initializeStorage() {
-  // Check if chat_media bucket exists
-  const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-  
-  if (listError) {
-    console.error('Error checking storage buckets:', listError);
-    return;
-  }
-
-  const chatMediaBucket = buckets?.find(bucket => bucket.name === 'chat_media');
-  
-  // Create chat_media bucket if it doesn't exist
-  if (!chatMediaBucket) {
-    console.log('Creating chat_media storage bucket...');
-    const { data, error } = await supabase.storage.createBucket('chat_media', {
-      public: true,
-      fileSizeLimit: 10485760, // 10MB limit
-      allowedMimeTypes: ['image/*', 'video/*']
-    });
+  try {
+    // Check if chat_media bucket exists
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
-    if (error) {
-      console.error('Error creating chat_media bucket:', error);
-    } else {
-      console.log('Created chat_media bucket successfully');
+    if (listError) {
+      console.error('Error checking storage buckets:', listError);
+      return;
     }
+
+    const chatMediaBucket = buckets?.find(bucket => bucket.name === 'chat_media');
+    
+    // Create chat_media bucket if it doesn't exist
+    if (!chatMediaBucket) {
+      console.log('Creating chat_media storage bucket...');
+      const { data, error } = await supabase.storage.createBucket('chat_media', {
+        public: true,
+        fileSizeLimit: 10485760, // 10MB limit
+        allowedMimeTypes: ['image/*', 'video/*']
+      });
+      
+      if (error) {
+        console.error('Error creating chat_media bucket:', error);
+      } else {
+        console.log('Created chat_media bucket successfully');
+      }
+    }
+
+    // Set up RLS and public access policies for the bucket if needed
+    // Note: This is handled server-side and would require additional SQL queries
+  } catch (err) {
+    console.error('Failed to initialize storage:', err);
   }
-})().catch(err => {
-  console.error('Failed to initialize storage:', err);
-});
+})();
