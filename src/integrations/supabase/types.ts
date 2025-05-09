@@ -56,6 +56,9 @@ export type Database = {
           id: string
           is_audio: boolean
           is_guest: boolean
+          is_media: boolean
+          media_type: string | null
+          media_url: string | null
           responded_at: string | null
           response_time: number | null
         }
@@ -67,6 +70,9 @@ export type Database = {
           id?: string
           is_audio?: boolean
           is_guest?: boolean
+          is_media?: boolean
+          media_type?: string | null
+          media_url?: string | null
           responded_at?: string | null
           response_time?: number | null
         }
@@ -78,6 +84,9 @@ export type Database = {
           id?: string
           is_audio?: boolean
           is_guest?: boolean
+          is_media?: boolean
+          media_type?: string | null
+          media_url?: string | null
           responded_at?: string | null
           response_time?: number | null
         }

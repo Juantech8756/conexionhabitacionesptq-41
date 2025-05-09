@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile"; 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
+import MediaMessage from "@/components/MediaMessage";
 
 type Guest = {
   id: string;
@@ -37,6 +38,8 @@ type Message = {
   audio_url?: string;
   created_at: string;
   responded_at: string | null;
+  media_url?: string;
+  media_type?: 'image' | 'video';
 };
 
 interface ReceptionDashboardProps {
@@ -923,17 +926,23 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                           className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'}`}
                         >
                           <div
-                            className={`max-w-[80%] p-3 rounded-lg shadow-sm ${
+                            className={`max-w-[80%] rounded-lg shadow-sm ${
                               msg.is_guest 
                                 ? 'bg-white border border-gray-200 text-gray-800' 
                                 : 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white'
-                            } ${msg.is_audio ? 'overflow-hidden' : ''}`}
+                            } ${msg.is_audio || msg.is_media ? 'overflow-hidden p-0' : 'p-3'}`}
                           >
                             {msg.is_audio ? (
                               <AudioMessagePlayer 
                                 audioUrl={msg.audio_url || ''} 
                                 isGuest={!msg.is_guest} 
                                 isDark={!msg.is_guest}
+                              />
+                            ) : msg.is_media ? (
+                              <MediaMessage
+                                mediaUrl={msg.media_url || ''}
+                                mediaType={msg.media_type as 'image' | 'video'}
+                                isGuest={!msg.is_guest}
                               />
                             ) : (
                               <p>{msg.content}</p>

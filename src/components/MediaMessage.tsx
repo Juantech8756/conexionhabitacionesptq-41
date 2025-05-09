@@ -16,6 +16,8 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
     setIsOpen(true);
   };
 
+  console.log("Rendering media message:", { mediaUrl, mediaType });
+
   return (
     <>
       {mediaType === 'image' ? (
@@ -25,6 +27,11 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
             alt="Imagen enviada"
             className="max-w-full rounded max-h-40 object-contain"
             loading="lazy"
+            onError={(e) => {
+              console.error("Failed to load image:", e);
+              (e.target as HTMLImageElement).src = "/placeholder.svg";
+              (e.target as HTMLImageElement).alt = "Error al cargar imagen";
+            }}
           />
           <div className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
             Imagen
@@ -37,6 +44,14 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
               src={mediaUrl}
               className="max-h-40 max-w-full"
               preload="metadata"
+              onError={(e) => {
+                console.error("Failed to load video:", e);
+                const videoEl = e.target as HTMLVideoElement;
+                const parentEl = videoEl.parentElement;
+                if (parentEl) {
+                  parentEl.innerHTML = '<div class="p-2 text-white text-xs">Error al cargar video</div>';
+                }
+              }}
             />
             <div className="absolute inset-0 flex items-center justify-center">
               <FileVideo className="h-10 w-10 text-white opacity-70" />
@@ -55,6 +70,10 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
               src={mediaUrl} 
               alt="Imagen enviada" 
               className="max-w-full max-h-[calc(80vh-2rem)] object-contain"
+              onError={(e) => {
+                console.error("Failed to load fullsize image:", e);
+                (e.target as HTMLImageElement).src = "/placeholder.svg";
+              }}
             />
           ) : (
             <video 
@@ -62,6 +81,14 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
               controls 
               className="max-w-full max-h-[calc(80vh-2rem)]"
               autoPlay
+              onError={(e) => {
+                console.error("Failed to load fullsize video:", e);
+                const videoEl = e.target as HTMLVideoElement;
+                const parentEl = videoEl.parentElement;
+                if (parentEl) {
+                  parentEl.innerHTML = '<div class="p-4 text-center">Error al cargar video</div>';
+                }
+              }}
             />
           )}
         </DialogContent>

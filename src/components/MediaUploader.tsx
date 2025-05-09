@@ -61,23 +61,34 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
     });
 
     try {
+      console.log("Starting file upload...");
+      
       // Create folder structure: media/{guestId}/{fileType}s/
       const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
       const filePath = `media/${guestId}/${fileType}s/${fileName}`;
 
+      console.log("Uploading to path:", filePath);
+      
       // Upload to Supabase Storage
       const { data, error } = await supabase
         .storage
         .from('chat_media')
         .upload(filePath, file);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Upload error:", error);
+        throw error;
+      }
+
+      console.log("Upload successful:", data);
 
       // Get public URL for the uploaded file
       const { data: publicUrlData } = supabase
         .storage
         .from('chat_media')
         .getPublicUrl(filePath);
+
+      console.log("Got public URL:", publicUrlData.publicUrl);
 
       // Pass the URL back to the parent component
       onUploadComplete(publicUrlData.publicUrl, fileType as 'image' | 'video');
