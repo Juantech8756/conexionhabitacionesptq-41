@@ -12,8 +12,6 @@ import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 import MediaMessage from "@/components/MediaMessage";
 import MediaUploader from "@/components/MediaUploader";
 import { showGlobalAlert } from "@/hooks/use-alerts";
-import AudioRecorder from "@/components/AudioRecorder";
-
 type Guest = {
   id: string;
   name: string;
@@ -64,7 +62,6 @@ const ReceptionDashboard = ({
   const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
   const [showGuestList, setShowGuestList] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const {
     toast
   } = useToast();
@@ -407,10 +404,7 @@ const ReceptionDashboard = ({
   };
   const handleSend = async () => {
     if (!selectedGuest) return;
-    if (audioBlob) {
-      // If there's a file pending upload, upload it first
-      await handleSendAudio();
-    } else if (selectedFile) {
+    if (selectedFile) {
       // If there's a file pending upload, upload it first
       await handleFileUpload();
     } else if (replyText.trim() !== "") {
@@ -646,93 +640,6 @@ const ReceptionDashboard = ({
       stopRecording();
     } else {
       startRecording();
-    }
-  };
-
-  const handleAudioRecorded = (blob: Blob) => {
-    setAudioBlob(blob);
-  };
-
-  const handleCancelAudio = () => {
-    setAudioBlob(null);
-  };
-
-  const handleSendAudio = async () => {
-    if (!audioBlob || !selectedGuest) return;
-    
-    setIsLoading(true);
-    showGlobalAlert({
-      title: "Enviando mensaje de voz",
-      description: "Por favor espere mientras se envía el mensaje de voz...",
-      duration: 2000
-    });
-    
-    try {
-      // Upload audio to Supabase Storage
-      const fileName = `audio_${Date.now()}_reception.webm`;
-      const { data: uploadData, error: uploadError } = await supabase
-        .storage
-        .from('audio_messages')
-        .upload(fileName, audioBlob);
-      
-      if (uploadError) throw uploadError;
-      
-      // Get public URL
-      const { data: publicUrlData } = supabase
-        .storage
-        .from('audio_messages')
-        .getPublicUrl(fileName);
-      
-      // Add message with audio
-      const newAudioMessage = {
-        guest_id: selectedGuest.id,
-        content: "Mensaje de voz",
-        is_guest: false,
-        is_audio: true,
-        audio_url: publicUrlData.publicUrl
-      };
-      
-      const { error: messageError } = await supabase
-        .from('messages')
-        .insert([newAudioMessage]);
-      
-      if (messageError) throw messageError;
-      
-      // Mark all pending messages as responded
-      await updateResponseStatus(selectedGuest.id);
-      
-      // Immediately reset wait time in UI
-      setSelectedGuest(prev => prev ? {
-        ...prev,
-        wait_time_minutes: 0
-      } : null);
-      
-      setGuests(prevGuests => prevGuests.map(g => g.id === selectedGuest.id ? {
-        ...g,
-        wait_time_minutes: 0
-      } : g));
-      
-      // Force refresh statistics to ensure wait time is properly updated
-      setTimeout(() => {
-        refreshGuestStatistics();
-      }, 500);
-      
-      // Clear audio blob
-      setAudioBlob(null);
-      
-      toast({
-        title: "Mensaje de voz enviado",
-        description: "El mensaje de voz se ha enviado correctamente."
-      });
-    } catch (error) {
-      console.error("Error uploading audio:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar el mensaje de voz",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -1026,59 +933,18 @@ const ReceptionDashboard = ({
             
             <div className="p-4 border-t bg-white">
               <div className="flex items-center space-x-2 max-w-3xl mx-auto">
-                {audioBlob ? (
-                  <div className="flex-grow">
-                    <AudioMessagePlayer 
-                      audioUrl={URL.createObjectURL(audioBlob)} 
-                      isPreview={true}
-                      onSend={handleSendAudio}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCancelAudio}
-                      className="mt-2 text-gray-500"
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <AudioRecorder 
-                      onAudioRecorded={handleAudioRecorded} 
-                      onCancel={handleCancelAudio}
-                      disabled={isLoading || !!selectedFile}
-                      title={isRecording ? "Detener grabación" : "Grabar mensaje de voz"}
-                    />
-                    
-                    <MediaUploader 
-                      guestId={selectedGuest.id} 
-                      onUploadComplete={handleMediaUploadComplete} 
-                      disabled={isLoading || !!audioBlob} 
-                      onFileSelect={handleFileSelect}
-                      selectedFile={selectedFile} 
-                    />
-                    
-                    <Input 
-                      placeholder="Escriba su respuesta..." 
-                      value={replyText} 
-                      onChange={e => setReplyText(e.target.value)} 
-                      onKeyPress={e => e.key === "Enter" && !e.shiftKey && handleSend()} 
-                      className="flex-grow" 
-                      disabled={isLoading || !!audioBlob || !!selectedFile} 
-                    />
-                    
-                    <Button 
-                      type="button" 
-                      onClick={handleSend} 
-                      disabled={(replyText.trim() === "" && !selectedFile && !audioBlob) || isLoading} 
-                      className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600"
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      Enviar
-                    </Button>
-                  </>
-                )}
+                <Button type="button" size="icon" variant="outline" onClick={toggleRecording} className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`} disabled={isLoading} title={isRecording ? "Detener grabación" : "Grabar mensaje de voz"}>
+                  {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+                
+                <MediaUploader guestId={selectedGuest.id} onUploadComplete={handleMediaUploadComplete} disabled={isRecording || isLoading} onFileSelect={handleFileSelect} selectedFile={selectedFile} />
+                
+                <Input placeholder="Escriba su respuesta..." value={replyText} onChange={e => setReplyText(e.target.value)} onKeyPress={e => e.key === "Enter" && !e.shiftKey && handleSend()} className="flex-grow" disabled={isRecording || isLoading} />
+                
+                <Button type="button" onClick={handleSend} disabled={replyText.trim() === "" && !selectedFile || isRecording || isLoading} className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600">
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar
+                </Button>
               </div>
             </div>
           </> : <div className="flex items-center justify-center h-full">

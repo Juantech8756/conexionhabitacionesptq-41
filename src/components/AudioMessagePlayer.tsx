@@ -1,25 +1,16 @@
 
 import { useState, useRef, useEffect } from "react";
-import { Play, Pause, AudioWaveform, Send } from "lucide-react";
+import { Play, Pause, AudioWaveform } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 
 interface AudioMessagePlayerProps {
   audioUrl: string;
   isGuest?: boolean;
   isDark?: boolean;
-  isPreview?: boolean;
-  onSend?: () => void;
 }
 
-const AudioMessagePlayer = ({ 
-  audioUrl, 
-  isGuest = false, 
-  isDark = false, 
-  isPreview = false,
-  onSend 
-}: AudioMessagePlayerProps) => {
+const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: AudioMessagePlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -174,28 +165,12 @@ const AudioMessagePlayer = ({
         <div className={`text-xs font-medium ${textColorClass} min-w-[38px] text-right`}>
           {formatTime(currentTime)}
         </div>
-        
-        {/* Send button (only shown in preview mode) */}
-        {isPreview && onSend && (
-          <Button
-            type="button"
-            size="icon"
-            onClick={() => onSend()}
-            className={`ml-2 flex-shrink-0 ${isDark || isGuest 
-              ? 'bg-white/20 hover:bg-white/30 text-white' 
-              : 'bg-hotel-500 hover:bg-hotel-600 text-white'}`}
-            title="Enviar mensaje de voz"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        )}
       </div>
       
       {/* Audio info */}
       <div className={`flex items-center justify-center mt-3 text-xs ${textColorClass} opacity-70`}>
         <AudioWaveform className="h-3 w-3 mr-1.5" />
         <span>{isLoaded ? "Mensaje de voz" : "Cargando..."}</span>
-        {isPreview && <span className="ml-1">(Vista previa)</span>}
       </div>
     </div>
   );
