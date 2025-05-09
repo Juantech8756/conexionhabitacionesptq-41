@@ -27,37 +27,45 @@ const GuestPortal = () => {
   const [roomData, setRoomData] = useState<{room_number: string, type: string | null, status: string | null} | null>(null);
   // Flag to prevent duplicate toasts
   const [hasShownRegistrationToast, setHasShownRegistrationToast] = useState(false);
+  // State to track if we're checking registration
+  const [isCheckingRegistration, setIsCheckingRegistration] = useState(true);
 
   // Check if the user has registered previously and load their chat
   useEffect(() => {
     const checkRegistration = async () => {
       console.log("Checking registration status with roomIdFromUrl:", roomIdFromUrl);
+      setIsCheckingRegistration(true);
       
-      // Usar la nueva versión de checkExistingRegistration que incluye el roomIdFromUrl
-      const existingGuest = await checkExistingRegistration(false, roomIdFromUrl || undefined);
-      
-      if (existingGuest) {
-        console.log("Found existing guest registration:", existingGuest);
-        setGuestName(existingGuest.name);
-        setRoomNumber(existingGuest.room_number);
-        setGuestId(existingGuest.id);
-        setRoomId(existingGuest.room_id || '');
-        setIsRegistered(true);
+      try {
+        // Use the updated checkExistingRegistration that handles QR codes better
+        const existingGuest = await checkExistingRegistration(false, roomIdFromUrl || undefined);
         
-        // Mostrar un toast informando al usuario que está continuando su sesión
-        if (!hasShownRegistrationToast) {
-          toast({
-            title: "Sesión recuperada",
-            description: `Bienvenido de nuevo, ${existingGuest.name}. Continuando en la cabaña ${existingGuest.room_number}`,
-            duration: 3000,
-          });
-          setHasShownRegistrationToast(true);
+        if (existingGuest) {
+          console.log("Found existing guest registration:", existingGuest);
+          setGuestName(existingGuest.name);
+          setRoomNumber(existingGuest.room_number);
+          setGuestId(existingGuest.id);
+          setRoomId(existingGuest.room_id || '');
+          setIsRegistered(true);
+          
+          // Show toast for returning users only once
+          if (!hasShownRegistrationToast) {
+            toast({
+              title: "Sesión recuperada",
+              description: `Bienvenido de nuevo, ${existingGuest.name}. Continuando en la cabaña ${existingGuest.room_number}`,
+              duration: 3000,
+            });
+            setHasShownRegistrationToast(true);
+          }
+        } else {
+          console.log("No existing registration found or new room requested via QR, showing form");
+          setIsRegistered(false);
         }
-      } else {
-        console.log("No existing registration found or new room requested, showing form");
-        
-        // Si no hay registro o es una habitación diferente, reiniciamos el estado para mostrar el formulario
+      } catch (error) {
+        console.error("Error during registration check:", error);
         setIsRegistered(false);
+      } finally {
+        setIsCheckingRegistration(false);
       }
     };
     
@@ -69,14 +77,20 @@ const GuestPortal = () => {
     const fetchRoomData = async () => {
       if (roomIdFromUrl) {
         try {
+          console.log("Fetching room data for room ID:", roomIdFromUrl);
           const { data, error } = await supabase
             .from('rooms')
             .select('room_number, type, status')
             .eq('id', roomIdFromUrl)
             .single();
           
-          if (error) throw error;
+          if (error) {
+            console.error("Error fetching room data:", error);
+            throw error;
+          }
+          
           if (data) {
+            console.log("Room data fetched:", data);
             setRoomData(data);
             setShowWelcome(true);
             
@@ -105,7 +119,7 @@ const GuestPortal = () => {
             }
           }
         } catch (error) {
-          console.error("Error fetching room data:", error);
+          console.error("Error in room data fetch:", error);
         }
       }
     };
@@ -114,20 +128,32 @@ const GuestPortal = () => {
   }, [roomIdFromUrl, isRegistered, roomId]);
 
   const handleRegister = async (name: string, room: string, id: string, newRoomId: string) => {
-    console.log("Registro exitoso, configurando chat...", {name, room, id, newRoomId});
-    // Guardar información de usuario
+    console.log("Registration successful, setting up chat...", {name, room, id, newRoomId});
+    
+    if (!id) {
+      console.error("Error: Received empty guest ID during registration");
+      toast({
+        title: "Error en el registro",
+        description: "No se pudo completar el registro. ID de invitado no válido.",
+        variant: "destructive",
+        duration: 4000,
+      });
+      return;
+    }
+    
+    // Save user information
     setGuestName(name);
     setRoomNumber(room);
     setGuestId(id);
     setRoomId(newRoomId);
     
-    // Guardar en localStorage para futuras visitas - USANDO CLAVES CONSISTENTES
+    // Save in localStorage for future visits - USING CONSISTENT KEYS
     localStorage.setItem("guest_id", id);
     localStorage.setItem("guestName", name);
     localStorage.setItem("roomNumber", room);
     localStorage.setItem("roomId", newRoomId);
     
-    // Mostrar toast solo si no se ha mostrado antes
+    // Show toast only if not shown before
     if (!hasShownRegistrationToast) {
       toast({
         title: "¡Registro exitoso!",
@@ -137,7 +163,7 @@ const GuestPortal = () => {
       setHasShownRegistrationToast(true);
     }
     
-    // Actualizar el estado isRegistered inmediatamente
+    // Update isRegistered state immediately
     setIsRegistered(true);
   };
 
@@ -168,6 +194,18 @@ const GuestPortal = () => {
         return type;
     }
   };
+
+  // Show loading indicator while checking registration
+  if (isCheckingRegistration) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center justify-center p-6 bg-white shadow-lg rounded-lg">
+          <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
+          <p className="text-gray-700">Verificando su registro...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-gray-50 overflow-x-hidden">

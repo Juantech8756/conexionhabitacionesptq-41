@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,10 +45,11 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   const location = useLocation();
   const [initialCheckDone, setInitialCheckDone] = useState(false);
   
-  // Cargamos el nombre del visitante de localStorage si existe
+  // Load visitor's name from localStorage if it exists
   useEffect(() => {
     const savedName = localStorage.getItem("guestName");
     if (savedName) {
+      console.log("Loaded saved guest name:", savedName);
       setGuestName(savedName);
     }
   }, []);
@@ -55,19 +57,23 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   // Check for existing registration once on component mount
   useEffect(() => {
     const handleExistingRegistration = async () => {
+      console.log("GuestRegistrationForm: Checking for existing registration");
+      
       // Check if we're coming from a QR code scan
       const queryParams = new URLSearchParams(location.search);
       const roomParam = queryParams.get('room');
       
-      // Si tenemos un roomId del QR o preseleccionado, verificamos si ya estamos registrados para ese room
+      // If we have a roomId from the QR or preselected, verify if we're already registered for that room
       const roomIdToCheck = roomParam || preselectedRoomId;
       
       if (roomIdToCheck) {
+        console.log("QR code or preselected room ID detected:", roomIdToCheck);
+        
         const existingGuest = await checkExistingRegistration(false, roomIdToCheck);
         
         if (existingGuest) {
-          // Si ya estamos registrados para esta habitación, simplemente continuamos la sesión
-          console.log("Continuing existing session for room", roomIdToCheck);
+          console.log("User is already registered for this room. Continuing session.");
+          // If we're already registered for this room, continue the session
           onRegister(
             existingGuest.name, 
             existingGuest.room_number, 
@@ -75,18 +81,18 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
             existingGuest.room_id || roomIdToCheck
           );
         } else {
-          // Si no estamos registrados para esta habitación específica,
-          // mostramos el formulario con la habitación preseleccionada
-          console.log("No existing registration for this room found, showing form with preselected room");
+          // If not registered for this room, show the form with the room preselected
+          console.log("No existing registration for this room. Showing form with preselected room.");
           setInitialCheckDone(true);
         }
       } else {
-        // Si no hay roomId en la URL, hacemos la verificación estándar
+        // If no room ID in URL, perform standard check
+        console.log("No room ID in URL. Performing standard registration check.");
         const existingGuest = await checkExistingRegistration();
         
         if (existingGuest) {
-          // Si tenemos un registro existente sin QR code específico, lo usamos
-          console.log("Found existing registration without QR code, continuing session");
+          // If there's an existing registration without specific QR code, use it
+          console.log("Found existing general registration. Continuing session.");
           onRegister(
             existingGuest.name, 
             existingGuest.room_number, 
@@ -94,6 +100,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
             existingGuest.room_id || ''
           );
         } else {
+          console.log("No existing registration found. Showing registration form.");
           setInitialCheckDone(true);
         }
       }
@@ -106,9 +113,11 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   // Fetch available rooms
   useEffect(() => {
     const fetchRooms = async () => {
-      if (!initialCheckDone) return; // Solo cargamos habitaciones después de verificar la sesión
+      if (!initialCheckDone) return; // Only load rooms after checking the session
       
+      console.log("Fetching available rooms and room details");
       setIsLoadingRooms(true);
+      
       try {
         // Check if we're coming from a QR code scan
         const queryParams = new URLSearchParams(location.search);
@@ -117,30 +126,40 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         // If we have a room parameter or preselectedRoomId, prioritize it
         const roomIdToSelect = roomParam || preselectedRoomId;
         
-        const { data, error } = await supabase
+        // Fetch available rooms
+        const { data: availableRooms, error } = await supabase
           .from('rooms')
           .select('*')
           .eq('status', 'available')
           .order('room_number', { ascending: true });
 
-        if (error) throw error;
-        setRooms(data || []);
+        if (error) {
+          console.error("Error fetching available rooms:", error);
+          throw error;
+        }
+        
+        setRooms(availableRooms || []);
+        console.log(`Fetched ${availableRooms?.length || 0} available rooms`);
 
-        // If we have a roomIdToSelect, try to find it
+        // If we have a roomIdToSelect, fetch its details even if not available
         if (roomIdToSelect) {
-          // Also fetch the specific room if it's not in the available rooms
+          console.log("Fetching details for the preselected room:", roomIdToSelect);
           const { data: roomData, error: roomError } = await supabase
             .from('rooms')
             .select('*')
             .eq('id', roomIdToSelect)
             .single();
 
-          if (!roomError && roomData) {
+          if (roomError) {
+            console.error("Error fetching preselected room:", roomError);
+          } else if (roomData) {
+            console.log("Found preselected room:", roomData);
             setSelectedRoomId(roomData.id);
             setPreselectedRoom(roomData);
             
-            // If the room isn't available, show a message
+            // Show a message if the room isn't available
             if (roomData.status !== 'available') {
+              console.log(`Room ${roomData.room_number} status: ${roomData.status}`);
               toast({
                 title: "Atención",
                 description: `La cabaña ${roomData.room_number} está marcada como ${roomData.status === 'occupied' ? 'ocupada' : roomData.status}. Por favor seleccione otra cabaña si es necesario.`,
@@ -151,7 +170,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
           }
         }
       } catch (error) {
-        console.error("Error fetching rooms:", error);
+        console.error("Error in room fetching process:", error);
         toast({
           title: "Error",
           description: "No se pudieron cargar las cabañas",
@@ -194,9 +213,18 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
     try {
       // Find room number from selected room id
       const selectedRoom = preselectedRoom || rooms.find(room => room.id === selectedRoomId);
-      if (!selectedRoom) throw new Error("Cabaña no encontrada");
+      if (!selectedRoom) {
+        console.error("Room not found:", { selectedRoomId, preselectedRoom });
+        throw new Error("Cabaña no encontrada");
+      }
       
       const finalRoomId = selectedRoom.id;
+      console.log("Registering guest for room:", { 
+        roomId: finalRoomId, 
+        roomNumber: selectedRoom.room_number,
+        guestName,
+        guestCount
+      });
 
       // Update the selected room to occupied status
       const { error: updateError } = await supabase
@@ -204,7 +232,10 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         .update({ status: 'occupied' })
         .eq('id', finalRoomId);
         
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Error updating room status:", updateError);
+        throw updateError;
+      }
 
       // Insert guest into Supabase with guest count
       const { data: guest, error } = await supabase
@@ -220,9 +251,19 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         .select('id')
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating guest record:", error);
+        throw error;
+      }
       
-      // Solo mostrar toast si se solicita explícitamente (para evitar duplicados)
+      if (!guest || !guest.id) {
+        console.error("No guest ID returned after insert");
+        throw new Error("Error al crear registro de invitado");
+      }
+      
+      console.log("Guest registered successfully with ID:", guest.id);
+      
+      // Only show toast if explicitly requested (to avoid duplicates)
       if (showSuccessToast) {
         toast({
           title: "¡Registro exitoso!",
@@ -231,18 +272,16 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         });
       }
       
-      // Store the guest ID and room ID in localStorage for persistence
-      if (guest && guest.id) {
-        localStorage.setItem('guest_id', guest.id);
-        localStorage.setItem('guestName', guestName);
-        localStorage.setItem('roomNumber', selectedRoom.room_number);
-        localStorage.setItem('roomId', finalRoomId);
-      }
+      // Store guest info in localStorage for persistence
+      localStorage.setItem('guest_id', guest.id);
+      localStorage.setItem('guestName', guestName);
+      localStorage.setItem('roomNumber', selectedRoom.room_number);
+      localStorage.setItem('roomId', finalRoomId);
       
-      // Limpiar cualquier toast previo de error que pudiera estar visible
+      // Clear any previous error toasts
       onRegister(guestName, selectedRoom.room_number, guest.id, finalRoomId);
     } catch (error) {
-      console.error("Error registering guest:", error);
+      console.error("Error in guest registration process:", error);
       toast({
         title: "Error de registro",
         description: "No se pudo completar el registro. Por favor intente nuevamente.",
@@ -268,7 +307,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   };
 
   if (!initialCheckDone) {
-    // Mostramos un indicador de carga mientras verificamos la sesión
+    // Show loading indicator while checking session
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
         <div className="flex flex-col items-center justify-center">

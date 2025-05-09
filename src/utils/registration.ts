@@ -13,27 +13,50 @@ export type GuestRegistration = {
 // Function to check if there's an existing guest registration using localStorage
 export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFromQR?: string): Promise<GuestRegistration> => {
   try {
+    console.log("Checking registration with params:", { skipRedirect, roomIdFromQR });
     // Get guest ID from localStorage if it exists
     const guestId = localStorage.getItem('guest_id');
     const storedRoomId = localStorage.getItem('roomId');
-    
-    // Si hay un roomIdFromQR y un guestId existente, verificamos si es el mismo room
+
+    // If we have a QR code scan and existing registration
     if (guestId && roomIdFromQR) {
-      console.log(`QR scan detected with room ID: ${roomIdFromQR}. Checking if user is already registered for this room.`);
+      console.log(`QR scan detected with room ID: ${roomIdFromQR}. Current stored room: ${storedRoomId}`);
       
-      // Si el usuario ya está registrado, comprobamos si es para la misma habitación
+      // Check if user is registered for this exact room
       if (storedRoomId === roomIdFromQR) {
-        console.log("User is already registered for this room. Continuing to chat.");
-        // Es la misma habitación, continuamos con la sesión existente
-        skipRedirect = false;
-      } else {
-        console.log("User is registered for a different room. Showing registration form for new room.");
-        // Es una habitación diferente, mostramos el formulario
-        return null;
-      }
+        console.log("User is already registered for this room. Continuing with existing session.");
+        
+        // Look up the guest using their ID to make sure the record still exists in DB
+        const { data: existingGuest, error: guestError } = await supabase
+          .from('guests')
+          .select('id, name, room_number, guest_count, room_id')
+          .eq('id', guestId)
+          .maybeSingle();
+        
+        if (guestError) {
+          console.error("Error fetching guest record:", guestError);
+          return null;
+        }
+        
+        if (!existingGuest) {
+          console.log("Guest record no longer exists in database. Clearing localStorage.");
+          localStorage.removeItem('guest_id');
+          localStorage.removeItem('guestName');
+          localStorage.removeItem('roomNumber');
+          localStorage.removeItem('roomId');
+          return null;
+        }
+        
+        // Return the existing guest data
+        return existingGuest;
+      } 
+      
+      // If it's a different room, we'll allow the user to register for the new room
+      console.log("User is registered for a different room. Will show registration form for new room.");
+      return null;
     }
     
-    // Si no hay ID de invitado almacenado, retornamos null para mostrar el formulario
+    // If no guest ID in localStorage, show the registration form
     if (!guestId) {
       console.log("No existing registration found, showing registration form");
       return null;
@@ -60,8 +83,7 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
       return null;
     }
     
-    // Si llegamos aquí, el usuario está registrado correctamente
-    // Si el roomIdFromQR coincide con el almacenado, mantenemos la sesión
+    console.log("Found valid existing registration:", data);
     return data;
   } catch (error) {
     console.error("Error checking existing registration:", error);
