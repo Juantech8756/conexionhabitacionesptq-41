@@ -94,7 +94,7 @@ const CallInterface = ({
             showGlobalAlert({
               title: "Conexión interrumpida",
               description: "Intentando reconectar...",
-              variant: "warning",
+              variant: "destructive",
               duration: 3000
             });
             break;
@@ -111,7 +111,7 @@ const CallInterface = ({
               showGlobalAlert({
                 title: `Intento de reconexión (${reconnectionAttempts.current}/${maxReconnectionAttempts})`,
                 description: "Intentando restablecer la llamada...",
-                variant: "warning",
+                variant: "destructive",
                 duration: 3000
               });
               // Attempt reconnection logic here
@@ -251,7 +251,7 @@ const CallInterface = ({
             showGlobalAlert({
               title: "Llamada entrante",
               description: `${isGuest ? "Recepción" : guestName} está llamando`,
-              variant: "info",
+              variant: "default",
               duration: 10000
             });
           } catch (error) {
@@ -821,6 +821,7 @@ const CallInterface = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.2 }}
         className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center"
       >
         <div className={`relative bg-gray-900 rounded-lg overflow-hidden ${isMobile ? 'w-full h-full' : 'w-4/5 h-4/5 max-w-4xl'}`}>
