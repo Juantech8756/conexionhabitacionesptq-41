@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { checkExistingRegistration } from "@/utils/registration";
+import { useLocation } from "react-router-dom";
 
 interface GuestRegistrationFormProps {
   onRegister: (guestName: string, roomNumber: string, guestId: string) => void;
@@ -40,13 +42,22 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [preselectedRoom, setPreselectedRoom] = useState<Room | null>(null);
+  const location = useLocation();
 
   // Check for existing registration once on component mount
   useEffect(() => {
     const handleExistingRegistration = async () => {
-      const existingGuest = await checkExistingRegistration();
+      // Check if we're coming from a QR code scan
+      const queryParams = new URLSearchParams(location.search);
+      const roomParam = queryParams.get('room');
       
-      if (existingGuest) {
+      // If we have a room parameter from QR, we want to skip redirect and show the form
+      // This ensures users who scan a QR code always see the registration form
+      const skipRedirect = !!roomParam || !!preselectedRoomId;
+      
+      const existingGuest = await checkExistingRegistration(skipRedirect);
+      
+      if (existingGuest && !skipRedirect) {
         toast({
           title: "Ya has registrado esta cabaña",
           description: `Continúas como ${existingGuest.name} en la cabaña ${existingGuest.room_number}`,
@@ -66,6 +77,13 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
     const fetchRooms = async () => {
       setIsLoadingRooms(true);
       try {
+        // Check if we're coming from a QR code scan
+        const queryParams = new URLSearchParams(location.search);
+        const roomParam = queryParams.get('room');
+        
+        // If we have a room parameter or preselectedRoomId, prioritize it
+        const roomIdToSelect = roomParam || preselectedRoomId;
+        
         const { data, error } = await supabase
           .from('rooms')
           .select('*')
@@ -75,13 +93,13 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         if (error) throw error;
         setRooms(data || []);
 
-        // If we have a preselectedRoomId, try to find it
-        if (preselectedRoomId) {
+        // If we have a roomIdToSelect, try to find it
+        if (roomIdToSelect) {
           // Also fetch the specific room if it's not in the available rooms
           const { data: roomData, error: roomError } = await supabase
             .from('rooms')
             .select('*')
-            .eq('id', preselectedRoomId)
+            .eq('id', roomIdToSelect)
             .single();
 
           if (!roomError && roomData) {
@@ -113,7 +131,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
     };
 
     fetchRooms();
-  }, [toast, preselectedRoomId]);
+  }, [toast, preselectedRoomId, location.search]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,7 +171,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         
       if (updateError) throw updateError;
 
-      // Insert guest into Supabase (removed device_id)
+      // Insert guest into Supabase with guest count
       const { data: guest, error } = await supabase
         .from('guests')
         .insert([

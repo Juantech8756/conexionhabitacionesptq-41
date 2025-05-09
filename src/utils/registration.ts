@@ -9,7 +9,7 @@ export type GuestRegistration = {
 } | null;
 
 // Function to check if there's an existing guest registration using localStorage
-export const checkExistingRegistration = async (): Promise<GuestRegistration> => {
+export const checkExistingRegistration = async (skipRedirect?: boolean): Promise<GuestRegistration> => {
   try {
     // Get guest ID from localStorage if it exists
     const guestId = localStorage.getItem('guest_id');
@@ -31,9 +31,18 @@ export const checkExistingRegistration = async (): Promise<GuestRegistration> =>
       return null;
     }
     
+    // If we're checking from QR code scan (skipRedirect is true), 
+    // return null so the form shows regardless of previous registration
+    if (skipRedirect) {
+      // Clear existing registration when a new QR code is scanned
+      localStorage.removeItem('guest_id');
+      return null;
+    }
+    
     return data;
   } catch (error) {
     console.error("Error checking existing registration:", error);
     return null;
   }
 };
+

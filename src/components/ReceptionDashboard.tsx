@@ -227,7 +227,7 @@ const ReceptionDashboard = ({
       const {
         data: guestsData,
         error: guestsError
-      } = await supabase.from('guests').select('id, name, room_number, room_id, created_at');
+      } = await supabase.from('guests').select('id, name, room_number, room_id, created_at, guest_count');
       
       if (guestsError) throw guestsError;
       if (!guestsData) return;
@@ -255,7 +255,7 @@ const ReceptionDashboard = ({
           last_activity: latestMessage?.created_at || guest.created_at,
           unread_messages: guestStats.pending_messages || 0,
           wait_time_minutes: guestStats.wait_time_minutes || 0,
-          guest_count: guestStats.guest_count || null
+          guest_count: guest.guest_count || null  // Make sure we include the guest count
         };
       }));
 
