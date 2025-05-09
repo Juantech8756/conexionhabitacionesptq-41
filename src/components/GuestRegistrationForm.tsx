@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,7 @@ import { checkExistingRegistration } from "@/utils/registration";
 import { useLocation } from "react-router-dom";
 
 interface GuestRegistrationFormProps {
-  onRegister: (guestName: string, roomNumber: string, guestId: string) => void;
+  onRegister: (guestName: string, roomNumber: string, guestId: string, roomId: string) => void;
   preselectedRoomId?: string;
   showSuccessToast?: boolean;
 }
@@ -43,6 +42,15 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   const isMobile = useIsMobile();
   const [preselectedRoom, setPreselectedRoom] = useState<Room | null>(null);
   const location = useLocation();
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
+  
+  // Cargamos el nombre del visitante de localStorage si existe
+  useEffect(() => {
+    const savedName = localStorage.getItem("guestName");
+    if (savedName) {
+      setGuestName(savedName);
+    }
+  }, []);
 
   // Check for existing registration once on component mount
   useEffect(() => {
@@ -51,20 +59,43 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
       const queryParams = new URLSearchParams(location.search);
       const roomParam = queryParams.get('room');
       
-      // If we have a room parameter from QR, we want to skip redirect and show the form
-      // This ensures users who scan a QR code always see the registration form
-      const skipRedirect = !!roomParam || !!preselectedRoomId;
+      // Si tenemos un roomId del QR o preseleccionado, verificamos si ya estamos registrados para ese room
+      const roomIdToCheck = roomParam || preselectedRoomId;
       
-      const existingGuest = await checkExistingRegistration(skipRedirect);
-      
-      if (existingGuest && !skipRedirect) {
-        toast({
-          title: "Ya has registrado esta cabaña",
-          description: `Continúas como ${existingGuest.name} en la cabaña ${existingGuest.room_number}`,
-          duration: 5000,
-        });
+      if (roomIdToCheck) {
+        const existingGuest = await checkExistingRegistration(false, roomIdToCheck);
         
-        onRegister(existingGuest.name, existingGuest.room_number, existingGuest.id);
+        if (existingGuest) {
+          // Si ya estamos registrados para esta habitación, simplemente continuamos la sesión
+          console.log("Continuing existing session for room", roomIdToCheck);
+          onRegister(
+            existingGuest.name, 
+            existingGuest.room_number, 
+            existingGuest.id, 
+            existingGuest.room_id || roomIdToCheck
+          );
+        } else {
+          // Si no estamos registrados para esta habitación específica,
+          // mostramos el formulario con la habitación preseleccionada
+          console.log("No existing registration for this room found, showing form with preselected room");
+          setInitialCheckDone(true);
+        }
+      } else {
+        // Si no hay roomId en la URL, hacemos la verificación estándar
+        const existingGuest = await checkExistingRegistration();
+        
+        if (existingGuest) {
+          // Si tenemos un registro existente sin QR code específico, lo usamos
+          console.log("Found existing registration without QR code, continuing session");
+          onRegister(
+            existingGuest.name, 
+            existingGuest.room_number, 
+            existingGuest.id, 
+            existingGuest.room_id || ''
+          );
+        } else {
+          setInitialCheckDone(true);
+        }
       }
     };
     
@@ -75,6 +106,8 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   // Fetch available rooms
   useEffect(() => {
     const fetchRooms = async () => {
+      if (!initialCheckDone) return; // Solo cargamos habitaciones después de verificar la sesión
+      
       setIsLoadingRooms(true);
       try {
         // Check if we're coming from a QR code scan
@@ -131,7 +164,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
     };
 
     fetchRooms();
-  }, [toast, preselectedRoomId, location.search]);
+  }, [toast, preselectedRoomId, location.search, initialCheckDone]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +179,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
       return;
     }
     
-    if (!selectedRoomId) {
+    if (!selectedRoomId && !preselectedRoom) {
       toast({
         title: "Cabaña requerida",
         description: "Por favor seleccione su cabaña",
@@ -162,12 +195,14 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
       // Find room number from selected room id
       const selectedRoom = preselectedRoom || rooms.find(room => room.id === selectedRoomId);
       if (!selectedRoom) throw new Error("Cabaña no encontrada");
+      
+      const finalRoomId = selectedRoom.id;
 
       // Update the selected room to occupied status
       const { error: updateError } = await supabase
         .from('rooms')
         .update({ status: 'occupied' })
-        .eq('id', selectedRoomId);
+        .eq('id', finalRoomId);
         
       if (updateError) throw updateError;
 
@@ -178,7 +213,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
           { 
             name: guestName, 
             room_number: selectedRoom.room_number, 
-            room_id: selectedRoomId,
+            room_id: finalRoomId,
             guest_count: parseInt(guestCount)
           }
         ])
@@ -196,13 +231,16 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         });
       }
       
-      // Store the guest ID in localStorage for persistence
+      // Store the guest ID and room ID in localStorage for persistence
       if (guest && guest.id) {
         localStorage.setItem('guest_id', guest.id);
+        localStorage.setItem('guestName', guestName);
+        localStorage.setItem('roomNumber', selectedRoom.room_number);
+        localStorage.setItem('roomId', finalRoomId);
       }
       
       // Limpiar cualquier toast previo de error que pudiera estar visible
-      onRegister(guestName, selectedRoom.room_number, guest.id);
+      onRegister(guestName, selectedRoom.room_number, guest.id, finalRoomId);
     } catch (error) {
       console.error("Error registering guest:", error);
       toast({
@@ -228,6 +266,18 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         return type;
     }
   };
+
+  if (!initialCheckDone) {
+    // Mostramos un indicador de carga mientras verificamos la sesión
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <div className="flex flex-col items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+          <p className="text-gray-600">Verificando si ya has registrado tu cabaña...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">

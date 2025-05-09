@@ -9,12 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Hotel } from "lucide-react";
 import { showGlobalAlert } from "@/hooks/use-alerts";
+import { checkExistingRegistration } from "@/utils/registration";
 
 const GuestPortal = () => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [guestName, setGuestName] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
   const [guestId, setGuestId] = useState("");
+  const [roomId, setRoomId] = useState("");
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
@@ -26,26 +28,41 @@ const GuestPortal = () => {
   // Flag to prevent duplicate toasts
   const [hasShownRegistrationToast, setHasShownRegistrationToast] = useState(false);
 
-  // Check if the user has registered previously
+  // Check if the user has registered previously and load their chat
   useEffect(() => {
-    const checkLocalStorage = () => {
-      const savedName = localStorage.getItem("guestName");
-      const savedRoom = localStorage.getItem("roomNumber");
-      const savedId = localStorage.getItem("guestId");
+    const checkRegistration = async () => {
+      console.log("Checking registration status with roomIdFromUrl:", roomIdFromUrl);
       
-      if (savedName && savedRoom && savedId) {
-        setGuestName(savedName);
-        setRoomNumber(savedRoom);
-        setGuestId(savedId);
+      // Usar la nueva versión de checkExistingRegistration que incluye el roomIdFromUrl
+      const existingGuest = await checkExistingRegistration(false, roomIdFromUrl || undefined);
+      
+      if (existingGuest) {
+        console.log("Found existing guest registration:", existingGuest);
+        setGuestName(existingGuest.name);
+        setRoomNumber(existingGuest.room_number);
+        setGuestId(existingGuest.id);
+        setRoomId(existingGuest.room_id || '');
         setIsRegistered(true);
-        console.log("Usuario encontrado en localStorage, cargando chat...");
+        
+        // Mostrar un toast informando al usuario que está continuando su sesión
+        if (!hasShownRegistrationToast) {
+          toast({
+            title: "Sesión recuperada",
+            description: `Bienvenido de nuevo, ${existingGuest.name}. Continuando en la cabaña ${existingGuest.room_number}`,
+            duration: 3000,
+          });
+          setHasShownRegistrationToast(true);
+        }
       } else {
-        console.log("No se encontró información de usuario en localStorage");
+        console.log("No existing registration found or new room requested, showing form");
+        
+        // Si no hay registro o es una habitación diferente, reiniciamos el estado para mostrar el formulario
+        setIsRegistered(false);
       }
     };
     
-    checkLocalStorage();
-  }, []);
+    checkRegistration();
+  }, [roomIdFromUrl, toast, hasShownRegistrationToast]);
 
   // Get room information if roomIdFromUrl is provided
   useEffect(() => {
@@ -68,8 +85,8 @@ const GuestPortal = () => {
               setShowWelcome(false);
             }, 1500);
             
-            // Only show this banner if the cabin is occupied
-            if (data.status === 'occupied') {
+            // Only show this banner if the cabin is occupied and we're not already registered for it
+            if (data.status === 'occupied' && (!isRegistered || (isRegistered && roomId !== roomIdFromUrl))) {
               // Add a small timeout to avoid alert flashing too quickly with welcome animation
               setTimeout(() => {
                 // Use an ID that persists across sessions to prevent duplicate alerts
@@ -94,19 +111,21 @@ const GuestPortal = () => {
     };
 
     fetchRoomData();
-  }, [roomIdFromUrl]);
+  }, [roomIdFromUrl, isRegistered, roomId]);
 
-  const handleRegister = async (name: string, room: string, id: string) => {
-    console.log("Registro exitoso, configurando chat...", {name, room, id});
+  const handleRegister = async (name: string, room: string, id: string, newRoomId: string) => {
+    console.log("Registro exitoso, configurando chat...", {name, room, id, newRoomId});
     // Guardar información de usuario
     setGuestName(name);
     setRoomNumber(room);
     setGuestId(id);
+    setRoomId(newRoomId);
     
-    // Guardar en localStorage para futuras visitas
+    // Guardar en localStorage para futuras visitas - USANDO CLAVES CONSISTENTES
+    localStorage.setItem("guest_id", id);
     localStorage.setItem("guestName", name);
     localStorage.setItem("roomNumber", room);
-    localStorage.setItem("guestId", id);
+    localStorage.setItem("roomId", newRoomId);
     
     // Mostrar toast solo si no se ha mostrado antes
     if (!hasShownRegistrationToast) {
@@ -125,9 +144,10 @@ const GuestPortal = () => {
   const handleBackToRegistration = () => {
     // For testing, allow returning to the form
     setIsRegistered(false);
+    localStorage.removeItem("guest_id");
     localStorage.removeItem("guestName");
     localStorage.removeItem("roomNumber");
-    localStorage.removeItem("guestId");
+    localStorage.removeItem("roomId");
     setHasShownRegistrationToast(false);
     
     // Clear any session storage markers for alerts
