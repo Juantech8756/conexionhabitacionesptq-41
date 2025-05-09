@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,21 +35,19 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isCallActive, setIsCallActive] = useState(false);
   
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // Scroll to newest messages with improved reliability
+  // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({
-          behavior: smooth ? "smooth" : "auto",
-          block: "end"
-        });
-      }, 100);
+      messagesEndRef.current.scrollIntoView({
+        behavior: smooth ? "smooth" : "auto",
+        block: "end"
+      });
     }
   };
 
@@ -123,7 +122,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   // Scroll to bottom on new messages
   useEffect(() => {
-    scrollToBottom(true);
+    scrollToBottom();
   }, [messages]);
 
   // Focus input field when component mounts
@@ -155,7 +154,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       if (error) throw error;
       
       setMessage("");
-      // Scroll to bottom immediately after sending
       scrollToBottom(false);
     } catch (error) {
       console.error("Error sending message:", error);
@@ -216,7 +214,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           if (messageError) throw messageError;
           
           setAudioChunks([]);
-          // Scroll to bottom after sending audio
           scrollToBottom(false);
         } catch (error) {
           console.error("Error uploading audio:", error);
@@ -276,68 +273,73 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   };
 
   return (
-    <div className="chat-container">
-      {/* Fixed Header */}
-      <div className="chat-header gradient-header-soft">
-        <div className="flex items-center justify-between p-3">
-          <motion.button 
-            whileHover={{ scale: isMobile ? 1.05 : 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onBack} 
-            className="mr-2 p-2 rounded-full hover:bg-white/10 transition-colors" 
-            aria-label="Volver"
-          >
-            <ArrowLeft className="h-5 w-5 text-white" />
-          </motion.button>
-          <div className="flex-grow">
-            <h1 className="text-lg font-semibold text-white">Recepción</h1>
-            <p className="text-sm opacity-90 text-white">Cabaña {roomNumber} - {guestName}</p>
-          </div>
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-3 shadow-sm text-white">
+        <div className="flex items-center justify-between">
           <Button 
             variant="ghost" 
+            size="icon" 
+            className="mr-2 text-white hover:bg-white/20"
+            onClick={onBack}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-grow">
+            <h2 className="text-base font-semibold">Recepción</h2>
+            <p className="text-xs text-white/90">
+              Cabaña {roomNumber} - {guestName}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
             size="icon"
             onClick={startCall}
-            className="ml-2 text-white hover:bg-white/20"
+            className="text-white hover:bg-white/20"
+            title="Llamar a recepción"
           >
             <Phone className="h-5 w-5" />
           </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Messages Container */}
-      <div className="chat-messages-container" ref={messagesContainerRef}>
-        <div className="message-container">
+      {/* Messages Area */}
+      <div className="flex-grow overflow-auto p-3" ref={scrollContainerRef}>
+        <div className="space-y-3 pb-4">
           <AnimatePresence>
             {messages.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="empty-chat-message"
+                className="text-center text-gray-500 mt-10 p-6"
               >
-                <MessageCircle className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+                <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-30" />
                 <p>No hay mensajes aún. ¡Inicia la conversación!</p>
               </motion.div>
             ) : (
               messages.map((msg) => (
                 <motion.div
                   key={msg.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className={msg.is_guest ? "justify-end" : "justify-start"}
+                  transition={{ duration: 0.2 }}
+                  className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`${msg.is_guest 
-                      ? 'chat-bubble-guest' 
-                      : 'chat-bubble-staff'} ${msg.is_audio ? 'p-0 overflow-hidden' : ''}`}
+                    className={`max-w-[85%] rounded-lg shadow-sm ${
+                      msg.is_guest 
+                        ? 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white rounded-tr-none' 
+                        : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
+                    } ${msg.is_audio ? 'p-0 overflow-hidden' : 'p-3'}`}
                   >
                     {msg.is_audio ? (
                       <AudioMessagePlayer 
                         audioUrl={msg.audio_url || ''} 
-                        isGuest={msg.is_guest}
+                        isGuest={!msg.is_guest}
+                        isDark={msg.is_guest}
                       />
                     ) : (
-                      <p className="break-words">{msg.content}</p>
+                      <p className="text-sm break-words">{msg.content}</p>
                     )}
                   </div>
                 </motion.div>
@@ -348,21 +350,21 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      {/* Fixed Input Area at Bottom */}
-      <div className="chat-input-container">
-        <div className={`flex items-center space-x-2 w-full ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
+      {/* Input Area */}
+      <div className="p-3 border-t bg-white shadow-inner">
+        <div className="flex items-center space-x-2">
           <Button
             type="button"
             size="icon"
             variant="outline"
             onClick={toggleRecording}
-            className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
+            className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`}
             disabled={isLoading}
           >
             {isRecording ? (
-              <MicOff className="h-5 w-5 recording-animation" />
+              <MicOff className="h-4 w-4" />
             ) : (
-              <Mic className="h-5 w-5" />
+              <Mic className="h-4 w-4" />
             )}
           </Button>
           
@@ -371,25 +373,20 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-            className="flex-grow shadow-sm focus:ring-2 focus:ring-blue-500/30 transition-all text-sm"
+            className="flex-grow shadow-sm text-sm"
             disabled={isRecording || isLoading}
             ref={inputRef}
           />
           
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <Button
+            type="button"
+            size="icon"
+            onClick={sendMessage}
+            disabled={message.trim() === "" || isRecording || isLoading}
+            className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600"
           >
-            <Button
-              type="button"
-              size="icon"
-              onClick={sendMessage}
-              disabled={message.trim() === "" || isRecording || isLoading}
-              className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 shadow-sm"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          </motion.div>
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 

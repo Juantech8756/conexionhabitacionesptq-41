@@ -62,10 +62,10 @@ const GuestPortal = () => {
             setRoomData(data);
             setShowWelcome(true);
             
-            // Hide welcome message after shorter time (1.5s instead of 2.5s)
+            // Hide welcome message after 1s
             setTimeout(() => {
               setShowWelcome(false);
-            }, 1500);
+            }, 1000);
           }
         } catch (error) {
           console.error("Error fetching room data:", error);
@@ -125,7 +125,7 @@ const GuestPortal = () => {
 
   // Simplified welcome screen that's only shown briefly
   return (
-    <div className="min-h-screen w-full overflow-auto bg-gray-50">
+    <div className="min-h-screen w-full bg-gray-50">
       {showWelcome && roomData && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -163,20 +163,22 @@ const GuestPortal = () => {
         </motion.div>
       )}
 
-      {isRegistered ? (
-        <GuestChat
-          guestName={guestName}
-          roomNumber={roomNumber}
-          guestId={guestId}
-          onBack={handleBackToRegistration}
-        />
-      ) : (
-        <GuestRegistrationForm 
-          onRegister={handleRegister}
-          preselectedRoomId={roomIdFromUrl || undefined}
-          showSuccessToast={false} 
-        />
-      )}
+      <div className="h-full">
+        {isRegistered ? (
+          <GuestChat
+            guestName={guestName}
+            roomNumber={roomNumber}
+            guestId={guestId}
+            onBack={handleBackToRegistration}
+          />
+        ) : (
+          <GuestRegistrationForm 
+            onRegister={handleRegister}
+            preselectedRoomId={roomIdFromUrl || undefined}
+            showSuccessToast={false} 
+          />
+        )}
+      </div>
     </div>
   );
 };

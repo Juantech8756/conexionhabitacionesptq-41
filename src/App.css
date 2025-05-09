@@ -43,123 +43,10 @@
   color: #888;
 }
 
-/* -------------- CHAT LAYOUT SYSTEM -------------- */
-
-/* Chat Container - Full viewport height with display flex */
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-  background-color: #f0f2f5;
-}
-
-/* Fixed Header - Always on top */
-.chat-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  z-index: 100;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-/* Message Area - Takes available space between header and input */
-.chat-messages-container {
-  flex: 1;
-  padding-top: 70px; /* Space for fixed header */
-  padding-bottom: 80px; /* Increased space for fixed input */
-  overflow-y: auto;
-  width: 100%;
-  height: 100vh;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-
-/* Fixed Input Area - Always at bottom */
-.chat-input-container {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 10px 15px;
-  background: white;
-  z-index: 100;
-  border-top: 1px solid #e0e0e0;
-  box-shadow: 0 -1px 5px rgba(0,0,0,0.05);
-}
-
-/* Messages Wrapper */
-.message-container {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  padding: 10px;
-  min-height: calc(100vh - 140px); /* Ensure it fills the space */
-}
-
-/* WhatsApp/Telegram style bubbles */
-.chat-bubble-guest {
-  background: linear-gradient(to right, #4285f4, #34a0f2);
-  color: white;
-  border-radius: 18px 18px 0 18px;
-  padding: 10px 15px;
-  margin-bottom: 8px;
-  max-width: 75%;
-  word-break: break-word;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  align-self: flex-end;
-}
-
-.chat-bubble-staff {
-  background: #ffffff;
-  color: #333;
-  border-radius: 18px 18px 18px 0;
-  padding: 10px 15px;
-  margin-bottom: 8px;
-  max-width: 75%;
-  word-break: break-word;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  align-self: flex-start;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .chat-bubble-guest,
-  .chat-bubble-staff {
-    max-width: 85%;
-  }
-  
-  .chat-header {
-    height: 55px;
-  }
-  
-  .chat-messages-container {
-    padding-top: 65px;
-    padding-bottom: 75px;
-  }
-  
-  .chat-input-container {
-    padding: 10px;
-  }
-}
-
 /* Header gradient */
 .gradient-header-soft {
   background: linear-gradient(to right, #4285f4, #34a0f2);
   color: white;
-}
-
-/* Audio message styling */
-.audio-message-container {
-  display: flex;
-  align-items: center;
-  min-width: 200px;
-  padding: 8px;
-  border-radius: 18px;
 }
 
 /* Recording animation */
@@ -182,14 +69,6 @@
   }
 }
 
-/* Empty chat state */
-.empty-chat-message {
-  text-align: center;
-  color: #888;
-  margin-top: 20px;
-  padding: 20px;
-}
-
 /* Global scrolling fix for all pages */
 body, html {
   height: 100%;
@@ -204,11 +83,6 @@ body, html {
   overflow-y: auto;
 }
 
-/* Ensure content doesn't get cut off */
-.p-4, .p-6, .p-8 {
-  padding-bottom: 80px !important;
-}
-
 /* Fix for message scroll areas */
 .chat-scroll-area {
   position: relative !important;
@@ -219,17 +93,3 @@ body, html {
   padding-bottom: 80px;
   padding-top: 70px;
 }
-
-/* Message alignment fixes */
-.justify-end {
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-}
-
-.justify-start {
-  display: flex;
-  justify-content: flex-start;
-  width: 100%;
-}
-
