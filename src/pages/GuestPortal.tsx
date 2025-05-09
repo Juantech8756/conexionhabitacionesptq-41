@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import GuestRegistrationForm from "@/components/GuestRegistrationForm";
@@ -24,7 +25,9 @@ const GuestPortal = () => {
   const [roomData, setRoomData] = useState<{room_number: string, type: string | null, status: string | null} | null>(null);
   // Flag to prevent duplicate toasts
   const [hasShownRegistrationToast, setHasShownRegistrationToast] = useState(false);
-  const [hasShownOccupiedAlert, setHasShownOccupiedAlert] = useState(false);
+  
+  // Completely remove this flag since we'll control the alert display differently
+  // const [hasShownOccupiedAlert, setHasShownOccupiedAlert] = useState(false);
 
   // Check if the user has registered previously
   useEffect(() => {
@@ -68,16 +71,27 @@ const GuestPortal = () => {
               setShowWelcome(false);
             }, 1000);
             
-            // Show temporary alert if the cabin is occupied and haven't shown it yet
-            if (data.status === 'occupied' && !hasShownOccupiedAlert) {
+            // Remove the duplicate banner logic completely - we'll let the general alert system handle this without special flags
+            // Only show this banner if the cabin is occupied - but no flags to track display state
+            if (data.status === 'occupied') {
+              // Add a small timeout to avoid alert flashing too quickly with welcome animation
               setTimeout(() => {
-                showGlobalAlert({
-                  title: "Cabaña no disponible",
-                  description: `La cabaña ${data.room_number} está ocupada. Por favor seleccione otra cabaña.`,
-                  variant: "destructive",
-                  duration: 6000
-                });
-                setHasShownOccupiedAlert(true);
+                // Use a descriptive ID to prevent duplicate alerts
+                const alertId = `cabin-occupied-${data.room_number}`;
+                const alertStorage = sessionStorage.getItem(alertId);
+                
+                // Only show if we haven't shown this alert in this session
+                if (!alertStorage) {
+                  showGlobalAlert({
+                    title: "Cabaña no disponible",
+                    description: `La cabaña ${data.room_number} está ocupada. Por favor seleccione otra cabaña.`,
+                    variant: "destructive",
+                    duration: 6000
+                  });
+                  
+                  // Mark this alert as shown in the session storage
+                  sessionStorage.setItem(alertId, "shown");
+                }
               }, 1500);
             }
           }
@@ -88,11 +102,6 @@ const GuestPortal = () => {
     };
 
     fetchRoomData();
-    
-    // Clean up function to reset the shown alert flag when component unmounts or roomId changes
-    return () => {
-      setHasShownOccupiedAlert(false);
-    };
   }, [roomIdFromUrl]);
 
   const handleRegister = async (name: string, room: string, id: string) => {
@@ -128,7 +137,11 @@ const GuestPortal = () => {
     localStorage.removeItem("roomNumber");
     localStorage.removeItem("guestId");
     setHasShownRegistrationToast(false);
-    setHasShownOccupiedAlert(false);
+    
+    // Clear any session storage markers for alerts
+    if (roomData) {
+      sessionStorage.removeItem(`cabin-occupied-${roomData.room_number}`);
+    }
   };
 
   const getRoomTypeText = (type: string | null) => {

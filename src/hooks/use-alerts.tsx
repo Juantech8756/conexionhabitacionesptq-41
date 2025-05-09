@@ -9,6 +9,9 @@ let alertsContainerInstance: {
 } | null = null;
 let containerInitialized = false;
 
+// Storage of recent alerts to prevent duplicates
+const recentAlertDescriptions = new Set<string>();
+
 // Initialize the alerts container if it doesn't exist yet
 const initializeAlertsContainer = () => {
   if (!containerInitialized && typeof document !== "undefined") {
@@ -48,6 +51,21 @@ export const useAlerts = () => {
   }, []);
   
   const showAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
+    // Global level alert deduplication
+    const alertKey = `${alert.title || ""}-${alert.description}`;
+    if (recentAlertDescriptions.has(alertKey)) {
+      console.log("Preventing duplicate alert:", alertKey);
+      return "";
+    }
+    
+    // Add to recent alerts
+    recentAlertDescriptions.add(alertKey);
+    
+    // Auto-clear from recent alerts after expiry
+    setTimeout(() => {
+      recentAlertDescriptions.delete(alertKey);
+    }, alert.duration || 5000);
+    
     // If we're on the server or the container isn't ready yet, schedule the alert for later
     if (typeof window === "undefined" || !alertsContainerInstance) {
       setTimeout(() => {
@@ -72,6 +90,21 @@ export const useAlerts = () => {
 // Simplified version for global use without hooks
 export const showGlobalAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
   if (typeof window !== "undefined") {
+    // Global level alert deduplication
+    const alertKey = `${alert.title || ""}-${alert.description}`;
+    if (recentAlertDescriptions.has(alertKey)) {
+      console.log("Preventing duplicate global alert:", alertKey);
+      return;
+    }
+    
+    // Add to recent alerts
+    recentAlertDescriptions.add(alertKey);
+    
+    // Auto-clear from recent alerts after expiry
+    setTimeout(() => {
+      recentAlertDescriptions.delete(alertKey);
+    }, alert.duration || 5000);
+    
     if (!containerInitialized) {
       initializeAlertsContainer();
     }

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, forwardRef, useImperativeHandle, useEffect } from "react";
 import TemporaryAlert from "./TemporaryAlert";
 
@@ -38,21 +39,22 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
     const now = Date.now();
     const duration = alert.duration || DEFAULT_DURATION;
     
-    // More aggressive duplicate prevention based on title and description
+    // Super aggressive duplicate prevention - check for exact matches or even contains
     setAlerts((prev) => {
-      // Check if there's already a similar alert (by title and description)
+      // Check if there's an existing alert with same title OR description
       const existingSimilar = prev.find(
         existingAlert => 
-          (existingAlert.title === alert.title && existingAlert.description === alert.description) ||
-          existingAlert.description === alert.description
+          (alert.title && existingAlert.title === alert.title) || 
+          (alert.description && existingAlert.description.includes(alert.description)) ||
+          (alert.description && alert.description.includes(existingAlert.description))
       );
       
-      // If a similar alert exists, don't add a new one
+      // Don't add duplicates
       if (existingSimilar) {
+        console.log('Preventing duplicate alert:', alert);
         return prev;
       }
       
-      // Otherwise, add the new alert
       return [...prev, { ...alert, id, timestamp: now }];
     });
     
