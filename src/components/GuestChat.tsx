@@ -227,28 +227,24 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       
       console.log("Sending media message:", newMessage);
       
-      const { error, data } = await supabase
+      const { error } = await supabase
         .from('messages')
-        .insert([newMessage])
-        .select();
+        .insert([newMessage]);
       
       if (error) {
         console.error("Error inserting media message:", error);
         throw error;
       }
       
-      console.log("Media message inserted successfully:", data);
-      
-      // Manually add the message to the messages array for immediate feedback
-      if (data && data.length > 0) {
-        const newMsg: MessageType = {
-          ...data[0],
-          media_type: data[0].media_type as 'image' | 'video' | undefined
-        };
-        setMessages(prev => [...prev, newMsg]);
-      }
+      console.log("Media message inserted successfully");
       
       scrollToBottom(false);
+      
+      toast({
+        title: mediaType === 'image' ? "Imagen enviada" : "Video enviado",
+        description: "Se ha enviado correctamente.",
+      });
+      
     } catch (error) {
       console.error("Error sending media message:", error);
       toast({
@@ -465,18 +461,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             type="button"
             size="icon"
             variant="outline"
-            onClick={() => {
-              toggleRecording();
-              if (!isRecording) {
-                // Show alert about recording audio
-                showGlobalAlert({
-                  title: "Grabando mensaje de voz",
-                  description: "Presione el mismo botón para detener la grabación.",
-                  variant: "default",
-                  duration: 5000
-                });
-              }
-            }}
+            onClick={toggleRecording}
             className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`}
             disabled={isLoading}
           >

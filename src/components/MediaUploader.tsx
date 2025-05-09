@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Paperclip, X } from "lucide-react";
+import { Paperclip, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { showGlobalAlert } from "@/hooks/use-alerts";
 
@@ -100,11 +100,38 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
 
       console.log("Uploading to path:", filePath);
       
+      // Asegurar que el bucket exista
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      
+      if (bucketsError) {
+        console.error("Error listing buckets:", bucketsError);
+        throw bucketsError;
+      }
+      
+      const chatMediaBucket = buckets?.find(b => b.name === 'chat_media');
+      
+      if (!chatMediaBucket) {
+        console.log("Creating chat_media bucket...");
+        const { data, error } = await supabase.storage.createBucket('chat_media', {
+          public: true,
+          fileSizeLimit: 10485760, // 10MB
+          allowedMimeTypes: ['image/*', 'video/*']
+        });
+        
+        if (error) {
+          console.error("Error creating bucket:", error);
+          // Continuar de todos modos, podría existir pero no ser visible para el usuario actual
+        }
+      }
+      
       // Upload to Supabase Storage
       const { data, error } = await supabase
         .storage
         .from('chat_media')
-        .upload(filePath, selectedFile);
+        .upload(filePath, selectedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (error) {
         console.error("Upload error:", error);
@@ -209,7 +236,7 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
             disabled={isUploading}
           >
             {isUploading ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-white" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               "Enviar"
             )}
