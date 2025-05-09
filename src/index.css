@@ -82,7 +82,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground overflow-hidden;
+    @apply bg-background text-foreground overflow-x-hidden overflow-y-auto;
     touch-action: manipulation; /* Improve touch experience */
     -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
   }

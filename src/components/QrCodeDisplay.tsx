@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
@@ -117,12 +116,12 @@ const QrCodeDisplay = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md mx-auto"
+        className="w-full max-w-md mx-auto py-8"
       >
         <Card className="shadow-lg">
           <CardHeader className="text-center bg-gradient-to-r from-hotel-700 to-hotel-600 text-white rounded-t-lg">
