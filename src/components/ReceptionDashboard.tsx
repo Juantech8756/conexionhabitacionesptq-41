@@ -1150,6 +1150,18 @@ const ReceptionDashboard = ({
               </div>
             </motion.div>}
         </AnimatePresence>
+        
+        {/* Add DeleteChatDialog here */}
+        {selectedGuest && (
+          <DeleteChatDialog
+            isOpen={isDeleteDialogOpen}
+            guestName={selectedGuest.name}
+            roomNumber={selectedGuest.room_number}
+            onConfirm={deleteChat}
+            onCancel={() => setIsDeleteDialogOpen(false)}
+            isDeleting={isDeleting}
+          />
+        )}
       </div>;
   }
 
