@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Paperclip } from "lucide-react";
+import { Paperclip, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { showGlobalAlert } from "@/hooks/use-alerts";
 
@@ -14,6 +14,8 @@ interface MediaUploaderProps {
 
 const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -53,6 +55,32 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
       return;
     }
 
+    // Generate preview for images
+    if (fileType === 'image') {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewUrl(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // For videos, just set a placeholder
+      setPreviewUrl('video');
+    }
+    
+    setSelectedFile(file);
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+    
     setIsUploading(true);
     showGlobalAlert({
       title: "Subiendo archivo",
@@ -63,8 +91,11 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
     try {
       console.log("Starting file upload...");
       
+      // Determine file type
+      const fileType = selectedFile.type.startsWith('image/') ? 'image' : 'video';
+      
       // Create folder structure: media/{guestId}/{fileType}s/
-      const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+      const fileName = `${Date.now()}_${selectedFile.name.replace(/\s+/g, '_')}`;
       const filePath = `media/${guestId}/${fileType}s/${fileName}`;
 
       console.log("Uploading to path:", filePath);
@@ -73,7 +104,7 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
       const { data, error } = await supabase
         .storage
         .from('chat_media')
-        .upload(filePath, file);
+        .upload(filePath, selectedFile);
 
       if (error) {
         console.error("Upload error:", error);
@@ -98,6 +129,10 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
         description: "El archivo se ha subido correctamente.",
         duration: 4000
       });
+
+      // Reset state
+      setSelectedFile(null);
+      setPreviewUrl(null);
 
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -126,21 +161,61 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
         className="hidden"
         disabled={disabled || isUploading}
       />
-      <Button
-        type="button"
-        size="icon"
-        variant="outline"
-        onClick={handleButtonClick}
-        className="flex-shrink-0"
-        disabled={disabled || isUploading}
-        title="Enviar imagen o video"
-      >
-        {isUploading ? (
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-hotel-600" />
-        ) : (
+      
+      {!selectedFile ? (
+        <Button
+          type="button"
+          size="icon"
+          variant="outline"
+          onClick={handleButtonClick}
+          className="flex-shrink-0"
+          disabled={disabled || isUploading}
+          title="Seleccionar imagen o video"
+        >
           <Paperclip className="h-4 w-4" />
-        )}
-      </Button>
+        </Button>
+      ) : (
+        <div className="flex items-center gap-1">
+          {previewUrl && previewUrl !== 'video' ? (
+            <div className="relative h-8 w-8 rounded overflow-hidden border border-gray-300">
+              <img 
+                src={previewUrl} 
+                alt="Preview" 
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="bg-gray-100 text-xs rounded p-1 border border-gray-300">
+              Video seleccionado
+            </div>
+          )}
+          
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={handleCancelSelection}
+            className="h-8 w-8 p-0"
+            disabled={isUploading}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleUpload}
+            className="h-8 flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600"
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-white" />
+            ) : (
+              "Enviar"
+            )}
+          </Button>
+        </div>
+      )}
     </>
   );
 };

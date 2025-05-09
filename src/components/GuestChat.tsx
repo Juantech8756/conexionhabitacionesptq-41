@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -441,10 +440,10 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
                         isGuest={msg.is_guest}
                         isDark={msg.is_guest}
                       />
-                    ) : msg.is_media ? (
+                    ) : msg.is_media && msg.media_url && msg.media_type ? (
                       <MediaMessage
-                        mediaUrl={msg.media_url || ''}
-                        mediaType={msg.media_type as 'image' | 'video'}
+                        mediaUrl={msg.media_url}
+                        mediaType={msg.media_type}
                         isGuest={msg.is_guest}
                       />
                     ) : (
