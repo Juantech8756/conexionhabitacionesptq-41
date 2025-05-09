@@ -1,19 +1,19 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { showGlobalAlert } from "@/hooks/use-alerts";
 
+// Updated interface to match Supabase column names (lowercase)
 export interface NotificationSubscription {
   id?: string;
-  userId?: string;
-  guestId?: string;
+  userid?: string; // Changed from userId to match database column
+  guestid?: string; // Changed from guestId to match database column
   endpoint: string;
   p256dh: string;
   auth: string;
-  userAgent?: string;
+  useragent?: string; // Changed from userAgent to match database column
   created_at?: string;
-  roomId?: string;
-  roomNumber?: string;
+  roomid?: string; // Changed from roomId to match database column
+  roomnumber?: string; // Changed from roomNumber to match database column
 }
 
 interface UseNotificationsOptions {
@@ -166,32 +166,31 @@ export const useNotifications = (options: UseNotificationsOptions) => {
         return;
       }
       
-      // Create subscription object
+      // Create subscription object with correct column names
       const subscriptionData: NotificationSubscription = {
         endpoint: endpoint,
         p256dh: keys.p256dh,
         auth: keys.auth,
-        userAgent: navigator.userAgent,
+        useragent: navigator.userAgent, // Changed from userAgent to useragent
       };
       
       // Add extra data based on type
       if (options.type === 'guest') {
-        subscriptionData.guestId = options.guestId;
-        subscriptionData.roomId = options.roomId;
-        subscriptionData.roomNumber = options.roomNumber;
+        subscriptionData.guestid = options.guestId; // Changed from guestId to guestid
+        subscriptionData.roomid = options.roomId; // Changed from roomId to roomid
+        subscriptionData.roomnumber = options.roomNumber; // Changed from roomNumber to roomnumber
       } else if (options.type === 'reception') {
         // Get the user ID from Supabase
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          subscriptionData.userId = user.id;
+          subscriptionData.userid = user.id; // Changed from userId to userid
         }
       }
       
-      // Usar SQL directo para insertar en la tabla notification_subscriptions
-      // Resolución del error: usar aserción de tipo para evitar inferencia recursiva
+      // Insert with correct column names
       const { error } = await supabase
         .from('notification_subscriptions')
-        .insert([subscriptionData] as any);
+        .insert([subscriptionData]);
         
       if (error) {
         console.error('Error inserting subscription:', error);
@@ -212,14 +211,13 @@ export const useNotifications = (options: UseNotificationsOptions) => {
       setSubscription(null);
       setIsSubscribed(false);
       
-      // Remove from database
+      // Remove from database with correct column names
       if (options.type === 'guest' && options.guestId) {
-        // Resolución del error: usar aserción de tipo para evitar inferencia recursiva
         const { error } = await supabase
           .from('notification_subscriptions')
           .delete()
-          .eq('guestId', options.guestId)
-          .eq('endpoint', subscription.endpoint) as any;
+          .eq('guestid', options.guestId) // Changed from guestId to guestid
+          .eq('endpoint', subscription.endpoint);
           
         if (error) {
           console.error('Error removing subscription:', error);
@@ -227,12 +225,11 @@ export const useNotifications = (options: UseNotificationsOptions) => {
       } else if (options.type === 'reception') {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Resolución del error: usar aserción de tipo para evitar inferencia recursiva
           const { error } = await supabase
             .from('notification_subscriptions')
             .delete()
-            .eq('userId', user.id)
-            .eq('endpoint', subscription.endpoint) as any;
+            .eq('userid', user.id) // Changed from userId to userid
+            .eq('endpoint', subscription.endpoint);
             
           if (error) {
             console.error('Error removing subscription:', error);
@@ -284,4 +281,3 @@ export const showNotification = (title: string, options = {}) => {
     });
   }
 };
-
