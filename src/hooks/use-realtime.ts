@@ -38,8 +38,9 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     subscriptions.forEach(({ table, event, filter, filterValue, callback }) => {
       const filterObj = filter ? { [filter]: filterValue } : {};
       
+      // Fix: Using the correct type assertion for the postgres_changes event
       channel = channel.on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event,
           schema: 'public',
