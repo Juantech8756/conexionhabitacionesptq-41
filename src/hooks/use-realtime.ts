@@ -44,28 +44,28 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     
     // Create the channel object
     const channel = supabase.channel(uniqueChannelName);
-    
-    // First, register system events (connection status)
-    channel
-      .on('system', { event: 'connected' }, () => {
-        console.log(`Channel ${uniqueChannelName} connected`);
-        setIsConnected(true);
-      })
-      .on('system', { event: 'disconnected' }, () => {
-        console.log(`Channel ${uniqueChannelName} disconnected`);
-        setIsConnected(false);
 
-        // Set up automatic reconnection
-        if (retryTimeoutRef.current === null) {
-          retryTimeoutRef.current = window.setTimeout(() => {
-            console.log('Attempting to reconnect...');
-            reconnect();
-            retryTimeoutRef.current = null;
-          }, 3000);
-        }
-      });
+    // Register system events for connection status
+    channel.on('system', { event: 'connected' }, () => {
+      console.log(`Channel ${uniqueChannelName} connected`);
+      setIsConnected(true);
+    });
 
-    // Then, separately add postgres_changes subscriptions for each table and event
+    channel.on('system', { event: 'disconnected' }, () => {
+      console.log(`Channel ${uniqueChannelName} disconnected`);
+      setIsConnected(false);
+
+      // Set up automatic reconnection
+      if (retryTimeoutRef.current === null) {
+        retryTimeoutRef.current = window.setTimeout(() => {
+          console.log('Attempting to reconnect...');
+          reconnect();
+          retryTimeoutRef.current = null;
+        }, 3000);
+      }
+    });
+
+    // Register postgres_changes subscriptions separately for each table and event
     subscriptions.forEach(({ table, event, filter, filterValue, callback }) => {
       // Prepare filter configuration if filter and filterValue are provided
       const filterConfig = filter && filterValue ? 
@@ -74,8 +74,7 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       console.log(`Adding subscription to ${table} for event ${event}`, 
         filter && filterValue ? filterConfig : "no filter");
       
-      // IMPORTANT: This needs to be a separate call, not chained from the system events
-      // Each postgres_changes subscription must be registered individually
+      // Each postgres_changes subscription must be registered individually without chaining
       channel.on(
         'postgres_changes', 
         { 
@@ -91,7 +90,7 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       );
     });
 
-    // Finally, subscribe to the channel with all events added
+    // Finally, subscribe to the channel with all events registered
     channelRef.current = channel.subscribe((status) => {
       console.log(`Realtime subscription status: ${status}`);
       setIsConnected(status === 'SUBSCRIBED');
