@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import GuestRegistrationForm from "@/components/GuestRegistrationForm";
@@ -37,7 +36,7 @@ const GuestPortal = () => {
       setIsCheckingRegistration(true);
       
       try {
-        // Use the updated checkExistingRegistration that handles QR codes better
+        // Use the updated checkExistingRegistration that handles cross-device access better
         const existingGuest = await checkExistingRegistration(false, roomIdFromUrl || undefined);
         
         if (existingGuest) {
@@ -52,7 +51,7 @@ const GuestPortal = () => {
           if (!hasShownRegistrationToast) {
             toast({
               title: "Sesión recuperada",
-              description: `Bienvenido de nuevo, ${existingGuest.name}. Continuando en la cabaña ${existingGuest.room_number}`,
+              description: `Bienvenido a la cabaña ${existingGuest.room_number}`,
               duration: 3000,
             });
             setHasShownRegistrationToast(true);
@@ -70,23 +69,48 @@ const GuestPortal = () => {
             .single();
             
           if (room && room.status === 'occupied') {
-            // If room is occupied but we didn't find a registration, there might be an inconsistency
-            // Let's check if there are any guests for this room
+            // Double-check if there are any guests for this room
+            // This is a fallback in case our main check missed something
             const { data: roomGuest } = await supabase
               .from('guests')
-              .select('id')
+              .select('id, name, room_number, guest_count, room_id')
               .eq('room_id', roomIdFromUrl)
               .maybeSingle();
               
-            if (!roomGuest) {
-              // Room is marked as occupied but has no guest registration - we'll allow registration
-              console.log("Room marked as occupied but has no guest registration. Will allow registration.");
-              toast({
-                title: "Cabaña disponible",
-                description: "Aunque la cabaña aparece como ocupada, puede registrarse ahora.",
-                duration: 5000,
-              });
+            if (roomGuest) {
+              // Found a guest for this room, set up the session
+              console.log("Found guest for occupied room on secondary check:", roomGuest);
+              setGuestName(roomGuest.name);
+              setRoomNumber(roomGuest.room_number);
+              setGuestId(roomGuest.id);
+              setRoomId(roomIdFromUrl);
+              setIsRegistered(true);
+              
+              // Save in localStorage
+              localStorage.setItem('guest_id', roomGuest.id);
+              localStorage.setItem('guestName', roomGuest.name);
+              localStorage.setItem('roomNumber', roomGuest.room_number);
+              localStorage.setItem('roomId', roomIdFromUrl);
+              
+              if (!hasShownRegistrationToast) {
+                toast({
+                  title: "Sesión recuperada",
+                  description: `Bienvenido a la cabaña ${roomGuest.room_number}`,
+                  duration: 3000,
+                });
+                setHasShownRegistrationToast(true);
+              }
+              return;
             }
+            
+            // Room is marked as occupied but has no guest - this is an inconsistency
+            // We'll allow registration but show a notification
+            console.log("Room marked as occupied but has no guest registration. Will allow registration.");
+            toast({
+              title: "Cabaña disponible",
+              description: "Aunque la cabaña aparece como ocupada, puede registrarse ahora.",
+              duration: 5000,
+            });
           }
         } else {
           console.log("No existing registration found or new room requested via QR, showing form");
@@ -106,56 +130,41 @@ const GuestPortal = () => {
   // Get room information if roomIdFromUrl is provided
   useEffect(() => {
     const fetchRoomData = async () => {
-      if (roomIdFromUrl) {
-        try {
-          console.log("Fetching room data for room ID:", roomIdFromUrl);
-          const { data, error } = await supabase
-            .from('rooms')
-            .select('room_number, type, status')
-            .eq('id', roomIdFromUrl)
-            .single();
-          
-          if (error) {
-            console.error("Error fetching room data:", error);
-            throw error;
-          }
-          
-          if (data) {
-            console.log("Room data fetched:", data);
-            setRoomData(data);
-            setShowWelcome(true);
-            
-            // Show welcome animation for 1.5s
-            setTimeout(() => {
-              setShowWelcome(false);
-            }, 1500);
-            
-            // In the new system, we don't block registration for occupied cabins
-            // Instead we check if there's an active registration for this room
-            if (data.status === 'occupied' && !isRegistered) {
-              const { data: existingGuest } = await supabase
-                .from('guests')
-                .select('id')
-                .eq('room_id', roomIdFromUrl)
-                .maybeSingle();
-                
-              if (existingGuest) {
-                // There's an active registration for this cabin - we'll handle this in checkExistingRegistration
-                console.log("Active registration exists for this occupied cabin.");
-              } else {
-                // Cabin marked as occupied but no registration - we'll allow registration
-                console.log("Cabin marked as occupied but no registration exists.");
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Error in room data fetch:", error);
+      if (!roomIdFromUrl) return;
+      
+      setIsLoading(true);
+      try {
+        console.log("Fetching room data for room ID:", roomIdFromUrl);
+        const { data, error } = await supabase
+          .from('rooms')
+          .select('room_number, type, status')
+          .eq('id', roomIdFromUrl)
+          .single();
+        
+        if (error) {
+          console.error("Error fetching room data:", error);
+          throw error;
         }
+        
+        if (data) {
+          console.log("Room data fetched:", data);
+          setRoomData(data);
+          setShowWelcome(true);
+          
+          // Show welcome animation for 1.5s
+          setTimeout(() => {
+            setShowWelcome(false);
+          }, 1500);
+        }
+      } catch (error) {
+        console.error("Error in room data fetch:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchRoomData();
-  }, [roomIdFromUrl, isRegistered]);
+  }, [roomIdFromUrl]);
 
   const handleRegister = async (name: string, room: string, id: string, newRoomId: string) => {
     console.log("Registration successful, setting up chat...", {name, room, id, newRoomId});

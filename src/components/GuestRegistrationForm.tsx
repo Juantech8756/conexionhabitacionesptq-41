@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +68,33 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
       if (roomIdToCheck) {
         console.log("QR code or preselected room ID detected:", roomIdToCheck);
         
+        // First, check if ANY guest is registered for this room in the database
+        const { data: roomGuest, error: roomGuestError } = await supabase
+          .from('guests')
+          .select('id, name, room_number, guest_count, room_id')
+          .eq('room_id', roomIdToCheck)
+          .maybeSingle();
+          
+        if (!roomGuestError && roomGuest) {
+          console.log("Found existing registration for this room ID. Continuing with that guest session:", roomGuest);
+          
+          // Update localStorage with this guest's info
+          localStorage.setItem('guest_id', roomGuest.id);
+          localStorage.setItem('guestName', roomGuest.name);
+          localStorage.setItem('roomNumber', roomGuest.room_number);
+          localStorage.setItem('roomId', roomIdToCheck);
+          
+          // Continue session with this guest
+          onRegister(
+            roomGuest.name, 
+            roomGuest.room_number, 
+            roomGuest.id, 
+            roomIdToCheck
+          );
+          return;
+        }
+        
+        // If no guest found for this room, check if we have a guest ID in localStorage
         const existingGuest = await checkExistingRegistration(false, roomIdToCheck);
         
         if (existingGuest) {
@@ -156,29 +182,6 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
             console.log("Found preselected room:", roomData);
             setSelectedRoomId(roomData.id);
             setPreselectedRoom(roomData);
-            
-            // Show a message if the room isn't available but don't block registration
-            // we want to allow registration even if the room is occupied in the new system
-            if (roomData.status !== 'available') {
-              console.log(`Room ${roomData.room_number} status: ${roomData.status}`);
-              // Informative toast only
-              if (roomData.status === 'occupied') {
-                const { data: existingGuest } = await supabase
-                  .from('guests')
-                  .select('id')
-                  .eq('room_id', roomIdToSelect)
-                  .maybeSingle();
-                  
-                if (!existingGuest) {
-                  toast({
-                    title: "Atención",
-                    description: `Aunque la cabaña ${roomData.room_number} está marcada como ocupada, no hay un registro activo. Puede registrarse ahora.`,
-                    variant: "default",
-                    duration: 5000,
-                  });
-                }
-              }
-            }
           }
         }
       } catch (error) {

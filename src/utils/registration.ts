@@ -10,7 +10,7 @@ export type GuestRegistration = {
   room_id?: string | null;
 } | null;
 
-// Function to check if there's an existing guest registration using localStorage
+// Function to check if there's an existing guest registration using both localStorage and database
 export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFromQR?: string): Promise<GuestRegistration> => {
   try {
     console.log("Checking registration with params:", { skipRedirect, roomIdFromQR });
@@ -18,15 +18,43 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
     const guestId = localStorage.getItem('guest_id');
     const storedRoomId = localStorage.getItem('roomId');
 
-    // If we have a QR code scan
+    // If we have a QR code scan with a room ID
     if (roomIdFromQR) {
       console.log(`QR scan detected with room ID: ${roomIdFromQR}`);
       
-      // First check if user is registered for this exact room
-      if (guestId && storedRoomId === roomIdFromQR) {
-        console.log("User is already registered for this room. Continuing with existing session.");
+      // IMPROVED: First check if there's ANY existing guest registered for this room in the database
+      // This allows access from any device that scans the QR code for an occupied room
+      const { data: roomGuest, error: roomGuestError } = await supabase
+        .from('guests')
+        .select('id, name, room_number, guest_count, room_id')
+        .eq('room_id', roomIdFromQR)
+        .maybeSingle();
+      
+      // If we found a guest for this room in the database
+      if (!roomGuestError && roomGuest) {
+        console.log("Found existing registration for this room in database:", roomGuest);
         
-        // Look up the guest using their ID to make sure the record still exists in DB
+        // Update localStorage with this room's guest info for future reference
+        localStorage.setItem('guest_id', roomGuest.id);
+        localStorage.setItem('guestName', roomGuest.name);
+        localStorage.setItem('roomNumber', roomGuest.room_number);
+        localStorage.setItem('roomId', roomIdFromQR);
+        
+        // Also update room status to ensure it's marked as occupied
+        await supabase
+          .from('rooms')
+          .update({ status: 'occupied' })
+          .eq('id', roomIdFromQR);
+          
+        console.log("Room guest info saved to localStorage and room confirmed as occupied");
+        return roomGuest;
+      }
+      
+      // If the user has a stored guest ID for this exact room
+      if (guestId && storedRoomId === roomIdFromQR) {
+        console.log("User is already registered for this room in localStorage. Verifying in database...");
+        
+        // Verify the guest record still exists in database
         const { data: existingGuest, error: guestError } = await supabase
           .from('guests')
           .select('id, name, room_number, guest_count, room_id')
@@ -51,35 +79,16 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
         return existingGuest;
       } 
       
-      // If no registration or registered for a different room, check room availability
+      // No registration found for this room - check room status
+      console.log("No existing registration found for this room. Checking room status...");
       const { data: roomData } = await supabase
         .from('rooms')
         .select('status')
         .eq('id', roomIdFromQR)
         .single();
-        
-      // If room is occupied but by someone else, check if there's a guest registered for this room
-      if (roomData?.status === 'occupied') {
-        const { data: roomGuest, error: roomGuestError } = await supabase
-          .from('guests')
-          .select('id, name, room_number, guest_count, room_id')
-          .eq('room_id', roomIdFromQR)
-          .maybeSingle();
-          
-        if (!roomGuestError && roomGuest) {
-          // Save this guest's info to localStorage and continue with their session
-          localStorage.setItem('guest_id', roomGuest.id);
-          localStorage.setItem('guestName', roomGuest.name);
-          localStorage.setItem('roomNumber', roomGuest.room_number);
-          localStorage.setItem('roomId', roomIdFromQR);
-          
-          console.log("Found existing registration for this room. Continuing with that session.");
-          return roomGuest;
-        }
-      }
       
-      // If room is available or no guest found, return null to show registration form
-      console.log("Room available or no guest found. Showing registration form.");
+      // If room is available or no status data, show registration form
+      console.log("Room status:", roomData?.status || "unknown");
       return null;
     }
     
