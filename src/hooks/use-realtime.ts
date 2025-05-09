@@ -16,15 +16,17 @@ interface RealtimeSubscription {
 
 export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?: string) => {
   const [isConnected, setIsConnected] = useState(false);
-  const channelRef = useRef<RealtimeChannel | null>(null);
+  const channelsRef = useRef<RealtimeChannel[]>([]);
   const retryTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Cleanup previous channel if exists
-    if (channelRef.current) {
-      console.log("Cleaning up previous channel");
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+    // Clean up any existing channels
+    if (channelsRef.current.length > 0) {
+      console.log("Cleaning up previous channels");
+      channelsRef.current.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
+      channelsRef.current = [];
     }
 
     // Clear any existing retry timeouts
@@ -36,73 +38,85 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     // Skip if no subscriptions
     if (subscriptions.length === 0) return;
 
-    // Create a truly unique channel name with timestamp and random string
-    const uniqueChannelName = channelName || 
-      `realtime-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    // Create a channel for system events (connection status)
+    const uniqueSystemChannelName = channelName || 
+      `realtime-system-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     
-    console.log(`Creating new realtime channel: ${uniqueChannelName}`);
+    console.log(`Creating system channel: ${uniqueSystemChannelName}`);
     
-    // Create the channel object
-    const channel = supabase.channel(uniqueChannelName);
+    const systemChannel = supabase.channel(uniqueSystemChannelName);
+    
+    // Add system event listeners
+    systemChannel
+      .on('system', { event: 'connected' }, () => {
+        console.log(`System channel connected`);
+        setIsConnected(true);
+      })
+      .on('system', { event: 'disconnected' }, () => {
+        console.log(`System channel disconnected`);
+        setIsConnected(false);
 
-    // Register system events for connection status
-    channel.on('system', { event: 'connected' }, () => {
-      console.log(`Channel ${uniqueChannelName} connected`);
-      setIsConnected(true);
-    });
-
-    channel.on('system', { event: 'disconnected' }, () => {
-      console.log(`Channel ${uniqueChannelName} disconnected`);
-      setIsConnected(false);
-
-      // Set up automatic reconnection
-      if (retryTimeoutRef.current === null) {
-        retryTimeoutRef.current = window.setTimeout(() => {
-          console.log('Attempting to reconnect...');
-          reconnect();
-          retryTimeoutRef.current = null;
-        }, 3000);
-      }
-    });
-
-    // Register postgres_changes subscriptions separately for each table and event
-    subscriptions.forEach(({ table, event, filter, filterValue, callback }) => {
-      // Prepare filter configuration if filter and filterValue are provided
+        // Set up auto reconnection
+        if (retryTimeoutRef.current === null) {
+          retryTimeoutRef.current = window.setTimeout(() => {
+            console.log('Attempting to reconnect...');
+            reconnect();
+            retryTimeoutRef.current = null;
+          }, 3000);
+        }
+      })
+      .subscribe((status) => {
+        console.log(`System channel subscription status: ${status}`);
+      });
+    
+    // Store the system channel
+    channelsRef.current.push(systemChannel);
+    
+    // Create separate channels for each postgres_changes subscription
+    subscriptions.forEach((subscription, index) => {
+      const { table, event, filter, filterValue, callback } = subscription;
+      
+      const channelId = `${uniqueSystemChannelName}-pg-${table}-${event}-${index}`;
+      console.log(`Creating postgres channel: ${channelId}`);
+      
+      const pgChannel = supabase.channel(channelId);
+      
+      // Prepare filter configuration if needed
       const filterConfig = filter && filterValue ? 
         { filter: `${filter}=eq.${filterValue}` } : {};
       
       console.log(`Adding subscription to ${table} for event ${event}`, 
         filter && filterValue ? filterConfig : "no filter");
       
-      // Each postgres_changes subscription must be registered individually without chaining
-      channel.on(
-        'postgres_changes', 
-        { 
+      // Add postgres_changes event listener
+      pgChannel.on(
+        'postgres_changes',
+        {
           event: event,
           schema: 'public',
           table: table,
           ...filterConfig
-        }, 
+        },
         (payload) => {
           console.log(`Received realtime event for ${table}:`, payload);
           callback(payload);
         }
-      );
-    });
-
-    // Finally, subscribe to the channel with all events registered
-    channelRef.current = channel.subscribe((status) => {
-      console.log(`Realtime subscription status: ${status}`);
-      setIsConnected(status === 'SUBSCRIBED');
+      ).subscribe((status) => {
+        console.log(`Postgres channel ${channelId} status: ${status}`);
+      });
+      
+      // Store the postgres channel
+      channelsRef.current.push(pgChannel);
     });
 
     // Cleanup function
     return () => {
-      console.log(`Cleaning up channel ${uniqueChannelName}`);
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      console.log(`Cleaning up all channels`);
+      channelsRef.current.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
+      channelsRef.current = [];
+      
       if (retryTimeoutRef.current) {
         window.clearTimeout(retryTimeoutRef.current);
         retryTimeoutRef.current = null;
@@ -112,11 +126,13 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
 
   // Function to manually reconnect if needed
   const reconnect = () => {
-    if (channelRef.current) {
+    if (channelsRef.current.length > 0) {
       console.log("Manual reconnection triggered");
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-      // This will trigger the useEffect and create a new subscription
+      channelsRef.current.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
+      channelsRef.current = [];
+      // This will trigger the useEffect and create new subscriptions
     }
   };
 
