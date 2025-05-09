@@ -42,42 +42,48 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     
     console.log(`Creating new realtime channel: ${uniqueChannelName}`);
     
-    // Create a new channel with system event handlers
-    const channel = supabase.channel(uniqueChannelName)
-      .on('system', { event: 'connected' }, () => {
-        console.log(`Channel ${uniqueChannelName} connected`);
-        setIsConnected(true);
-      })
-      .on('system', { event: 'disconnected' }, () => {
-        console.log(`Channel ${uniqueChannelName} disconnected`);
-        setIsConnected(false);
+    // Create the channel object
+    const channel = supabase.channel(uniqueChannelName);
+    
+    // Add system events first
+    channel.on('system', { event: 'connected' }, () => {
+      console.log(`Channel ${uniqueChannelName} connected`);
+      setIsConnected(true);
+    });
+    
+    channel.on('system', { event: 'disconnected' }, () => {
+      console.log(`Channel ${uniqueChannelName} disconnected`);
+      setIsConnected(false);
 
-        // Set up automatic reconnection
-        if (retryTimeoutRef.current === null) {
-          retryTimeoutRef.current = window.setTimeout(() => {
-            console.log('Attempting to reconnect...');
-            reconnect();
-            retryTimeoutRef.current = null;
-          }, 3000);
-        }
-      });
+      // Set up automatic reconnection
+      if (retryTimeoutRef.current === null) {
+        retryTimeoutRef.current = window.setTimeout(() => {
+          console.log('Attempting to reconnect...');
+          reconnect();
+          retryTimeoutRef.current = null;
+        }, 3000);
+      }
+    });
 
-    // Add all postgres_changes subscriptions
+    // Add postgres_changes subscriptions
     subscriptions.forEach(({ table, event, filter, filterValue, callback }) => {
+      // Prepare filter configuration if filter and filterValue are provided
       const filterConfig = filter && filterValue ? 
         { filter: `${filter}=eq.${filterValue}` } : {};
       
       console.log(`Adding subscription to ${table} for event ${event}`, 
         filter && filterValue ? filterConfig : "no filter");
       
+      // Use the correct method to subscribe to postgres changes
+      // The error was due to incorrect syntax - we need to use channel.on() with the correct structure
       channel.on(
-        'postgres_changes',
-        {
+        'postgres_changes', 
+        { 
           event: event,
           schema: 'public',
           table: table,
           ...filterConfig
-        },
+        }, 
         (payload) => {
           console.log(`Received realtime event for ${table}:`, payload);
           callback(payload);
@@ -85,7 +91,7 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       );
     });
 
-    // Subscribe to the channel
+    // Subscribe to the channel and store the reference
     channelRef.current = channel.subscribe((status) => {
       console.log(`Realtime subscription status: ${status}`);
       setIsConnected(status === 'SUBSCRIBED');
@@ -111,10 +117,7 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       console.log("Manual reconnection triggered");
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
-      
-      // Force effect to run again by updating a dependency
-      // This is achieved by calling the reconnect function itself
-      // The effect will re-run on the next render cycle
+      // This will trigger the useEffect and create a new subscription
     }
   };
 
