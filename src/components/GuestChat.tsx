@@ -138,13 +138,13 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             filter: `guest_id=eq.${guestId}`
           },
           (payload) => {
-            // Ensure payload.new.media_type has the correct type
-            const newMessage = {
-              ...payload.new,
+            // Ensure we cast the entire payload to MessageType with correct media_type
+            const newMessage: MessageType = {
+              ...payload.new as any,
               media_type: payload.new.media_type as 'image' | 'video' | undefined
             };
             
-            setMessages(prev => [...prev, newMessage as MessageType]);
+            setMessages(prev => [...prev, newMessage]);
             
             // Si recibimos un nuevo mensaje de recepción, mostrar alerta
             if (!newMessage.is_guest) {
@@ -242,11 +242,11 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       
       // Manually add the message to the messages array for immediate feedback
       if (data && data.length > 0) {
-        const newMsg = {
+        const newMsg: MessageType = {
           ...data[0],
-          media_type: data[0].media_type as 'image' | 'video'
+          media_type: data[0].media_type as 'image' | 'video' | undefined
         };
-        setMessages(prev => [...prev, newMsg as MessageType]);
+        setMessages(prev => [...prev, newMsg]);
       }
       
       scrollToBottom(false);
