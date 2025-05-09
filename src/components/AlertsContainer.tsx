@@ -17,6 +17,7 @@ export interface AlertsContainerHandle {
 }
 
 const DEFAULT_DURATION = 5000; // 5 seconds default
+const MAX_ALERTS = 5; // Maximum number of alerts to show at once
 
 const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
   const [alerts, setAlerts] = useState<AlertType[]>([]);
@@ -25,10 +26,18 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
-      setAlerts((prev) => prev.filter(alert => {
-        const expiryTime = alert.timestamp + (alert.duration || DEFAULT_DURATION);
-        return now < expiryTime;
-      }));
+      setAlerts((prev) => {
+        const filteredAlerts = prev.filter(alert => {
+          const expiryTime = alert.timestamp + (alert.duration || DEFAULT_DURATION) + 1000; // Add 1 second buffer
+          return now < expiryTime;
+        });
+        
+        // If we filtered some alerts, return the new array
+        if (filteredAlerts.length !== prev.length) {
+          return filteredAlerts;
+        }
+        return prev;
+      });
     }, 1000);
     
     return () => clearInterval(interval);
@@ -39,7 +48,7 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
     const now = Date.now();
     const duration = alert.duration || DEFAULT_DURATION;
     
-    // Super aggressive duplicate prevention with a unique key based on content
+    // Prevent duplicate alerts
     setAlerts((prev) => {
       // Create a unique key for this alert
       const alertKey = `${alert.title || ""}-${alert.description}`;
@@ -56,14 +65,16 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
         return prev;
       }
       
-      return [...prev, { ...alert, id, timestamp: now }];
+      // Limit the number of alerts by removing the oldest ones if necessary
+      const newAlerts = [...prev, { ...alert, id, timestamp: now }];
+      if (newAlerts.length > MAX_ALERTS) {
+        return newAlerts.slice(newAlerts.length - MAX_ALERTS);
+      }
+      
+      return newAlerts;
     });
     
-    // Auto-remove after duration
-    setTimeout(() => {
-      setAlerts(prev => prev.filter(a => a.id !== id));
-    }, duration);
-    
+    // Alerts will be auto-removed by the useEffect cleanup or via the X button
     return id;
   }, []);
 

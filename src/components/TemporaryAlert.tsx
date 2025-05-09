@@ -25,21 +25,20 @@ const TemporaryAlert = ({
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
+    // Always set a timeout to ensure all alerts are temporary
     const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(() => {
-        onClose(id);
-      }, 300); // Give time for exit animation
+      handleClose();
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, id, onClose]);
+  }, [duration, id]);
 
   const handleClose = () => {
     setIsVisible(false);
+    // Use a shorter timeout for the exit animation
     setTimeout(() => {
       onClose(id);
-    }, 300); // Give time for exit animation
+    }, 300);
   };
 
   return (
@@ -60,9 +59,10 @@ const TemporaryAlert = ({
               size="icon"
               className="absolute top-2 right-2 h-6 w-6 text-gray-500 hover:text-gray-800"
               onClick={handleClose}
+              aria-label="Cerrar"
             >
               <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">Cerrar</span>
             </Button>
           </Alert>
         </motion.div>
