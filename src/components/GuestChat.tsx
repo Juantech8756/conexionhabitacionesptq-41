@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { MessageCircle, Mic, MicOff, Send, ArrowLeft, Phone } from "lucide-react";
+import { MessageCircle, Mic, MicOff, Send, ArrowLeft, Phone, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -11,6 +11,9 @@ import MediaMessage from "@/components/MediaMessage";
 import MediaUploader from "@/components/MediaUploader";
 import CallInterface from "@/components/CallInterface";
 import { showGlobalAlert } from "@/hooks/use-alerts";
+import { useNotifications } from "@/hooks/use-notifications";
+import { sendNotificationToReception, formatMessageNotification } from "@/utils/notification";
+import NotificationPermissionRequest from "@/components/NotificationPermissionRequest";
 
 interface GuestChatProps {
   guestName: string;
@@ -40,12 +43,19 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isCallActive, setIsCallActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showNotificationsPrompt, setShowNotificationsPrompt] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { permission, isSubscribed } = useNotifications({
+    type: 'guest',
+    guestId,
+    roomNumber,
+    roomId: roomId
+  });
 
   // Show a welcome alert when chat starts, but only once
   useEffect(() => {
@@ -55,10 +65,15 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         description: "Estamos aquí para ayudarte con cualquier consulta durante tu estancia.",
         duration: 5000
       });
+      
+      // Check if we should show notifications prompt
+      if (permission !== 'granted' && permission !== 'denied' && !isSubscribed) {
+        setShowNotificationsPrompt(true);
+      }
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [permission, isSubscribed]);
 
   // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {
@@ -193,6 +208,17 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         .insert([newMessage]);
       
       if (error) throw error;
+      
+      // Send notification to reception
+      sendNotificationToReception(
+        formatMessageNotification(
+          true, // isGuest
+          message,
+          guestName,
+          roomNumber,
+          guestId
+        )
+      );
       
       setMessage("");
       scrollToBottom(false);
@@ -386,25 +412,50 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
               Cabaña {roomNumber} - {guestName}
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              startCall();
-              // Show alert about the call
-              showGlobalAlert({
-                title: "Llamada a recepción",
-                description: "Conectando con recepción. Por favor espere...",
-                duration: 3000
-              });
-            }}
-            className="text-white hover:bg-white/20"
-            title="Llamar a recepción"
-          >
-            <Phone className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center">
+            {showNotificationsPrompt && !isSubscribed && permission !== 'granted' && permission !== 'denied' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowNotificationsPrompt(true)}
+                className="text-white hover:bg-white/20 mr-2"
+                title="Activar notificaciones"
+              >
+                <Bell className="h-5 w-5" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                startCall();
+                // Show alert about the call
+                showGlobalAlert({
+                  title: "Llamada a recepción",
+                  description: "Conectando con recepción. Por favor espere...",
+                  duration: 3000
+                });
+              }}
+              className="text-white hover:bg-white/20"
+              title="Llamar a recepción"
+            >
+              <Phone className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
+
+      {/* Notification Permission Banner */}
+      {showNotificationsPrompt && !isSubscribed && permission !== 'granted' && permission !== 'denied' && (
+        <div className="px-3 pt-3">
+          <NotificationPermissionRequest 
+            type="guest"
+            guestId={guestId}
+            roomNumber={roomNumber}
+            onPermissionChange={() => setShowNotificationsPrompt(false)}
+          />
+        </div>
+      )}
 
       {/* Messages Area */}
       <div className="flex-grow overflow-auto p-3" ref={scrollContainerRef}>

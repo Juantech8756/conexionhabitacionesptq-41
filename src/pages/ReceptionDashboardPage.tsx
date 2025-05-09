@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ReceptionDashboard from "@/components/ReceptionDashboard";
+import ReceptionDashboardWrapper from "@/components/ReceptionDashboardWrapper";
 import RoomManagement from "@/components/RoomManagement";
 import DashboardStats from "@/components/DashboardStats";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/s
 import CallInterface from "@/components/CallInterface";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 import type { RoomManagementProps } from "@/components/RoomManagementProps";
+import { sendNotificationToGuest, formatMessageNotification } from "@/utils/notification";
 
 const ReceptionDashboardPage = () => {
   const navigate = useNavigate();
@@ -89,12 +90,43 @@ const ReceptionDashboardPage = () => {
         description: "Has recibido un nuevo mensaje de un huésped.",
         variant: "default"
       });
+      
+      // Get guest information to send notification
+      const getMessage = async () => {
+        try {
+          // Get guest information by guest_id
+          const { data: guest } = await supabase
+            .from('guests')
+            .select('name, room_number')
+            .eq('id', payload.new.guest_id)
+            .single();
+            
+          if (guest) {
+            // Send notification via edge function
+            sendNotificationToGuest(
+              payload.new.guest_id,
+              formatMessageNotification(
+                false, // isGuest
+                payload.new.content,
+                guest.name,
+                guest.room_number,
+                payload.new.guest_id
+              )
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching guest data for notification:", error);
+        }
+      };
+      
+      getMessage();
 
       // If not on messages tab, add a visual indication
       if (activeTab !== "messages") {
         // Add visual indication here if needed
       }
     }).subscribe();
+    
     return () => {
       supabase.removeChannel(messagesChannel);
     };
@@ -367,7 +399,7 @@ const ReceptionDashboardPage = () => {
           
           <div className="flex-grow overflow-auto">
             <TabsContent value="messages" className="h-full m-0 p-0 data-[state=active]:fade-in">
-              <ReceptionDashboard onCallGuest={handleStartCall} />
+              <ReceptionDashboardWrapper onCallGuest={handleStartCall} />
             </TabsContent>
             <TabsContent value="stats" className="h-full m-0 p-0 data-[state=active]:fade-in">
               <DashboardStats />

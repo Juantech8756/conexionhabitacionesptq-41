@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import GuestRegistrationForm from "@/components/GuestRegistrationForm";
+import GuestRegistrationFormWrapper from "@/components/GuestRegistrationFormWrapper";
 import GuestChat from "@/components/GuestChat";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -336,7 +336,7 @@ const GuestPortal = () => {
               onBack={handleBackToRegistration}
             />
           ) : (
-            <GuestRegistrationForm 
+            <GuestRegistrationFormWrapper 
               onRegister={handleRegister}
               preselectedRoomId={roomIdFromUrl || undefined}
               showSuccessToast={false} 

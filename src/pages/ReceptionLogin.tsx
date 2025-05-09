@@ -7,11 +7,13 @@ import { useToast } from "@/components/ui/use-toast";
 import { Hotel } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import NotificationPermissionRequest from "@/components/NotificationPermissionRequest";
 
 const ReceptionLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -47,8 +49,13 @@ const ReceptionLogin = () => {
           description: "Redirigiendo al dashboard..."
         });
         
-        // Redirect to dashboard
-        navigate("/reception/dashboard");
+        // Show notification permission prompt
+        setShowNotificationPrompt(true);
+        
+        // Redirect to dashboard after a small delay to allow notification prompt
+        setTimeout(() => {
+          navigate("/reception/dashboard");
+        }, 500);
       }
     } catch (error: any) {
       console.error("Login error:", error);
@@ -71,6 +78,15 @@ const ReceptionLogin = () => {
             Portal de Recepción
           </h1>
         </div>
+        
+        {showNotificationPrompt && (
+          <div className="mb-6">
+            <NotificationPermissionRequest 
+              type="reception"
+              className="mb-4"
+            />
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
