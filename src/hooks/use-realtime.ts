@@ -42,11 +42,8 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     
     console.log(`Creating new realtime channel: ${uniqueChannelName}`);
     
-    // Create a new channel
-    let channel = supabase.channel(uniqueChannelName);
-    
-    // First, add system events for connection status (outside the loop)
-    channel = channel
+    // Create a new channel with system event handlers
+    const channel = supabase.channel(uniqueChannelName)
       .on('system', { event: 'connected' }, () => {
         console.log(`Channel ${uniqueChannelName} connected`);
         setIsConnected(true);
@@ -65,20 +62,21 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
         }
       });
 
-    // Then add postgres_changes events separately for each subscription
+    // Add all postgres_changes subscriptions
     subscriptions.forEach(({ table, event, filter, filterValue, callback }) => {
-      const filterObj = filter ? { [filter]: filterValue } : {};
+      const filterConfig = filter && filterValue ? 
+        { filter: `${filter}=eq.${filterValue}` } : {};
       
-      console.log(`Adding subscription to ${table} for event ${event}`, filterObj);
+      console.log(`Adding subscription to ${table} for event ${event}`, 
+        filter && filterValue ? filterConfig : "no filter");
       
-      // Add postgres_changes event handler with the correct structure
-      channel = channel.on(
+      channel.on(
         'postgres_changes',
         {
           event: event,
           schema: 'public',
           table: table,
-          filter: filter && filterValue ? `${filter}=eq.${filterValue}` : undefined
+          ...filterConfig
         },
         (payload) => {
           console.log(`Received realtime event for ${table}:`, payload);
