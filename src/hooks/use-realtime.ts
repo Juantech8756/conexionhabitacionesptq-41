@@ -51,14 +51,14 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       
       console.log(`Adding subscription to ${table} for event ${event}`, filterObj);
       
-      // Using the correct type for postgres_changes event
+      // Fix for the type error: Using the correct structure for postgres_changes event
       channel = channel.on(
         'postgres_changes',
         {
           event,
           schema: 'public',
           table,
-          ...filterObj
+          ...(filter ? { filter: `${filter}=eq.${filterValue}` } : {})
         },
         (payload) => {
           console.log(`Received realtime event for ${table}:`, payload);
