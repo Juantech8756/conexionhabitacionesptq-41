@@ -40,6 +40,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "react-router-dom";
+import { RoomManagementProps } from "@/components/RoomManagementProps";
 
 // Define the schema for form validation
 const roomFormSchema = z.object({
@@ -59,7 +60,7 @@ type Room = {
   created_at: string;
 };
 
-const RoomManagement = () => {
+const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -335,19 +336,20 @@ const RoomManagement = () => {
                 <TableHead>Nombre</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Estado</TableHead>
+                {showGuestCount && <TableHead>Huéspedes</TableHead>}
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-4">
+                  <TableCell colSpan={showGuestCount ? 5 : 4} className="text-center py-4">
                     Cargando...
                   </TableCell>
                 </TableRow>
               ) : filteredRooms.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-4">
+                  <TableCell colSpan={showGuestCount ? 5 : 4} className="text-center py-4">
                     No hay cabañas disponibles
                   </TableCell>
                 </TableRow>
@@ -357,6 +359,13 @@ const RoomManagement = () => {
                     <TableCell className="font-medium">{room.room_number}</TableCell>
                     <TableCell>{getTypeLabel(room.type)}</TableCell>
                     <TableCell>{getStatusBadge(room.status)}</TableCell>
+                    {showGuestCount && (
+                      <TableCell>
+                        {/* This is a placeholder for guest count */}
+                        {/* Implement guest count display here if needed */}
+                        -
+                      </TableCell>
+                    )}
                     <TableCell className="text-right">
                       <div className="flex justify-end items-center space-x-1">
                         <Button
@@ -480,6 +489,8 @@ const RoomManagement = () => {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {children}
     </div>
   );
 };

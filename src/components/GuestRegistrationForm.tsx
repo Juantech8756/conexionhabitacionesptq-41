@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,27 +41,33 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   const [preselectedRoom, setPreselectedRoom] = useState<Room | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
 
-  // Generate or retrieve device ID for persistency
+  // Generate or retrieve device ID for persistency - simplified to fix infinite type issue
   useEffect(() => {
-    const storedDeviceId = localStorage.getItem('device_id') || 
+    // Get existing or create new device ID
+    const id = localStorage.getItem('device_id') || 
       `device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     
+    // Store it if it doesn't exist
     if (!localStorage.getItem('device_id')) {
-      localStorage.setItem('device_id', storedDeviceId);
+      localStorage.setItem('device_id', id);
     }
     
-    setDeviceId(storedDeviceId);
+    setDeviceId(id);
+  }, []);
+  
+  // Separate useEffect for checking existing registration to avoid dependency issues
+  useEffect(() => {
+    // Only proceed if we have a device ID
+    if (!deviceId) return;
     
-    // Check if this device already registered a room
+    // Define function to check for existing registration
     const checkExistingRegistration = async () => {
-      if (!storedDeviceId) return;
-      
       try {
         // Check if this device is already registered with a room
         const { data: existingGuest, error } = await supabase
           .from('guests')
           .select('id, name, room_number, room_id')
-          .eq('device_id', storedDeviceId)
+          .eq('device_id', deviceId)
           .maybeSingle();
           
         if (error) throw error;
@@ -84,8 +90,9 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
       }
     };
     
+    // Call the function
     checkExistingRegistration();
-  }, [onRegister, toast]);
+  }, [deviceId, onRegister, toast]);
 
   // Fetch available rooms
   useEffect(() => {
