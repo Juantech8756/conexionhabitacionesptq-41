@@ -925,7 +925,7 @@ const ReceptionDashboard = ({
         toast({
           title: "Advertencia",
           description: "Se eliminaron todos los mensajes pero hubo un problema al eliminar al huésped. Parte de la información podría permanecer en el sistema.",
-          variant: "warning",
+          variant: "destructive",
           duration: 5000
         });
       }
