@@ -12,7 +12,7 @@ let containerInitialized = false;
 
 // Storage of recent alerts to prevent duplicates
 const recentAlertDescriptions = new Set<string>();
-const MAX_ALERT_LIFETIME = 10000; // Force remove after 10s
+const MAX_ALERT_LIFETIME = 6000; // Maximum lifetime for any alert (6 seconds)
 
 // Initialize the alerts container if it doesn't exist yet
 const initializeAlertsContainer = () => {

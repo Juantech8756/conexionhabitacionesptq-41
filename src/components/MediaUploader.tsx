@@ -32,10 +32,11 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
                     file.type.startsWith('video/') ? 'video' : null;
     
     if (!fileType) {
-      toast({
+      showGlobalAlert({
         title: "Tipo de archivo no soportado",
         description: "Solo se permiten archivos de imagen y video.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 4000
       });
       return;
     }
@@ -43,10 +44,11 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
     // Check file size (10MB limit)
     const MAX_SIZE = 10 * 1024 * 1024; // 10MB
     if (file.size > MAX_SIZE) {
-      toast({
+      showGlobalAlert({
         title: "Archivo demasiado grande",
         description: "El tamaño máximo permitido es 10MB.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 4000
       });
       return;
     }
@@ -80,17 +82,19 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
       // Pass the URL back to the parent component
       onUploadComplete(publicUrlData.publicUrl, fileType as 'image' | 'video');
 
-      toast({
+      showGlobalAlert({
         title: "Archivo subido",
         description: "El archivo se ha subido correctamente.",
+        duration: 4000
       });
 
     } catch (error) {
       console.error("Error uploading file:", error);
-      toast({
+      showGlobalAlert({
         title: "Error al subir archivo",
         description: "No se pudo subir el archivo. Intente de nuevo.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 4000
       });
     } finally {
       setIsUploading(false);

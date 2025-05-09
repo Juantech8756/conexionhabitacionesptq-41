@@ -17,8 +17,8 @@ export interface AlertsContainerHandle {
 }
 
 const DEFAULT_DURATION = 5000; // 5 seconds default
-const MAX_ALERTS = 5; // Maximum number of alerts to show at once
-const MAX_ALERT_LIFETIME = 10000; // Force remove after 10s
+const MAX_ALERTS = 3; // Maximum number of alerts to show at once
+const MAX_ALERT_LIFETIME = 6000; // Force remove after 6s
 
 const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
   const [alerts, setAlerts] = useState<AlertType[]>([]);
@@ -31,7 +31,7 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
         // Remove any alerts that have exceeded their lifetime or the maximum allowed time
         const filteredAlerts = prev.filter(alert => {
           const duration = Math.min(alert.duration || DEFAULT_DURATION, MAX_ALERT_LIFETIME);
-          const expiryTime = alert.timestamp + duration + 1000; // Add 1 second buffer
+          const expiryTime = alert.timestamp + duration;
           return now < expiryTime;
         });
         
@@ -79,7 +79,7 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
     // Safety measure: Force remove after MAX_ALERT_LIFETIME if not removed by other means
     setTimeout(() => {
       removeAlert(id);
-    }, MAX_ALERT_LIFETIME + 1500);
+    }, MAX_ALERT_LIFETIME + 500);
     
     return id;
   }, []);
