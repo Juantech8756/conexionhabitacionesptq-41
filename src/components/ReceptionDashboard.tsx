@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { User, MessageCircle, Mic, MicOff, Send, Bell, ArrowLeft, Menu, Phone, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -914,9 +914,21 @@ const ReceptionDashboard = ({
         }
       }
       
-      // Skip trying to delete from response_statistics as it's a VIEW, not a table
-      // We don't need to delete from it directly as it's based on the messages table
-      // which we've already deleted from
+      // Step 4: Delete the guest from the guests table
+      const { error: guestDeleteError } = await supabase
+        .from('guests')
+        .delete()
+        .eq('id', guestToRemove.id);
+        
+      if (guestDeleteError) {
+        console.error("Error deleting guest:", guestDeleteError);
+        toast({
+          title: "Advertencia",
+          description: "Se eliminaron todos los mensajes pero hubo un problema al eliminar al huésped. Parte de la información podría permanecer en el sistema.",
+          variant: "warning",
+          duration: 5000
+        });
+      }
       
       // Clear messages from local state
       setMessages(prev => {
@@ -942,14 +954,14 @@ const ReceptionDashboard = ({
       
       toast({
         title: "Conversación eliminada",
-        description: "Todos los mensajes y archivos asociados han sido eliminados correctamente.",
+        description: "Todos los mensajes, archivos y datos del huésped han sido eliminados correctamente.",
         duration: 4000
       });
     } catch (error) {
       console.error("Error deleting chat:", error);
       toast({
         title: "Error",
-        description: "No se pudo eliminar la conversación. Por favor, inténtalo de nuevo.",
+        description: "No se pudo eliminar completamente la conversación. Por favor, inténtalo de nuevo.",
         variant: "destructive",
         duration: 4000
       });

@@ -50,7 +50,7 @@ const DeleteChatDialog = ({
               <li>Todos los mensajes de texto</li>
               <li>Todos los mensajes de audio</li>
               <li>Todas las imágenes y videos compartidos</li>
-              <li>Historial completo de la conversación</li>
+              <li>El registro del huésped del sistema</li>
             </ul>
             <br />
             Esta acción <strong>no puede deshacerse</strong>.
