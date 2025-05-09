@@ -16,8 +16,13 @@ const QrCodeDisplay = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  const customDomain = "https://xn--conexin-q0a.parquetematicoquimbayas.com";
-  const qrUrl = roomId ? `${customDomain}/guest?room=${roomId}` : `${customDomain}/guest`;
+  // Get the current origin (protocol + hostname) to build an absolute URL that works in all environments
+  const currentOrigin = window.location.origin;
+  
+  // Build QR URL using the current origin instead of hardcoded domain
+  const qrUrl = roomId 
+    ? `${currentOrigin}/guest?room=${roomId}` 
+    : `${currentOrigin}/guest`;
 
   useEffect(() => {
     const fetchRoomData = async () => {
@@ -105,7 +110,8 @@ const QrCodeDisplay = () => {
   };
 
   const openQrDestination = () => {
-    // Open the QR URL in a new tab
+    // Open the QR URL - using the actual URL that will be encoded in the QR
+    console.log("Opening URL:", qrUrl);
     window.open(qrUrl, '_blank');
   };
 
@@ -179,6 +185,9 @@ const QrCodeDisplay = () => {
               <p className="text-xs italic">
                 El código QR lo conectará automáticamente con su habitación sin necesidad de seleccionarla manualmente.
               </p>
+              <p className="text-xs text-blue-600 mt-2 font-medium">
+                URL: {qrUrl}
+              </p>
             </div>
             <div className="flex gap-3 flex-wrap justify-center">
               <Button variant="outline" onClick={goBack} className="flex items-center gap-2">
@@ -189,7 +198,11 @@ const QrCodeDisplay = () => {
                 <Download className="h-4 w-4" />
                 Descargar QR
               </Button>
-              <Button variant="secondary" onClick={openQrDestination} className="flex items-center gap-2">
+              <Button 
+                variant="secondary" 
+                onClick={openQrDestination} 
+                className="flex items-center gap-2 bg-green-100 hover:bg-green-200 text-green-700 hover:text-green-800"
+              >
                 <ExternalLink className="h-4 w-4" />
                 Probar Enlace
               </Button>
