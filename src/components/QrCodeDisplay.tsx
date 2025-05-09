@@ -9,6 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
 
+// Define the base domain to use for QR codes
+const BASE_DOMAIN = "https://quimbayasconect.parquetematicoquimbayas.com";
+
 const QrCodeDisplay = () => {
   const [roomData, setRoomData] = useState<{id: string; room_number: string; type: string | null} | null>(null);
   const { roomId } = useParams();
@@ -16,13 +19,10 @@ const QrCodeDisplay = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Get the current origin (protocol + hostname) to build an absolute URL that works in all environments
-  const currentOrigin = window.location.origin;
-  
-  // Build QR URL using the current origin instead of hardcoded domain
+  // Build QR URL using the new BASE_DOMAIN instead of the current origin
   const qrUrl = roomId 
-    ? `${currentOrigin}/guest?room=${roomId}` 
-    : `${currentOrigin}/guest`;
+    ? `${BASE_DOMAIN}/guest?room=${roomId}` 
+    : `${BASE_DOMAIN}/guest`;
 
   useEffect(() => {
     const fetchRoomData = async () => {
@@ -110,7 +110,7 @@ const QrCodeDisplay = () => {
   };
 
   const openQrDestination = () => {
-    // Open the QR URL - using the actual URL that will be encoded in the QR
+    // Open the QR URL using our new domain URL
     console.log("Opening URL:", qrUrl);
     window.open(qrUrl, '_blank');
   };
