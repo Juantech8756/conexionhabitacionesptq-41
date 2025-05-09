@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 import CallInterface from "@/components/CallInterface";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface GuestChatProps {
   guestName: string;
@@ -42,8 +40,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  console.log("GuestChat renderizado con los datos:", {guestName, roomNumber, guestId});
-
   // Scroll to newest messages with improved reliability
   const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current) {
@@ -59,7 +55,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   // Fetch messages on initial load
   useEffect(() => {
     const fetchMessages = async () => {
-      console.log("Intentando obtener mensajes para el guestId:", guestId);
       try {
         const { data, error } = await supabase
           .from('messages')
@@ -68,8 +63,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           .order('created_at', { ascending: true });
         
         if (error) throw error;
-        
-        console.log("Mensajes obtenidos:", data);
         
         if (data.length === 0) {
           // Add welcome message if no messages exist
@@ -88,7 +81,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             
           if (!insertError) {
             setMessages([welcomeMessage]);
-            console.log("Mensaje de bienvenida agregado");
           }
         } else {
           setMessages(data);
@@ -118,7 +110,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             filter: `guest_id=eq.${guestId}`
           },
           (payload) => {
-            console.log("Nuevo mensaje recibido:", payload);
             setMessages(prev => [...prev, payload.new as MessageType]);
           }
         )
@@ -402,7 +393,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      {/* Call interface remains unchanged */}
+      {/* Call interface */}
       {isCallActive && (
         <CallInterface 
           isGuest={true}
