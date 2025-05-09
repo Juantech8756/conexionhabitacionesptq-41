@@ -10,14 +10,40 @@ interface MediaUploaderProps {
   guestId: string;
   onUploadComplete: (mediaUrl: string, mediaType: 'image' | 'video') => void;
   disabled?: boolean;
+  onFileSelect: (file: File | null) => void;
+  selectedFile: File | null;
 }
 
-const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUploaderProps) => {
+const MediaUploader = ({ 
+  guestId, 
+  onUploadComplete, 
+  disabled = false, 
+  onFileSelect,
+  selectedFile
+}: MediaUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Update the preview when a file is selected
+  useState(() => {
+    if (selectedFile) {
+      // Generate preview for images
+      if (selectedFile.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setPreviewUrl(e.target?.result as string);
+        };
+        reader.readAsDataURL(selectedFile);
+      } else {
+        // For videos, just set a placeholder
+        setPreviewUrl('video');
+      }
+    } else {
+      setPreviewUrl(null);
+    }
+  });
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
@@ -67,87 +93,15 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
       setPreviewUrl('video');
     }
     
-    setSelectedFile(file);
+    // Pass the selected file to parent component
+    onFileSelect(file);
   };
 
   const handleCancelSelection = () => {
-    setSelectedFile(null);
     setPreviewUrl(null);
+    onFileSelect(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-    
-    setIsUploading(true);
-    showGlobalAlert({
-      title: "Subiendo archivo",
-      description: "Por favor espere mientras se sube el archivo...",
-      duration: 2000
-    });
-
-    try {
-      console.log("Starting file upload...");
-      
-      // Determine file type
-      const fileType = selectedFile.type.startsWith('image/') ? 'image' : 'video';
-      
-      // Create folder structure: media/{guestId}/{fileType}s/
-      const fileName = `${Date.now()}_${selectedFile.name.replace(/\s+/g, '_')}`;
-      const filePath = `media/${guestId}/${fileType}s/${fileName}`;
-
-      console.log("Uploading to path:", filePath);
-      
-      // Upload to Supabase Storage
-      const { data, error } = await supabase
-        .storage
-        .from('chat_media')
-        .upload(filePath, selectedFile);
-
-      if (error) {
-        console.error("Upload error:", error);
-        throw error;
-      }
-
-      console.log("Upload successful:", data);
-
-      // Get public URL for the uploaded file
-      const { data: publicUrlData } = supabase
-        .storage
-        .from('chat_media')
-        .getPublicUrl(filePath);
-
-      console.log("Got public URL:", publicUrlData.publicUrl);
-
-      // Pass the URL back to the parent component
-      onUploadComplete(publicUrlData.publicUrl, fileType as 'image' | 'video');
-
-      showGlobalAlert({
-        title: "Archivo subido",
-        description: "El archivo se ha subido correctamente.",
-        duration: 4000
-      });
-
-      // Reset state
-      setSelectedFile(null);
-      setPreviewUrl(null);
-
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      showGlobalAlert({
-        title: "Error al subir archivo",
-        description: "No se pudo subir el archivo. Intente de nuevo.",
-        variant: "destructive",
-        duration: 4000
-      });
-    } finally {
-      setIsUploading(false);
-      // Clear the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
   };
 

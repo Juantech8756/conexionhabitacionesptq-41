@@ -447,8 +447,9 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
     return date.toLocaleDateString('es');
   };
 
-  // New function to check if there's a selected file to upload
   const handleSend = async () => {
+    if (!selectedGuest) return;
+    
     if (selectedFile) {
       // If there's a file pending upload, upload it first
       await handleFileUpload();
@@ -458,7 +459,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
     }
   };
 
-  const setSelectedMedia = (file: File | null) => {
+  const handleFileSelect = (file: File | null) => {
     setSelectedFile(file);
   };
 
@@ -937,8 +938,10 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                   
                   <MediaUploader 
                     guestId={selectedGuest.id} 
-                    onUploadComplete={handleMediaUploadComplete} 
-                    disabled={isRecording || isLoading} 
+                    onUploadComplete={handleMediaUploadComplete}
+                    disabled={isRecording || isLoading}
+                    onFileSelect={handleFileSelect}
+                    selectedFile={selectedFile}
                   />
                   
                   <Input
@@ -952,234 +955,11 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                   
                   <Button
                     type="button"
-                    onClick={sendReply}
-                    disabled={replyText.trim() === "" || isRecording || isLoading}
+                    onClick={handleSend}
+                    disabled={(replyText.trim() === "" && !selectedFile) || isRecording || isLoading}
                     className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
-  // Desktop layout 
-  return (
-    <div className="flex h-full bg-gray-100">
-      <div className="w-full h-full flex overflow-hidden">
-        {/* Lista de huéspedes (desktop) */}
-        <div className="w-1/4 border-r bg-white overflow-hidden flex flex-col">
-          <div className="p-4 border-b bg-gradient-to-r from-hotel-700 to-hotel-500 text-white">
-            <h2 className="text-xl font-semibold flex items-center">
-              <User className="mr-2 h-5 w-5" />
-              Huéspedes
-            </h2>
-          </div>
-          
-          <div className="flex-grow overflow-auto">
-            <ScrollArea className="h-full">
-              <AnimatePresence>
-                {guests.length === 0 ? (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="p-4 text-gray-500 text-center"
-                  >
-                    No hay huéspedes registrados
-                  </motion.div>
-                ) : (
-                  guests.map((guest) => (
-                    <motion.div
-                      key={guest.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${
-                        selectedGuest?.id === guest.id ? "bg-blue-50 border-l-4 border-l-hotel-600" : ""
-                      }`}
-                      onClick={() => selectGuest(guest)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium flex items-center">
-                            {guest.name} 
-                            <span className="ml-2 text-sm text-gray-500">
-                              Cabaña {guest.room_number}
-                            </span>
-                          </p>
-                          {getRoomInfo(guest)}
-                          <p className="text-xs text-gray-500 mt-1">
-                            {formatLastActivity(guest.last_activity)}
-                          </p>
-                        </div>
-                        {guest.unread_messages > 0 && (
-                          <motion.div 
-                            initial={{ scale: 0.8 }}
-                            animate={{ scale: 1 }}
-                            className="bg-hotel-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow-md"
-                          >
-                            {guest.unread_messages}
-                          </motion.div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </AnimatePresence>
-            </ScrollArea>
-          </div>
-        </div>
-
-        {/* Panel de mensajes (desktop) */}
-        <div className="flex-grow flex flex-col bg-gray-50 overflow-hidden">
-          {selectedGuest ? (
-            <>
-              <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-4 text-white shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold">{selectedGuest.name}</h2>
-                    <p className="text-sm text-white/90 flex items-center">
-                      Cabaña {selectedGuest.room_number}
-                    </p>
-                    {selectedGuest.room_id && rooms[selectedGuest.room_id] && (
-                      <div className="text-xs text-white/80 mt-1">
-                        {rooms[selectedGuest.room_id].type && (
-                          <span className="mr-3">
-                            Tipo: {rooms[selectedGuest.room_id].type === 'family' 
-                              ? 'Cabaña familiar' 
-                              : rooms[selectedGuest.room_id].type === 'couple' 
-                                ? 'Cabaña pareja' 
-                                : rooms[selectedGuest.room_id].type}
-                          </span>
-                        )}
-                        {rooms[selectedGuest.room_id].floor && (
-                          <span>Piso: {rooms[selectedGuest.room_id].floor}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={handleCallGuest}
-                      className="bg-white/20 hover:bg-white/30 text-white border-none"
-                    >
-                      <Phone className="h-4 w-4 mr-1" /> Llamar
-                    </Button>
-                    <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-none">
-                      <Bell className="h-4 w-4 mr-1" /> Notificar
-                    </Button>
-                  </div>
-                </div>
-              </header>
-
-              <div className="flex-grow overflow-auto">
-                <div className="h-full p-4">
-                  <div className="space-y-4">
-                    <AnimatePresence>
-                      {messages[selectedGuest.id]?.map((msg) => (
-                        <motion.div
-                          key={msg.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'}`}
-                        >
-                          <div
-                            className={`max-w-[80%] rounded-lg shadow-sm ${
-                              msg.is_guest 
-                                ? 'bg-white border border-gray-200 text-gray-800' 
-                                : 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white'
-                            } ${msg.is_audio || msg.is_media ? 'overflow-hidden p-0' : 'p-3'}`}
-                          >
-                            {msg.is_audio ? (
-                              <AudioMessagePlayer 
-                                audioUrl={msg.audio_url || ''} 
-                                isGuest={msg.is_guest} 
-                                isDark={!msg.is_guest}
-                              />
-                            ) : msg.is_media ? (
-                              <MediaMessage
-                                mediaUrl={msg.media_url || ''}
-                                mediaType={msg.media_type || 'image'}
-                                isGuest={msg.is_guest}
-                              />
-                            ) : (
-                              <p>{msg.content}</p>
-                            )}
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                    <div ref={messagesEndRef} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border-t bg-white shadow-inner">
-                <div className="flex items-center space-x-2">
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="outline"
-                    onClick={toggleRecording}
-                    className={`flex-shrink-0 transition-colors duration-200 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`}
-                    disabled={isLoading}
-                  >
-                    {isRecording ? (
-                      <MicOff className="h-5 w-5" />
-                    ) : (
-                      <Mic className="h-5 w-5" />
-                    )}
-                  </Button>
-                  
-                  <MediaUploader 
-                    guestId={selectedGuest.id} 
-                    onUploadComplete={handleMediaUploadComplete}
-                    disabled={isRecording || isLoading}
-                  />
-                  
-                  <Input
-                    placeholder="Escriba su respuesta..."
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSend()}
-                    className="flex-grow shadow-sm focus:ring-2 focus:ring-hotel-500/50 transition-all duration-200"
-                    disabled={isRecording || isLoading}
-                  />
-                  
-                  <Button
-                    type="button"
-                    onClick={handleSend}
-                    disabled={(replyText.trim() === "" && !selectedFile) || isRecording || isLoading}
-                    className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600 transition-all duration-200 shadow-sm"
-                  >
-                    <Send className="h-5 w-5 mr-1" /> Enviar
-                  </Button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center justify-center h-full text-gray-500"
-            >
-              <div className="text-center">
-                <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                <p>Seleccione un huésped para ver los mensajes</p>
-              </div>
-            </motion.div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default ReceptionDashboard;
