@@ -59,6 +59,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
   const [showGuestList, setShowGuestList] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   
@@ -443,6 +444,107 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `Hace ${hours} h`;
     return date.toLocaleDateString('es');
+  };
+
+  // New function to check if there's a selected file to upload
+  const handleSend = async () => {
+    if (selectedFile) {
+      // If there's a file pending upload, upload it first
+      await handleFileUpload();
+    } else if (replyText.trim() !== "") {
+      // Otherwise send a text message if there's text
+      await sendReply();
+    }
+  };
+
+  const setSelectedMedia = (file: File | null) => {
+    setSelectedFile(file);
+  };
+
+  const handleFileUpload = async () => {
+    if (!selectedFile || !selectedGuest) return;
+    
+    setIsLoading(true);
+    showGlobalAlert({
+      title: "Subiendo archivo",
+      description: "Por favor espere mientras se sube el archivo...",
+      duration: 2000
+    });
+
+    try {
+      // Determine file type
+      const fileType = selectedFile.type.startsWith('image/') ? 'image' : 'video';
+      
+      // Create folder structure: media/{guestId}/{fileType}s/
+      const fileName = `${Date.now()}_${selectedFile.name.replace(/\s+/g, '_')}`;
+      const filePath = `media/${selectedGuest.id}/${fileType}s/${fileName}`;
+      
+      // Upload to Supabase Storage
+      const { data, error } = await supabase
+        .storage
+        .from('chat_media')
+        .upload(filePath, selectedFile);
+
+      if (error) throw error;
+
+      // Get public URL for the uploaded file
+      const { data: publicUrlData } = supabase
+        .storage
+        .from('chat_media')
+        .getPublicUrl(filePath);
+
+      // Create a new media message
+      const newMessage = {
+        guest_id: selectedGuest.id,
+        content: fileType === 'image' ? "Imagen compartida" : "Video compartido",
+        is_guest: false,
+        is_audio: false,
+        is_media: true,
+        media_url: publicUrlData.publicUrl,
+        media_type: fileType
+      };
+      
+      const { error: msgError } = await supabase
+        .from('messages')
+        .insert([newMessage]);
+      
+      if (msgError) throw msgError;
+      
+      // Mark all pending messages as responded
+      await updateResponseStatus(selectedGuest.id);
+      
+      // Reset wait time in the UI
+      setSelectedGuest(prev => prev ? { ...prev, wait_time_minutes: 0 } : null);
+      
+      setGuests(prevGuests => 
+        prevGuests.map(g => 
+          g.id === selectedGuest.id ? { ...g, wait_time_minutes: 0 } : g
+        )
+      );
+
+      // Force refresh guest statistics
+      setTimeout(() => {
+        refreshGuestStatistics();
+      }, 500);
+
+      toast({
+        title: "Archivo enviado",
+        description: "El archivo se ha enviado correctamente."
+      });
+      
+      // Reset states
+      setSelectedFile(null);
+      
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast({
+        title: "Error al subir archivo",
+        description: "No se pudo enviar el archivo. Intente de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const sendReply = async () => {
@@ -842,14 +944,13 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                     placeholder="Escriba su respuesta..."
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && sendReply()}
+                    onKeyPress={(e) => e.key === "Enter" && handleSend()}
                     className="flex-grow shadow-sm text-sm"
                     disabled={isRecording || isLoading}
                   />
                   
                   <Button
                     type="button"
-                    size="icon"
                     onClick={sendReply}
                     disabled={replyText.trim() === "" || isRecording || isLoading}
                     className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600"
@@ -1038,23 +1139,23 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                   
                   <MediaUploader 
                     guestId={selectedGuest.id} 
-                    onUploadComplete={handleMediaUploadComplete} 
-                    disabled={isRecording || isLoading} 
+                    onUploadComplete={handleMediaUploadComplete}
+                    disabled={isRecording || isLoading}
                   />
                   
                   <Input
                     placeholder="Escriba su respuesta..."
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && sendReply()}
+                    onKeyPress={(e) => e.key === "Enter" && handleSend()}
                     className="flex-grow shadow-sm focus:ring-2 focus:ring-hotel-500/50 transition-all duration-200"
                     disabled={isRecording || isLoading}
                   />
                   
                   <Button
                     type="button"
-                    onClick={sendReply}
-                    disabled={replyText.trim() === "" || isRecording || isLoading}
+                    onClick={handleSend}
+                    disabled={(replyText.trim() === "" && !selectedFile) || isRecording || isLoading}
                     className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600 transition-all duration-200 shadow-sm"
                   >
                     <Send className="h-5 w-5 mr-1" /> Enviar

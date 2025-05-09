@@ -200,20 +200,6 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
           >
             <X className="h-4 w-4" />
           </Button>
-          
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleUpload}
-            className="h-8 flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600"
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-white" />
-            ) : (
-              "Enviar"
-            )}
-          </Button>
         </div>
       )}
     </>

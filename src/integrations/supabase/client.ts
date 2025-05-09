@@ -34,7 +34,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     if (!chatMediaBucket) {
       console.log('Creating chat_media storage bucket...');
       const { data, error } = await supabase.storage.createBucket('chat_media', {
-        public: true,
+        public: true, // Make sure bucket is public
         fileSizeLimit: 10485760, // 10MB limit
         allowedMimeTypes: ['image/*', 'video/*']
       });
@@ -43,16 +43,30 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
         console.error('Error creating chat_media bucket:', error);
         
         // If the error is due to RLS policy, we can't do much client-side
-        if (error.message.includes('row-level security policy')) {
+        if (error.message?.includes('row-level security policy')) {
           console.warn('Unable to create bucket due to Row Level Security policy. This might need to be created in the Supabase dashboard.');
         }
       } else {
         console.log('Created chat_media bucket successfully');
       }
+    } else {
+      console.log('chat_media bucket already exists');
+      
+      // Make sure the bucket is public if it exists
+      try {
+        const { error: updateError } = await supabase.storage.updateBucket('chat_media', {
+          public: true
+        });
+        
+        if (updateError) {
+          console.error('Error making bucket public:', updateError);
+        } else {
+          console.log('Ensured chat_media bucket is public');
+        }
+      } catch (err) {
+        console.error('Error updating bucket settings:', err);
+      }
     }
-
-    // Set up RLS and public access policies for the bucket if needed
-    // Note: This is handled server-side and would require additional SQL queries
   } catch (err) {
     console.error('Failed to initialize storage:', err);
   }
