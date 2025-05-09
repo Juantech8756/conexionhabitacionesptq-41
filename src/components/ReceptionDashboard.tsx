@@ -917,7 +917,7 @@ const ReceptionDashboard = ({
                 }} transition={{
                   duration: 0.2
                 }} className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'}`}>
-                        <div className="rounded-sm mx-[13px] my-[5px] px-[2px] py-[5px]">
+                        <div className={`rounded-lg ${msg.is_guest ? 'chat-bubble-guest' : 'chat-bubble-staff'} mx-2 my-1 px-3 py-2`}>
                           {msg.is_audio ? <AudioMessagePlayer audioUrl={msg.audio_url || ''} isGuest={!msg.is_guest} isDark={!msg.is_guest} /> : msg.is_media ? <MediaMessage mediaUrl={msg.media_url || ''} mediaType={msg.media_type || 'image'} isGuest={msg.is_guest} /> : <p className="text-sm break-words">{msg.content}</p>}
                         </div>
                       </motion.div>)}
