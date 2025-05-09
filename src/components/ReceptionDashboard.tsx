@@ -922,7 +922,7 @@ const ReceptionDashboard = ({
               }} transition={{
                 duration: 0.2
               }} className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'}`}>
-                      <div className="mx-[6px] bg-transparent">
+                      <div className={`max-w-[85%] p-3 rounded-lg ${msg.is_guest ? 'bg-white border border-gray-200 text-gray-800' : 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white'}`}>
                         {msg.is_audio ? <AudioMessagePlayer audioUrl={msg.audio_url || ''} isGuest={!msg.is_guest} isDark={!msg.is_guest} /> : msg.is_media ? <MediaMessage mediaUrl={msg.media_url || ''} mediaType={msg.media_type || 'image'} isGuest={msg.is_guest} /> : <p className="text-sm break-words">{msg.content}</p>}
                       </div>
                     </motion.div>)}
