@@ -24,16 +24,21 @@ const TemporaryAlert = ({
 }: TemporaryAlertProps) => {
   const [isVisible, setIsVisible] = useState(true);
 
+  // Force-close after maximum duration (10 seconds) regardless of specified duration
+  const maxDuration = Math.min(duration, 10000); // Max 10 seconds for any alert
+
   useEffect(() => {
     // Always set a timeout to ensure all alerts are temporary
     const timer = setTimeout(() => {
       handleClose();
-    }, duration);
+    }, maxDuration);
 
     return () => clearTimeout(timer);
-  }, [duration, id]);
+  }, [maxDuration, id]);
 
   const handleClose = () => {
+    if (!isVisible) return; // Prevent duplicate close actions
+    
     setIsVisible(false);
     // Use a shorter timeout for the exit animation
     setTimeout(() => {

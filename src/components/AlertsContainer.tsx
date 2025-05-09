@@ -18,21 +18,23 @@ export interface AlertsContainerHandle {
 
 const DEFAULT_DURATION = 5000; // 5 seconds default
 const MAX_ALERTS = 5; // Maximum number of alerts to show at once
+const MAX_ALERT_LIFETIME = 10000; // Force remove after 10s
 
 const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
   const [alerts, setAlerts] = useState<AlertType[]>([]);
 
-  // Clean up expired alerts automatically
+  // Clean up expired alerts automatically every second
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
       setAlerts((prev) => {
+        // Remove any alerts that have exceeded their lifetime or the maximum allowed time
         const filteredAlerts = prev.filter(alert => {
-          const expiryTime = alert.timestamp + (alert.duration || DEFAULT_DURATION) + 1000; // Add 1 second buffer
+          const duration = Math.min(alert.duration || DEFAULT_DURATION, MAX_ALERT_LIFETIME);
+          const expiryTime = alert.timestamp + duration + 1000; // Add 1 second buffer
           return now < expiryTime;
         });
         
-        // If we filtered some alerts, return the new array
         if (filteredAlerts.length !== prev.length) {
           return filteredAlerts;
         }
@@ -46,7 +48,7 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
   const addAlert = useCallback((alert: Omit<AlertType, "id" | "timestamp">) => {
     const id = Math.random().toString(36).substring(2, 9);
     const now = Date.now();
-    const duration = alert.duration || DEFAULT_DURATION;
+    const duration = Math.min(alert.duration || DEFAULT_DURATION, MAX_ALERT_LIFETIME);
     
     // Prevent duplicate alerts
     setAlerts((prev) => {
@@ -66,7 +68,7 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
       }
       
       // Limit the number of alerts by removing the oldest ones if necessary
-      const newAlerts = [...prev, { ...alert, id, timestamp: now }];
+      const newAlerts = [...prev, { ...alert, id, timestamp: now, duration }];
       if (newAlerts.length > MAX_ALERTS) {
         return newAlerts.slice(newAlerts.length - MAX_ALERTS);
       }
@@ -74,7 +76,11 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
       return newAlerts;
     });
     
-    // Alerts will be auto-removed by the useEffect cleanup or via the X button
+    // Safety measure: Force remove after MAX_ALERT_LIFETIME if not removed by other means
+    setTimeout(() => {
+      removeAlert(id);
+    }, MAX_ALERT_LIFETIME + 1500);
+    
     return id;
   }, []);
 

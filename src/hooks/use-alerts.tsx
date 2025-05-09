@@ -6,11 +6,13 @@ import AlertsContainer, { AlertType } from "@/components/AlertsContainer";
 // Create a singleton for the alerts container
 let alertsContainerInstance: {
   addAlert: (alert: Omit<AlertType, "id" | "timestamp">) => string;
+  removeAlert: (id: string) => void;
 } | null = null;
 let containerInitialized = false;
 
 // Storage of recent alerts to prevent duplicates
 const recentAlertDescriptions = new Set<string>();
+const MAX_ALERT_LIFETIME = 10000; // Force remove after 10s
 
 // Initialize the alerts container if it doesn't exist yet
 const initializeAlertsContainer = () => {
@@ -51,6 +53,10 @@ export const useAlerts = () => {
   }, []);
   
   const showAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
+    // Enforce maximum duration
+    const duration = Math.min(alert.duration || 5000, MAX_ALERT_LIFETIME);
+    const alertWithLimit = { ...alert, duration };
+    
     // Global level alert deduplication
     const alertKey = `${alert.title || ""}-${alert.description}`;
     
@@ -76,7 +82,7 @@ export const useAlerts = () => {
     // Auto-clear from recent alerts after expiry
     setTimeout(() => {
       recentAlertDescriptions.delete(alertKey);
-    }, alert.duration || 5000);
+    }, duration);
     
     // If we're on the server or the container isn't ready yet, schedule the alert for later
     if (typeof window === "undefined" || !alertsContainerInstance) {
@@ -86,14 +92,14 @@ export const useAlerts = () => {
         }
         setTimeout(() => {
           if (alertsContainerInstance) {
-            alertsContainerInstance.addAlert(alert);
+            alertsContainerInstance.addAlert(alertWithLimit);
           }
         }, 100);
       }, 0);
       return "";
     }
     
-    return alertsContainerInstance.addAlert(alert);
+    return alertsContainerInstance.addAlert(alertWithLimit);
   };
   
   return { showAlert };
@@ -102,6 +108,10 @@ export const useAlerts = () => {
 // Simplified version for global use without hooks
 export const showGlobalAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
   if (typeof window !== "undefined") {
+    // Enforce maximum duration
+    const duration = Math.min(alert.duration || 5000, MAX_ALERT_LIFETIME);
+    const alertWithLimit = { ...alert, duration };
+    
     // Global level alert deduplication
     const alertKey = `${alert.title || ""}-${alert.description}`;
     
@@ -127,7 +137,7 @@ export const showGlobalAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
     // Auto-clear from recent alerts after expiry
     setTimeout(() => {
       recentAlertDescriptions.delete(alertKey);
-    }, alert.duration || 5000);
+    }, duration);
     
     if (!containerInitialized) {
       initializeAlertsContainer();
@@ -135,7 +145,7 @@ export const showGlobalAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
     
     setTimeout(() => {
       if (alertsContainerInstance) {
-        alertsContainerInstance.addAlert(alert);
+        alertsContainerInstance.addAlert(alertWithLimit);
       }
     }, 0);
   }
