@@ -58,10 +58,10 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
     }
   };
 
-  // Dialog content class based on fullscreen state
+  // Dialog content class based on fullscreen state - making it transparent
   const dialogContentClass = isFullscreen
-    ? "sm:max-w-[95vw] max-h-[95vh] p-1 overflow-hidden flex items-center justify-center"
-    : "sm:max-w-xl max-h-[80vh] p-1 overflow-hidden flex items-center justify-center";
+    ? "sm:max-w-[95vw] max-h-[95vh] p-1 overflow-hidden flex items-center justify-center bg-transparent border-none"
+    : "sm:max-w-xl max-h-[80vh] p-1 overflow-hidden flex items-center justify-center bg-transparent border-none";
 
   const isValidUrl = validateMediaUrl(mediaUrl);
 
