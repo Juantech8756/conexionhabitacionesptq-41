@@ -39,7 +39,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isCallActive, setIsCallActive] = useState(false);
-  const [hasShownWelcomeMessage, setHasShownWelcomeMessage] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -50,19 +49,16 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   // Show a welcome alert when chat starts, but only once
   useEffect(() => {
-    if (!hasShownWelcomeMessage) {
-      const timer = setTimeout(() => {
-        showGlobalAlert({
-          title: "¡Bienvenido al chat de soporte!",
-          description: "Estamos aquí para ayudarte con cualquier consulta durante tu estancia.",
-          duration: 5000
-        });
-        setHasShownWelcomeMessage(true);
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [hasShownWelcomeMessage]);
+    const timer = setTimeout(() => {
+      showGlobalAlert({
+        title: "¡Bienvenido al chat de soporte!",
+        description: "Estamos aquí para ayudarte con cualquier consulta durante tu estancia.",
+        duration: 5000
+      });
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {

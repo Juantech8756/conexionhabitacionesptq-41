@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import GuestRegistrationForm from "@/components/GuestRegistrationForm";
@@ -27,7 +26,7 @@ const GuestPortal = () => {
   const [showWelcome, setShowWelcome] = useState(false);
   const [roomData, setRoomData] = useState<{room_number: string, type: string | null, status: string | null} | null>(null);
   // Flag to prevent duplicate toasts
-  const [hasShownRegistrationToast, setHasShownRegistrationToast] = useState(false);
+  const [hasShownRegistrationToast, setHasShownRegistrationToast] = useState(true);
   // State to track if we're checking registration
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(true);
 
@@ -70,19 +69,7 @@ const GuestPortal = () => {
             setRoomId(roomIdFromUrl);
             setIsRegistered(true);
             
-            // Show welcome toast if not shown already
-            if (!hasShownRegistrationToast) {
-              toast({
-                title: "Sesión recuperada",
-                description: `Bienvenido a la cabaña ${existingRoomGuest.room_number}`,
-                duration: 3000,
-              });
-              setHasShownRegistrationToast(true);
-            }
-            
-            // Skip the rest of the checks
-            setIsCheckingRegistration(false);
-            return;
+            // REMOVED: Eliminated toast notification for returning users
           }
           
           // If no direct guest record, check room status
@@ -114,15 +101,7 @@ const GuestPortal = () => {
           setRoomId(existingGuest.room_id || '');
           setIsRegistered(true);
           
-          // Only show welcome toast for returning users, but not banner alerts
-          if (!hasShownRegistrationToast) {
-            toast({
-              title: "Sesión recuperada",
-              description: `Bienvenido a la cabaña ${existingGuest.room_number}`,
-              duration: 3000,
-            });
-            setHasShownRegistrationToast(true);
-          }
+          // REMOVED: Eliminated toast notification for returning users
         } else {
           console.log("No existing registration found, showing form");
           setIsRegistered(false);
@@ -136,7 +115,7 @@ const GuestPortal = () => {
     };
     
     checkRegistration();
-  }, [roomIdFromUrl, toast, hasShownRegistrationToast]);
+  }, [roomIdFromUrl, toast]);
 
   // Get room information if roomIdFromUrl is provided
   useEffect(() => {
@@ -161,14 +140,20 @@ const GuestPortal = () => {
           console.log("Room data fetched:", data);
           setRoomData(data);
           
-          // Only show welcome animation when not already registered for this room
-          if (!isRegistered) {
+          // MODIFIED: Only show welcome animation if:
+          // 1. Not already registered for this room AND
+          // 2. We don't have a session marked in sessionStorage
+          const animationShownKey = `animation-shown-${roomIdFromUrl}`;
+          if (!isRegistered && !sessionStorage.getItem(animationShownKey)) {
             setShowWelcome(true);
             
             // Show welcome animation for 1.5s
             setTimeout(() => {
               setShowWelcome(false);
             }, 1500);
+            
+            // Mark that we've shown the animation for this room
+            sessionStorage.setItem(animationShownKey, 'true');
           }
         }
       } catch (error) {
@@ -230,15 +215,20 @@ const GuestPortal = () => {
     localStorage.removeItem("roomId");
     setHasShownRegistrationToast(false);
     
-    // Clear any session storage markers for alerts
+    // Clear any session storage markers for alerts AND animations
     if (roomData) {
       const alertKey = `cabin-alert-Cabaña no disponible-La cabaña ${roomData.room_number} está ocupada.`;
       sessionStorage.removeItem(alertKey);
       
+      // Also remove animation markers
+      if (roomId) {
+        sessionStorage.removeItem(`animation-shown-${roomId}`);
+      }
+      
       // Clear any other cabin alert keys
       const keys = Object.keys(sessionStorage);
       keys.forEach(key => {
-        if (key.startsWith('cabin-alert-')) {
+        if (key.startsWith('cabin-alert-') || key.startsWith('animation-shown-')) {
           sessionStorage.removeItem(key);
         }
       });

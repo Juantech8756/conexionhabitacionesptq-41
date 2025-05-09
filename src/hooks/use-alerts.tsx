@@ -50,14 +50,19 @@ const initializeAlertsContainer = () => {
 const shouldShowAlert = (alertKey: string, duration: number): boolean => {
   const now = Date.now();
   
-  // Check for QR scan related alerts
-  if (alertKey.includes("QR") || (alertKey.includes("Cabaña") && alertKey.includes("ocupada"))) {
+  // Check for QR scan related alerts or session recovery alerts
+  if (alertKey.includes("QR") || 
+      (alertKey.includes("Cabaña") && alertKey.includes("ocupada")) ||
+      alertKey.includes("Sesión recuperada") ||
+      alertKey.includes("Bienvenido al chat") ||
+      alertKey.includes("¡Registro exitoso!")) {
+    
     // Create a unique key for this QR scan session
     const sessionKey = `cabin-alert-${alertKey}`;
     
     // Check if we've already shown this alert in this browser session
     if (sessionStorage.getItem(sessionKey) || qrScanSessions.has(sessionKey)) {
-      console.log("Suppressing duplicate QR scan/cabin alert:", alertKey);
+      console.log("Suppressing duplicate QR scan/cabin/session alert:", alertKey);
       return false;
     }
     
