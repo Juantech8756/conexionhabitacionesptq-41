@@ -51,14 +51,34 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       
       console.log(`Adding subscription to ${table} for event ${event}`, filterObj);
       
-      // Fix for the type error: Using the correct structure for postgres_changes event
+      // First, add system events for connection status
+      channel = channel
+        .on('system', { event: 'connected' }, () => {
+          console.log(`Channel ${uniqueChannelName} connected`);
+          setIsConnected(true);
+        })
+        .on('system', { event: 'disconnected' }, () => {
+          console.log(`Channel ${uniqueChannelName} disconnected`);
+          setIsConnected(false);
+
+          // Set up automatic reconnection
+          if (retryTimeoutRef.current === null) {
+            retryTimeoutRef.current = window.setTimeout(() => {
+              console.log('Attempting to reconnect...');
+              reconnect();
+              retryTimeoutRef.current = null;
+            }, 3000);
+          }
+        });
+
+      // Then add postgres_changes events separately with the correct config structure
       channel = channel.on(
         'postgres_changes',
         {
           event,
           schema: 'public',
           table,
-          ...(filter ? { filter: `${filter}=eq.${filterValue}` } : {})
+          ...(filter && filterValue ? { filter: `${filter}=eq.${filterValue}` } : {})
         },
         (payload) => {
           console.log(`Received realtime event for ${table}:`, payload);
@@ -66,26 +86,6 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
         }
       );
     });
-
-    // Subscribe to system events for connection status
-    channel = channel
-      .on('system', { event: 'connected' }, () => {
-        console.log(`Channel ${uniqueChannelName} connected`);
-        setIsConnected(true);
-      })
-      .on('system', { event: 'disconnected' }, () => {
-        console.log(`Channel ${uniqueChannelName} disconnected`);
-        setIsConnected(false);
-
-        // Set up automatic reconnection
-        if (retryTimeoutRef.current === null) {
-          retryTimeoutRef.current = window.setTimeout(() => {
-            console.log('Attempting to reconnect...');
-            reconnect();
-            retryTimeoutRef.current = null;
-          }, 3000);
-        }
-      });
 
     // Subscribe to the channel
     channelRef.current = channel.subscribe((status) => {
