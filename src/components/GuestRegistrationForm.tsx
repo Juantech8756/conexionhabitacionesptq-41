@@ -43,12 +43,10 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
 
   // Generate or retrieve device ID for persistency
   useEffect(() => {
-    // Check if a device ID already exists in localStorage
-    let storedDeviceId = localStorage.getItem('device_id');
+    const storedDeviceId = localStorage.getItem('device_id') || 
+      `device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     
-    // If no device ID exists, generate a new one
-    if (!storedDeviceId) {
-      storedDeviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    if (!localStorage.getItem('device_id')) {
       localStorage.setItem('device_id', storedDeviceId);
     }
     
@@ -56,7 +54,6 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
     
     // Check if this device already registered a room
     const checkExistingRegistration = async () => {
-      // Skip if no device ID
       if (!storedDeviceId) return;
       
       try {
