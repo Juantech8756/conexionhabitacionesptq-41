@@ -188,10 +188,10 @@ export const useNotifications = (options: UseNotificationsOptions) => {
       }
       
       // Usar SQL directo para insertar en la tabla notification_subscriptions
-      // Definir explícitamente el tipo para evitar inferencia recursiva
+      // Resolución del error: usar aserción de tipo para evitar inferencia recursiva
       const { error } = await supabase
         .from('notification_subscriptions')
-        .insert([subscriptionData]);
+        .insert([subscriptionData] as any);
         
       if (error) {
         console.error('Error inserting subscription:', error);
@@ -214,12 +214,12 @@ export const useNotifications = (options: UseNotificationsOptions) => {
       
       // Remove from database
       if (options.type === 'guest' && options.guestId) {
-        // Definir explícitamente el tipo de retorno para evitar inferencia recursiva
+        // Resolución del error: usar aserción de tipo para evitar inferencia recursiva
         const { error } = await supabase
           .from('notification_subscriptions')
           .delete()
           .eq('guestId', options.guestId)
-          .eq('endpoint', subscription.endpoint);
+          .eq('endpoint', subscription.endpoint) as any;
           
         if (error) {
           console.error('Error removing subscription:', error);
@@ -227,12 +227,12 @@ export const useNotifications = (options: UseNotificationsOptions) => {
       } else if (options.type === 'reception') {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Definir explícitamente el tipo de retorno para evitar inferencia recursiva
+          // Resolución del error: usar aserción de tipo para evitar inferencia recursiva
           const { error } = await supabase
             .from('notification_subscriptions')
             .delete()
             .eq('userId', user.id)
-            .eq('endpoint', subscription.endpoint);
+            .eq('endpoint', subscription.endpoint) as any;
             
           if (error) {
             console.error('Error removing subscription:', error);
@@ -284,3 +284,4 @@ export const showNotification = (title: string, options = {}) => {
     });
   }
 };
+
