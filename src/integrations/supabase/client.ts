@@ -30,93 +30,57 @@ async function createStorageBuckets() {
       return;
     }
     
-    // Check and create chat_media bucket
-    const chatMediaBucket = buckets?.find(bucket => bucket.name === 'chat_media');
-    
-    if (!chatMediaBucket) {
-      console.log('Creating chat_media storage bucket...');
-      
+    // Create or update chat_media bucket
+    const createOrUpdateBucket = async (bucketName: string, mimeTypes: string[], exists: boolean = false) => {
       try {
-        const { data, error } = await supabase.storage.createBucket('chat_media', {
-          public: true,
-          fileSizeLimit: 10485760, // 10MB limit
-          allowedMimeTypes: ['image/*', 'video/*']
-        });
-        
-        if (error) {
-          console.error('Error creating chat_media bucket:', error);
-          // If the error is due to RLS policy, we can't do much from the client
-          if (error.message?.includes('row-level security policy')) {
-            console.warn('Unable to create bucket due to Row Level Security policy. This might need to be created in the Supabase dashboard.');
+        if (!exists) {
+          console.log(`Creating ${bucketName} storage bucket...`);
+          const { data, error } = await supabase.storage.createBucket(bucketName, {
+            public: true,
+            fileSizeLimit: 10485760, // 10MB limit
+            allowedMimeTypes: mimeTypes
+          });
+          
+          if (error) {
+            console.error(`Error creating ${bucketName} bucket:`, error);
+            if (error.message?.includes('row-level security policy')) {
+              console.warn('Unable to create bucket due to Row Level Security policy. This might need to be created in the Supabase dashboard.');
+            }
+          } else {
+            console.log(`Created ${bucketName} bucket successfully:`, data);
           }
         } else {
-          console.log('Created chat_media bucket successfully:', data);
+          console.log(`${bucketName} bucket already exists`);
+          
+          // Ensure it's public
+          try {
+            const { data, error } = await supabase.storage.updateBucket(bucketName, {
+              public: true,
+              fileSizeLimit: 10485760,
+              allowedMimeTypes: mimeTypes
+            });
+            
+            if (error) {
+              console.error(`Error updating ${bucketName} bucket settings:`, error);
+            } else {
+              console.log(`Updated ${bucketName} bucket successfully:`, data);
+            }
+          } catch (updateErr) {
+            console.error(`Error updating ${bucketName} bucket settings:`, updateErr);
+          }
         }
-      } catch (createErr) {
-        console.error('Failed to create chat_media bucket:', createErr);
+      } catch (err) {
+        console.error(`Failed to create/update ${bucketName} bucket:`, err);
       }
-    } else {
-      console.log('chat_media bucket already exists');
-      
-      // Ensure it's public
-      try {
-        const { data, error } = await supabase.storage.updateBucket('chat_media', {
-          public: true,
-          fileSizeLimit: 10485760,
-          allowedMimeTypes: ['image/*', 'video/*']
-        });
-        
-        if (error) {
-          console.error('Error updating chat_media bucket settings:', error);
-        } else {
-          console.log('Updated chat_media bucket successfully:', data);
-        }
-      } catch (updateErr) {
-        console.error('Error updating bucket settings:', updateErr);
-      }
-    }
+    };
     
-    // Create audio_messages bucket if it doesn't exist
+    // Check and create/update chat_media bucket
+    const chatMediaBucket = buckets?.find(bucket => bucket.name === 'chat_media');
+    await createOrUpdateBucket('chat_media', ['image/*', 'video/*'], !!chatMediaBucket);
+    
+    // Check and create/update audio_messages bucket
     const audioMessagesBucket = buckets?.find(bucket => bucket.name === 'audio_messages');
-    
-    if (!audioMessagesBucket) {
-      console.log('Creating audio_messages storage bucket...');
-      
-      try {
-        const { data, error } = await supabase.storage.createBucket('audio_messages', {
-          public: true,
-          fileSizeLimit: 10485760,
-          allowedMimeTypes: ['audio/*']
-        });
-        
-        if (error) {
-          console.error('Error creating audio_messages bucket:', error);
-        } else {
-          console.log('Created audio_messages bucket successfully:', data);
-        }
-      } catch (audioErr) {
-        console.error('Failed to create audio_messages bucket:', audioErr);
-      }
-    } else {
-      console.log('audio_messages bucket already exists');
-      
-      // Ensure it's public
-      try {
-        const { data, error } = await supabase.storage.updateBucket('audio_messages', {
-          public: true,
-          fileSizeLimit: 10485760,
-          allowedMimeTypes: ['audio/*']
-        });
-        
-        if (error) {
-          console.error('Error updating audio_messages bucket settings:', error);
-        } else {
-          console.log('Updated audio_messages bucket successfully:', data);
-        }
-      } catch (updateErr) {
-        console.error('Error updating audio_messages bucket settings:', updateErr);
-      }
-    }
+    await createOrUpdateBucket('audio_messages', ['audio/*'], !!audioMessagesBucket);
     
     console.log("Storage buckets initialization complete");
   } catch (err) {
