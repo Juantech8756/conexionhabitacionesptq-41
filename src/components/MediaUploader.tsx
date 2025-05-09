@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { paperclip, file-image, file-video } from "lucide-react";
+import { Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { showGlobalAlert } from "@/hooks/use-alerts";
 
@@ -123,7 +123,7 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
         {isUploading ? (
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-hotel-600" />
         ) : (
-          <paperclip className="h-4 w-4" />
+          <Paperclip className="h-4 w-4" />
         )}
       </Button>
     </>

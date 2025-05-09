@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { file-image, file-video } from "lucide-react";
+import { FileImage, FileVideo } from "lucide-react";
 
 interface MediaMessageProps {
   mediaUrl: string;
@@ -39,7 +39,7 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
               preload="metadata"
             />
             <div className="absolute inset-0 flex items-center justify-center">
-              <file-video className="h-10 w-10 text-white opacity-70" />
+              <FileVideo className="h-10 w-10 text-white opacity-70" />
             </div>
             <div className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
               Video
