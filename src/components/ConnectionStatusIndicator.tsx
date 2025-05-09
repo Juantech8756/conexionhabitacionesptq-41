@@ -14,13 +14,25 @@ const ConnectionStatusIndicator = ({ className }: ConnectionStatusIndicatorProps
 
   useEffect(() => {
     // Set up listeners for real-time connection status
-    const { data: { subscription } } = supabase.realtime.status((status) => {
-      setIsConnected(status === 'CONNECTED');
-      setIsReconnecting(status === 'CONNECTING');
-    });
+    const channel = supabase.channel('connection-status');
+    
+    // Listen to connection status changes
+    const subscription = channel
+      .on('system', { event: 'connected' }, () => {
+        setIsConnected(true);
+        setIsReconnecting(false);
+      })
+      .on('system', { event: 'disconnected' }, () => {
+        setIsConnected(false);
+        setIsReconnecting(false);
+      })
+      .on('system', { event: 'connecting' }, () => {
+        setIsReconnecting(true);
+      })
+      .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, []);
 

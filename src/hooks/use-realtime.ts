@@ -50,16 +50,16 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       );
     });
 
-    // Subscribe to status changes
-    channel.on('system', { event: 'connected' }, () => {
-      console.log(`Channel ${uniqueChannelName} connected`);
-      setIsConnected(true);
-    });
-
-    channel.on('system', { event: 'disconnected' }, () => {
-      console.log(`Channel ${uniqueChannelName} disconnected`);
-      setIsConnected(false);
-    });
+    // Subscribe to system events for connection status
+    channel = channel
+      .on('system', { event: 'connected' }, () => {
+        console.log(`Channel ${uniqueChannelName} connected`);
+        setIsConnected(true);
+      })
+      .on('system', { event: 'disconnected' }, () => {
+        console.log(`Channel ${uniqueChannelName} disconnected`);
+        setIsConnected(false);
+      });
 
     // Subscribe to the channel
     channelRef.current = channel.subscribe((status) => {
