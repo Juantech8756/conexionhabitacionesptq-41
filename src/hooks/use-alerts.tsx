@@ -12,7 +12,7 @@ let containerInitialized = false;
 
 // Storage of recent alerts to prevent duplicates
 const recentAlertDescriptions = new Set<string>();
-const MAX_ALERT_LIFETIME = 6000; // Maximum lifetime for any alert (6 seconds)
+const MAX_ALERT_LIFETIME = 5000; // Maximum lifetime for any alert (5 seconds)
 
 // Initialize the alerts container if it doesn't exist yet
 const initializeAlertsContainer = () => {
@@ -53,14 +53,14 @@ export const useAlerts = () => {
   }, []);
   
   const showAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
-    // Enforce maximum duration
+    // Enforce maximum duration - shorter to avoid persistent alerts
     const duration = Math.min(alert.duration || 5000, MAX_ALERT_LIFETIME);
     const alertWithLimit = { ...alert, duration };
     
     // Global level alert deduplication
     const alertKey = `${alert.title || ""}-${alert.description}`;
     
-    // Special handling for cabin occupied alerts
+    // Special handling for cabin occupied alerts - don't show repeatedly
     if (alertKey.includes("Cabaña") && alertKey.includes("ocupada")) {
       // Only show once per session by storing in sessionStorage
       const sessionKey = `cabin-alert-${alertKey}`;
@@ -79,7 +79,7 @@ export const useAlerts = () => {
     // Add to recent alerts
     recentAlertDescriptions.add(alertKey);
     
-    // Auto-clear from recent alerts after expiry
+    // Auto-clear from recent alerts after expiry - shorter time
     setTimeout(() => {
       recentAlertDescriptions.delete(alertKey);
     }, duration);
@@ -108,7 +108,7 @@ export const useAlerts = () => {
 // Simplified version for global use without hooks
 export const showGlobalAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
   if (typeof window !== "undefined") {
-    // Enforce maximum duration
+    // Enforce maximum duration - shorter to avoid persistent alerts
     const duration = Math.min(alert.duration || 5000, MAX_ALERT_LIFETIME);
     const alertWithLimit = { ...alert, duration };
     

@@ -8,9 +8,24 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
+import { useEffect } from "react"
 
 export function Toaster() {
-  const { toasts } = useToast()
+  const { toasts, dismiss } = useToast()
+
+  // Ensure all toasts are temporary
+  useEffect(() => {
+    // Auto-dismiss all toasts after 5 seconds maximum
+    toasts.forEach(toast => {
+      if (toast.id) {
+        const timer = setTimeout(() => {
+          dismiss(toast.id)
+        }, 5000)
+        
+        return () => clearTimeout(timer)
+      }
+    })
+  }, [toasts, dismiss])
 
   return (
     <ToastProvider>

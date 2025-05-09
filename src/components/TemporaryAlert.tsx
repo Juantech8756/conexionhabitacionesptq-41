@@ -24,8 +24,8 @@ const TemporaryAlert = ({
 }: TemporaryAlertProps) => {
   const [isVisible, setIsVisible] = useState(true);
 
-  // Ensure all alerts have a maximum duration (6 seconds)
-  const maxDuration = Math.min(duration, 6000); 
+  // Ensure all alerts have a maximum duration (5 seconds)
+  const maxDuration = Math.min(duration, 5000); 
 
   useEffect(() => {
     // Always set a timeout to ensure all alerts are temporary
