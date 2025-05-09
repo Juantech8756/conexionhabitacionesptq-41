@@ -120,7 +120,7 @@
 
 /* Media message thin borders */
 .media-message-image {
-  @apply border-[1px] border-opacity-50;
+  @apply border-[0.5px] border-opacity-50;
 }
 
 .media-message-guest {
@@ -129,6 +129,23 @@
 
 .media-message-staff {
   @apply border-hotel-400;
+}
+
+/* Audio player enhanced styling */
+.audio-player {
+  @apply overflow-hidden;
+}
+
+.audio-player-guest, .audio-player-staff {
+  @apply border-[0.5px];
+}
+
+.audio-player-guest {
+  @apply border-white/10;
+}
+
+.audio-player-staff {
+  @apply border-gray-200/50;
 }
 
 /* Chat bubbles - optimized for mobile */

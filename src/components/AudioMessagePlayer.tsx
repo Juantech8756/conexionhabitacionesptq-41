@@ -74,13 +74,16 @@ const AudioMessagePlayer = ({ audioUrl, isGuest = false, isDark = false }: Audio
     ? "bg-gradient-to-r from-hotel-700 to-hotel-600" 
     : isGuest 
       ? "bg-gradient-to-r from-hotel-600 to-hotel-500" 
-      : "bg-white border border-gray-200";
+      : "bg-white border-gray-100";
 
   // Dynamic text color based on props
   const textColorClass = isDark || isGuest ? "text-white" : "text-gray-700";
   
+  // Use a very thin border (0.5px)
+  const borderClass = isDark || isGuest ? "" : "border border-gray-200/50";
+  
   return (
-    <div className={`rounded-lg shadow-sm overflow-hidden ${bgColorClass} ${isMobile ? 'p-3' : 'p-4'}`}>
+    <div className={`rounded-lg shadow-sm overflow-hidden ${bgColorClass} ${borderClass} ${isMobile ? 'p-3' : 'p-4'}`}>
       {/* Hidden audio element */}
       <audio ref={audioRef} src={audioUrl} preload="metadata" />
       
