@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 import MediaMessage from "@/components/MediaMessage";
 import MediaUploader from "@/components/MediaUploader";
+import { showGlobalAlert } from "@/hooks/use-alerts";
 
 type Guest = {
   id: string;
