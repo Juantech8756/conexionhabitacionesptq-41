@@ -57,6 +57,37 @@ const GuestPortal = () => {
             });
             setHasShownRegistrationToast(true);
           }
+        } else if (roomIdFromUrl) {
+          // Specifically for QR scan with no existing registration
+          console.log("QR code scan detected, but no existing registration found. Showing registration form.");
+          setIsRegistered(false);
+          
+          // Pre-check room status
+          const { data: room } = await supabase
+            .from('rooms')
+            .select('status')
+            .eq('id', roomIdFromUrl)
+            .single();
+            
+          if (room && room.status === 'occupied') {
+            // If room is occupied but we didn't find a registration, there might be an inconsistency
+            // Let's check if there are any guests for this room
+            const { data: roomGuest } = await supabase
+              .from('guests')
+              .select('id')
+              .eq('room_id', roomIdFromUrl)
+              .maybeSingle();
+              
+            if (!roomGuest) {
+              // Room is marked as occupied but has no guest registration - we'll allow registration
+              console.log("Room marked as occupied but has no guest registration. Will allow registration.");
+              toast({
+                title: "Cabaña disponible",
+                description: "Aunque la cabaña aparece como ocupada, puede registrarse ahora.",
+                duration: 5000,
+              });
+            }
+          }
         } else {
           console.log("No existing registration found or new room requested via QR, showing form");
           setIsRegistered(false);
@@ -99,23 +130,22 @@ const GuestPortal = () => {
               setShowWelcome(false);
             }, 1500);
             
-            // Only show this banner if the cabin is occupied and we're not already registered for it
-            if (data.status === 'occupied' && (!isRegistered || (isRegistered && roomId !== roomIdFromUrl))) {
-              // Add a small timeout to avoid alert flashing too quickly with welcome animation
-              setTimeout(() => {
-                // Use an ID that persists across sessions to prevent duplicate alerts
-                const alertKey = `cabin-alert-Cabaña no disponible-La cabaña ${data.room_number} está ocupada.`;
+            // In the new system, we don't block registration for occupied cabins
+            // Instead we check if there's an active registration for this room
+            if (data.status === 'occupied' && !isRegistered) {
+              const { data: existingGuest } = await supabase
+                .from('guests')
+                .select('id')
+                .eq('room_id', roomIdFromUrl)
+                .maybeSingle();
                 
-                // Only show if we haven't shown this alert in this session
-                if (!sessionStorage.getItem(alertKey)) {
-                  showGlobalAlert({
-                    title: "Cabaña no disponible",
-                    description: `La cabaña ${data.room_number} está ocupada. Por favor seleccione otra cabaña.`,
-                    variant: "destructive",
-                    duration: 6000
-                  });
-                }
-              }, 2000);
+              if (existingGuest) {
+                // There's an active registration for this cabin - we'll handle this in checkExistingRegistration
+                console.log("Active registration exists for this occupied cabin.");
+              } else {
+                // Cabin marked as occupied but no registration - we'll allow registration
+                console.log("Cabin marked as occupied but no registration exists.");
+              }
             }
           }
         } catch (error) {
@@ -125,7 +155,7 @@ const GuestPortal = () => {
     };
 
     fetchRoomData();
-  }, [roomIdFromUrl, isRegistered, roomId]);
+  }, [roomIdFromUrl, isRegistered]);
 
   const handleRegister = async (name: string, room: string, id: string, newRoomId: string) => {
     console.log("Registration successful, setting up chat...", {name, room, id, newRoomId});

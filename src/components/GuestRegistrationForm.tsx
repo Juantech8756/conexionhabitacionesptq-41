@@ -157,15 +157,27 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
             setSelectedRoomId(roomData.id);
             setPreselectedRoom(roomData);
             
-            // Show a message if the room isn't available
+            // Show a message if the room isn't available but don't block registration
+            // we want to allow registration even if the room is occupied in the new system
             if (roomData.status !== 'available') {
               console.log(`Room ${roomData.room_number} status: ${roomData.status}`);
-              toast({
-                title: "Atención",
-                description: `La cabaña ${roomData.room_number} está marcada como ${roomData.status === 'occupied' ? 'ocupada' : roomData.status}. Por favor seleccione otra cabaña si es necesario.`,
-                variant: "default",
-                duration: 5000,
-              });
+              // Informative toast only
+              if (roomData.status === 'occupied') {
+                const { data: existingGuest } = await supabase
+                  .from('guests')
+                  .select('id')
+                  .eq('room_id', roomIdToSelect)
+                  .maybeSingle();
+                  
+                if (!existingGuest) {
+                  toast({
+                    title: "Atención",
+                    description: `Aunque la cabaña ${roomData.room_number} está marcada como ocupada, no hay un registro activo. Puede registrarse ahora.`,
+                    variant: "default",
+                    duration: 5000,
+                  });
+                }
+              }
             }
           }
         }
@@ -226,7 +238,31 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         guestCount
       });
 
-      // Update the selected room to occupied status
+      // Check if there's an existing guest for this room
+      const { data: existingGuest, error: checkError } = await supabase
+        .from('guests')
+        .select('id')
+        .eq('room_id', finalRoomId)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error("Error checking for existing guests:", checkError);
+      }
+      
+      // If there's an existing registration, delete it
+      if (existingGuest) {
+        console.log("Found existing guest registration. Deleting before creating new one.");
+        const { error: deleteError } = await supabase
+          .from('guests')
+          .delete()
+          .eq('id', existingGuest.id);
+          
+        if (deleteError) {
+          console.error("Error deleting existing guest:", deleteError);
+        }
+      }
+
+      // Always update the room to occupied status
       const { error: updateError } = await supabase
         .from('rooms')
         .update({ status: 'occupied' })

@@ -41,6 +41,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "react-router-dom";
 import { RoomManagementProps } from "@/components/RoomManagementProps";
+import { clearRoomRegistration } from "@/utils/registration";
 
 // Define the schema for form validation
 const roomFormSchema = z.object({
@@ -176,10 +177,27 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
 
         if (error) throw error;
 
-        toast({
-          title: "Cabaña actualizada",
-          description: `La cabaña ${values.room_number} ha sido actualizada correctamente.`,
-        });
+        // If status is changing to available, clear any guest registrations
+        if (values.status === 'available' && currentRoom.status !== 'available') {
+          const success = await clearRoomRegistration(currentRoom.id);
+          if (success) {
+            toast({
+              title: "Cabaña actualizada",
+              description: `La cabaña ${values.room_number} ha sido actualizada y está lista para nuevos huéspedes.`,
+            });
+          } else {
+            toast({
+              title: "Cabaña actualizada",
+              description: `La cabaña ${values.room_number} ha sido actualizada, pero ocurrió un error al limpiar los registros anteriores.`,
+              variant: "warning",
+            });
+          }
+        } else {
+          toast({
+            title: "Cabaña actualizada",
+            description: `La cabaña ${values.room_number} ha sido actualizada correctamente.`,
+          });
+        }
       } else {
         // Insert new room
         const { data, error } = await supabase.from("rooms").insert([
