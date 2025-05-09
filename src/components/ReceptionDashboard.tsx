@@ -865,7 +865,7 @@ const ReceptionDashboard = ({
           // Format is usually: /storage/v1/object/public/chat_media/media/{guestId}/{type}s/filename
           const urlParts = msg.media_url.split('/chat_media/');
           if (urlParts.length > 1) {
-            mediaFilesToDelete.push('chat_media/' + urlParts[1]);
+            mediaFilesToDelete.push(urlParts[1]);
           }
         }
       }
@@ -880,40 +880,43 @@ const ReceptionDashboard = ({
       
       // Step 2: Delete media files from storage if any exist
       if (mediaFilesToDelete.length > 0) {
-        const { error: mediaDeleteError } = await supabase
-          .storage
-          .from('chat_media')
-          .remove(mediaFilesToDelete);
-          
-        if (mediaDeleteError) {
-          console.error("Error deleting media files:", mediaDeleteError);
-          // Continue with deletion process even if some media files failed to delete
+        try {
+          const { error: mediaDeleteError } = await supabase
+            .storage
+            .from('chat_media')
+            .remove(mediaFilesToDelete);
+            
+          if (mediaDeleteError) {
+            console.error("Error deleting media files:", mediaDeleteError);
+            // Continue with deletion process even if some media files failed to delete
+          }
+        } catch (mediaError) {
+          console.error("Error handling media file deletion:", mediaError);
+          // Continue with process despite errors with media deletion
         }
       }
       
       // Step 3: Delete audio files from storage if any exist
       if (audioFilesToDelete.length > 0) {
-        const { error: audioDeleteError } = await supabase
-          .storage
-          .from('audio_messages')
-          .remove(audioFilesToDelete);
-          
-        if (audioDeleteError) {
-          console.error("Error deleting audio files:", audioDeleteError);
-          // Continue with deletion process even if some audio files failed to delete
+        try {
+          const { error: audioDeleteError } = await supabase
+            .storage
+            .from('audio_messages')
+            .remove(audioFilesToDelete);
+            
+          if (audioDeleteError) {
+            console.error("Error deleting audio files:", audioDeleteError);
+            // Continue with deletion process even if some audio files failed to delete
+          }
+        } catch (audioError) {
+          console.error("Error handling audio file deletion:", audioError);
+          // Continue with process despite errors with audio deletion
         }
       }
       
-      // Step 4: Delete response statistics
-      const { error: statsDeleteError } = await supabase
-        .from('response_statistics')
-        .delete()
-        .eq('guest_id', guestToRemove.id);
-        
-      if (statsDeleteError) {
-        console.error("Error deleting response statistics:", statsDeleteError);
-        // Continue with deletion process even if stats deletion failed
-      }
+      // Skip trying to delete from response_statistics as it's a VIEW, not a table
+      // We don't need to delete from it directly as it's based on the messages table
+      // which we've already deleted from
       
       // Clear messages from local state
       setMessages(prev => {

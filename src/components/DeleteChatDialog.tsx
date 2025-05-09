@@ -45,12 +45,12 @@ const DeleteChatDialog = ({
             <strong>{roomNumber}</strong>.
             <br />
             <br />
-            Esta acción eliminará:
+            Esta acción eliminará permanentemente:
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>Todos los mensajes de texto</li>
               <li>Todos los mensajes de audio</li>
               <li>Todas las imágenes y videos compartidos</li>
-              <li>Estadísticas relacionadas con la conversación</li>
+              <li>Historial completo de la conversación</li>
             </ul>
             <br />
             Esta acción <strong>no puede deshacerse</strong>.

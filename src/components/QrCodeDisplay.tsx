@@ -15,8 +15,8 @@ const QrCodeDisplay = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  const appUrl = window.location.origin;
-  const qrUrl = roomId ? `${appUrl}/guest?room=${roomId}` : `${appUrl}/guest`;
+  const customDomain = "https://xn--conexin-q0a.parquetematicoquimbayas.com";
+  const qrUrl = roomId ? `${customDomain}/guest?room=${roomId}` : `${customDomain}/guest`;
 
   useEffect(() => {
     const fetchRoomData = async () => {
