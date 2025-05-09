@@ -1,31 +1,29 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-// Utility function to get or create device ID
-export const getDeviceId = (): string => {
-  const stored = localStorage.getItem('device_id');
-  if (stored) return stored;
-  
-  // Create new device ID if not exists
-  const newId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  localStorage.setItem('device_id', newId);
-  return newId;
-};
-
 // Define an explicit type for the guest registration data
-type GuestRegistration = {
+export type GuestRegistration = {
   id: string;
   name: string;
   room_number: string;
 } | null;
 
-// Function to check for existing guest registration
-export const checkExistingRegistration = async (deviceId: string): Promise<GuestRegistration> => {
+// Function to check if there's an existing guest registration using localStorage
+export const checkExistingRegistration = async (): Promise<GuestRegistration> => {
   try {
+    // Get guest ID from localStorage if it exists
+    const guestId = localStorage.getItem('guest_id');
+    
+    // If no guest ID is stored, return null
+    if (!guestId) {
+      return null;
+    }
+    
+    // Look up the guest using their ID
     const { data, error } = await supabase
       .from('guests')
       .select('id, name, room_number')
-      .eq('device_id', deviceId)
+      .eq('id', guestId)
       .maybeSingle();
       
     if (error) {

@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getDeviceId, checkExistingRegistration } from "@/utils/registration";
+import { checkExistingRegistration } from "@/utils/registration";
 
 interface GuestRegistrationFormProps {
   onRegister: (guestName: string, roomNumber: string, guestId: string) => void;
@@ -40,14 +40,11 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [preselectedRoom, setPreselectedRoom] = useState<Room | null>(null);
-  
-  // Store deviceId in a ref to avoid it being part of dependency arrays
-  const deviceIdRef = useRef<string>(getDeviceId());
 
   // Check for existing registration once on component mount
   useEffect(() => {
     const handleExistingRegistration = async () => {
-      const existingGuest = await checkExistingRegistration(deviceIdRef.current);
+      const existingGuest = await checkExistingRegistration();
       
       if (existingGuest) {
         toast({
@@ -61,7 +58,6 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
     };
     
     handleExistingRegistration();
-  // We're using refs instead of dependencies to avoid the circular reference issue
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -157,7 +153,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         
       if (updateError) throw updateError;
 
-      // Insert guest into Supabase with device ID
+      // Insert guest into Supabase (removed device_id)
       const { data: guest, error } = await supabase
         .from('guests')
         .insert([
@@ -165,8 +161,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
             name: guestName, 
             room_number: selectedRoom.room_number, 
             room_id: selectedRoomId,
-            guest_count: parseInt(guestCount),
-            device_id: deviceIdRef.current // Use the deviceId from ref
+            guest_count: parseInt(guestCount)
           }
         ])
         .select('id')
