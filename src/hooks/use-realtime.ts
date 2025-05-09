@@ -74,7 +74,8 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       console.log(`Adding subscription to ${table} for event ${event}`, 
         filter && filterValue ? filterConfig : "no filter");
       
-      // Now correctly subscribe to postgres changes with the right event format
+      // IMPORTANT: This needs to be a separate call, not chained from the system events
+      // Each postgres_changes subscription must be registered individually
       channel.on(
         'postgres_changes', 
         { 
