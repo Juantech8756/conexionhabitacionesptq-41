@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 import CallInterface from "@/components/CallInterface";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface GuestChatProps {
   guestName: string;
@@ -162,6 +164,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       if (error) throw error;
       
       setMessage("");
+      // Scroll to bottom immediately after sending
+      scrollToBottom(false);
     } catch (error) {
       console.error("Error sending message:", error);
       toast({
@@ -221,6 +225,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           if (messageError) throw messageError;
           
           setAudioChunks([]);
+          // Scroll to bottom after sending audio
+          scrollToBottom(false);
         } catch (error) {
           console.error("Error uploading audio:", error);
           toast({
@@ -351,7 +357,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      {/* Fixed Input Area */}
+      {/* Fixed Input Area at Bottom */}
       <div className="chat-input-container">
         <div className={`flex items-center space-x-2 w-full ${isMobile ? "max-w-full" : "max-w-3xl"} mx-auto`}>
           <Button

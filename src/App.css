@@ -71,7 +71,7 @@
 .chat-messages-container {
   flex: 1;
   padding-top: 70px; /* Space for fixed header */
-  padding-bottom: 70px; /* Space for fixed input */
+  padding-bottom: 80px; /* Increased space for fixed input */
   overflow-y: auto;
   width: 100%;
   height: 100vh;
@@ -85,7 +85,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 10px;
+  padding: 10px 15px;
   background: white;
   z-index: 100;
   border-top: 1px solid #e0e0e0;
@@ -98,6 +98,7 @@
   flex-direction: column;
   width: 100%;
   padding: 10px;
+  min-height: calc(100vh - 140px); /* Ensure it fills the space */
 }
 
 /* WhatsApp/Telegram style bubbles */
@@ -138,7 +139,11 @@
   
   .chat-messages-container {
     padding-top: 65px;
-    padding-bottom: 65px;
+    padding-bottom: 75px;
+  }
+  
+  .chat-input-container {
+    padding: 10px;
   }
 }
 
@@ -208,10 +213,10 @@ body, html {
 .chat-scroll-area {
   position: relative !important;
   height: auto !important;
-  min-height: calc(100vh - 130px);
+  min-height: calc(100vh - 140px);
   width: 100%;
   overflow-y: auto;
-  padding-bottom: 70px;
+  padding-bottom: 80px;
   padding-top: 70px;
 }
 
