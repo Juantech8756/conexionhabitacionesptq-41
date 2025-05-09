@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, MessageCircle, Mic, MicOff, Send, Bell, ArrowLeft, Menu, Phone } from "lucide-react";
+import { User, MessageCircle, Mic, MicOff, Send, Bell, ArrowLeft, Menu, Phone, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -16,6 +16,7 @@ import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 import AudioRecorder from "@/components/AudioRecorder";
 import { useRealtime } from "@/hooks/use-realtime";
 import MessageNotificationBadge from "@/components/MessageNotificationBadge";
+import DeleteChatDialog from "@/components/DeleteChatDialog";
 
 type Guest = {
   id: string;
@@ -70,6 +71,8 @@ const ReceptionDashboard = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [recentlyUpdatedGuests, setRecentlyUpdatedGuests] = useState<Record<string, boolean>>({});
   const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState<number>(Date.now());
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     toast
   } = useToast();
@@ -815,6 +818,222 @@ const ReceptionDashboard = ({
     return null;
   };
 
+  // Delete chat and all associated messages and files
+  const deleteChat = async () => {
+    if (!selectedGuest) return;
+    
+    setIsDeleting(true);
+    try {
+      showGlobalAlert({
+        title: "Eliminando conversación",
+        description: `Eliminando todos los mensajes con ${selectedGuest.name}...`,
+        duration: 3000
+      });
+      
+      // Get all messages for this guest to identify media files to delete
+      const { data: messagesToDelete, error: msgFetchError } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('guest_id', selectedGuest.id);
+        
+      if (msgFetchError) throw msgFetchError;
+      
+      // Collect media files to delete
+      const mediaFilesToDelete = [];
+      const audioFilesToDelete = [];
+      
+      for (const msg of messagesToDelete || []) {
+        // Collect audio files
+        if (msg.is_audio && msg.audio_url) {
+          const audioPath = msg.audio_url.split('/').pop();
+          if (audioPath) audioFilesToDelete.push(audioPath);
+        }
+        
+        // Collect media files (images, videos)
+        if (msg.is_media && msg.media_url) {
+          // Extract path from the full URL
+          // Format is usually: /storage/v1/object/public/chat_media/media/{guestId}/{type}s/filename
+          const urlParts = msg.media_url.split('/chat_media/');
+          if (urlParts.length > 1) {
+            mediaFilesToDelete.push('chat_media/' + urlParts[1]);
+          }
+        }
+      }
+      
+      // Step 1: Delete all messages for this guest
+      const { error: deleteMessagesError } = await supabase
+        .from('messages')
+        .delete()
+        .eq('guest_id', selectedGuest.id);
+        
+      if (deleteMessagesError) throw deleteMessagesError;
+      
+      // Step 2: Delete media files from storage if any exist
+      if (mediaFilesToDelete.length > 0) {
+        const { error: mediaDeleteError } = await supabase
+          .storage
+          .from('chat_media')
+          .remove(mediaFilesToDelete);
+          
+        if (mediaDeleteError) {
+          console.error("Error deleting media files:", mediaDeleteError);
+          // Continue with deletion process even if some media files failed to delete
+        }
+      }
+      
+      // Step 3: Delete audio files from storage if any exist
+      if (audioFilesToDelete.length > 0) {
+        const { error: audioDeleteError } = await supabase
+          .storage
+          .from('audio_messages')
+          .remove(audioFilesToDelete);
+          
+        if (audioDeleteError) {
+          console.error("Error deleting audio files:", audioDeleteError);
+          // Continue with deletion process even if some audio files failed to delete
+        }
+      }
+      
+      // Step 4: Delete response statistics
+      const { error: statsDeleteError } = await supabase
+        .from('response_statistics')
+        .delete()
+        .eq('guest_id', selectedGuest.id);
+        
+      if (statsDeleteError) {
+        console.error("Error deleting response statistics:", statsDeleteError);
+        // Continue with deletion process even if stats deletion failed
+      }
+      
+      // Clear messages from local state
+      setMessages(prev => {
+        const newMessages = { ...prev };
+        delete newMessages[selectedGuest.id];
+        return newMessages;
+      });
+      
+      // Reset the selected guest's stats
+      setGuests(prevGuests => prevGuests.map(g => {
+        if (g.id === selectedGuest.id) {
+          return {
+            ...g,
+            unread_messages: 0,
+            wait_time_minutes: 0
+          };
+        }
+        return g;
+      }));
+      
+      // Close the delete dialog
+      setIsDeleteDialogOpen(false);
+      
+      // Force refresh guests list
+      refreshGuestsList();
+      
+      toast({
+        title: "Conversación eliminada",
+        description: "Todos los mensajes y archivos asociados han sido eliminados correctamente.",
+        duration: 4000
+      });
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la conversación. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+        duration: 4000
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // For desktop layout, modify the header to include delete button
+  const renderDesktopHeader = () => {
+    return (
+      <header className="p-4 bg-white border-b shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">{selectedGuest?.name}</h2>
+            <p className="text-sm text-gray-500 flex flex-wrap items-center gap-2">
+              <span>Cabaña {selectedGuest?.room_number}</span>
+              
+              {selectedGuest?.guest_count && 
+                <span className="bg-blue-50 text-hotel-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                  {selectedGuest.guest_count} {selectedGuest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
+                </span>
+              }
+              
+              {selectedGuest?.wait_time_minutes && selectedGuest.wait_time_minutes > 0 ? (
+                <span className="text-amber-600">
+                  Esperando respuesta: {selectedGuest.wait_time_minutes} min
+                </span>
+              ) : null}
+            </p>
+            {getRoomInfo(selectedGuest)}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <ConnectionStatusIndicator />
+            
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => setIsDeleteDialogOpen(true)}
+              className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Eliminar chat
+            </Button>
+            
+            <Button size="sm" onClick={handleCallGuest} className="bg-green-500 hover:bg-green-600">
+              <Phone className="h-4 w-4 mr-2" />
+              Llamar
+            </Button>
+          </div>
+        </div>
+      </header>
+    );
+  };
+
+  // For mobile layout, add delete button to header
+  const renderMobileHeader = () => {
+    return (
+      <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-3 text-white shadow-sm">
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="icon" className="mr-2 text-white hover:bg-white/20" onClick={handleBackToGuestList}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-grow">
+            <h2 className="text-base font-semibold">{selectedGuest?.name}</h2>
+            <p className="text-xs text-white/90 flex items-center">
+              <span>Cabaña {selectedGuest?.room_number}</span>
+              {selectedGuest?.guest_count && 
+                <span className="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
+                  {selectedGuest.guest_count} {selectedGuest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
+                </span>
+              }
+            </p>
+          </div>
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setIsDeleteDialogOpen(true)}
+              className="text-white hover:bg-white/20 mr-1" 
+              title="Eliminar chat"
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleCallGuest} className="text-white hover:bg-white/20" title="Llamar a huésped">
+              <Phone className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </header>
+    );
+  };
+
   // Mobile layout with sliding panels
   if (isMobile) {
     return <div className="flex h-full bg-gray-100 relative">
@@ -891,27 +1110,7 @@ const ReceptionDashboard = ({
         }} transition={{
           duration: 0.2
         }} className="flex flex-col w-full h-full bg-gray-50">
-              <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-3 text-white shadow-sm">
-                <div className="flex items-center justify-between">
-                  <Button variant="ghost" size="icon" className="mr-2 text-white hover:bg-white/20" onClick={handleBackToGuestList}>
-                    <ArrowLeft className="h-5 w-5" />
-                  </Button>
-                  <div className="flex-grow">
-                    <h2 className="text-base font-semibold">{selectedGuest.name}</h2>
-                    <p className="text-xs text-white/90 flex items-center">
-                      <span>Cabaña {selectedGuest.room_number}</span>
-                      {selectedGuest.guest_count && 
-                        <span className="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
-                          {selectedGuest.guest_count} {selectedGuest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
-                        </span>
-                      }
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={handleCallGuest} className="text-white hover:bg-white/20" title="Llamar a huésped">
-                    <Phone className="h-5 w-5" />
-                  </Button>
-                </div>
-              </header>
+              {renderMobileHeader()}
 
               <div className="flex-grow overflow-auto p-2" ref={scrollContainerRef}>
                 <div className="space-y-3">
@@ -1027,38 +1226,7 @@ const ReceptionDashboard = ({
       <div className="flex-1 flex flex-col">
         {selectedGuest ? (
           <>
-            <header className="p-4 bg-white border-b shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold">{selectedGuest.name}</h2>
-                  <p className="text-sm text-gray-500 flex flex-wrap items-center gap-2">
-                    <span>Cabaña {selectedGuest.room_number}</span>
-                    
-                    {selectedGuest.guest_count && 
-                      <span className="bg-blue-50 text-hotel-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                        {selectedGuest.guest_count} {selectedGuest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
-                      </span>
-                    }
-                    
-                    {selectedGuest.wait_time_minutes && selectedGuest.wait_time_minutes > 0 ? (
-                      <span className="text-amber-600">
-                        Esperando respuesta: {selectedGuest.wait_time_minutes} min
-                      </span>
-                    ) : null}
-                  </p>
-                  {getRoomInfo(selectedGuest)}
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <ConnectionStatusIndicator />
-                  
-                  <Button size="sm" onClick={handleCallGuest} className="bg-green-500 hover:bg-green-600">
-                    <Phone className="h-4 w-4 mr-2" />
-                    Llamar
-                  </Button>
-                </div>
-              </div>
-            </header>
+            {renderDesktopHeader()}
             
             <ScrollArea className="flex-grow p-4" ref={scrollContainerRef}>
               <div className="space-y-4 max-w-3xl mx-auto">
