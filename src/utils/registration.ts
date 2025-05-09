@@ -12,8 +12,15 @@ export const getDeviceId = (): string => {
   return newId;
 };
 
+// Define an explicit type for the guest registration data
+type GuestRegistration = {
+  id: string;
+  name: string;
+  room_number: string;
+} | null;
+
 // Function to check for existing guest registration
-export const checkExistingRegistration = async (deviceId: string) => {
+export const checkExistingRegistration = async (deviceId: string): Promise<GuestRegistration> => {
   try {
     const { data, error } = await supabase
       .from('guests')
