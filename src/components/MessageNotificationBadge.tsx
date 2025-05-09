@@ -1,41 +1,51 @@
 
+import React from "react";
 import { motion } from "framer-motion";
 
 interface MessageNotificationBadgeProps {
-  count: number;
+  count?: number;
   waitTime?: number | null;
+  hideWaitTime?: boolean; // Added option to hide wait time
 }
 
-const MessageNotificationBadge = ({ count, waitTime }: MessageNotificationBadgeProps) => {
-  if (count <= 0) return null;
-  
-  return (
-    <div className="flex flex-col items-end">
-      <motion.div 
-        initial={{ scale: 0.8 }} 
+const MessageNotificationBadge = ({
+  count = 0,
+  waitTime = null,
+  hideWaitTime = true // Set to true by default to hide wait times
+}: MessageNotificationBadgeProps) => {
+  // Don't show anything if no unread messages and hiding wait time
+  if (count === 0 && (!waitTime || waitTime === 0 || hideWaitTime)) {
+    return null;
+  }
+
+  // Show unread count badge
+  if (count > 0) {
+    return (
+      <motion.div
+        initial={{ scale: 0.8 }}
         animate={{ scale: 1 }}
-        transition={{ 
-          type: "spring", 
-          stiffness: 400, 
-          damping: 15 
-        }}
-        className="bg-hotel-600 text-white rounded-full h-5 min-w-5 flex items-center justify-center text-xs shadow-md px-1"
+        className="bg-hotel-600 text-white rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center text-xs shadow-md"
       >
         {count}
       </motion.div>
-      
-      {waitTime && waitTime > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="text-xs text-amber-600 font-medium mt-1"
-        >
-          {waitTime} min
-        </motion.div>
-      )}
-    </div>
-  );
+    );
+  }
+
+  // Show wait time badge only if we're not hiding it and it exists
+  if (waitTime && waitTime > 0 && !hideWaitTime) {
+    const formattedTime = Math.round(waitTime);
+    return (
+      <motion.div
+        initial={{ scale: 0.8 }}
+        animate={{ scale: 1 }}
+        className="bg-amber-500 text-white rounded-full px-2 py-0.5 text-xs shadow-md"
+      >
+        {formattedTime} min
+      </motion.div>
+    );
+  }
+
+  return null;
 };
 
 export default MessageNotificationBadge;
