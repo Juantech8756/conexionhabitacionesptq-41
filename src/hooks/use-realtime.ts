@@ -44,41 +44,41 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     
     // Create a new channel
     let channel = supabase.channel(uniqueChannelName);
+    
+    // First, add system events for connection status (outside the loop)
+    channel = channel
+      .on('system', { event: 'connected' }, () => {
+        console.log(`Channel ${uniqueChannelName} connected`);
+        setIsConnected(true);
+      })
+      .on('system', { event: 'disconnected' }, () => {
+        console.log(`Channel ${uniqueChannelName} disconnected`);
+        setIsConnected(false);
 
-    // Add all subscriptions to the channel
+        // Set up automatic reconnection
+        if (retryTimeoutRef.current === null) {
+          retryTimeoutRef.current = window.setTimeout(() => {
+            console.log('Attempting to reconnect...');
+            reconnect();
+            retryTimeoutRef.current = null;
+          }, 3000);
+        }
+      });
+
+    // Then add postgres_changes events separately for each subscription
     subscriptions.forEach(({ table, event, filter, filterValue, callback }) => {
       const filterObj = filter ? { [filter]: filterValue } : {};
       
       console.log(`Adding subscription to ${table} for event ${event}`, filterObj);
       
-      // First, add system events for connection status
-      channel = channel
-        .on('system', { event: 'connected' }, () => {
-          console.log(`Channel ${uniqueChannelName} connected`);
-          setIsConnected(true);
-        })
-        .on('system', { event: 'disconnected' }, () => {
-          console.log(`Channel ${uniqueChannelName} disconnected`);
-          setIsConnected(false);
-
-          // Set up automatic reconnection
-          if (retryTimeoutRef.current === null) {
-            retryTimeoutRef.current = window.setTimeout(() => {
-              console.log('Attempting to reconnect...');
-              reconnect();
-              retryTimeoutRef.current = null;
-            }, 3000);
-          }
-        });
-
-      // Then add postgres_changes events separately with the correct config structure
+      // Add postgres_changes event handler with the correct structure
       channel = channel.on(
         'postgres_changes',
         {
-          event,
+          event: event,
           schema: 'public',
-          table,
-          ...(filter && filterValue ? { filter: `${filter}=eq.${filterValue}` } : {})
+          table: table,
+          filter: filter && filterValue ? `${filter}=eq.${filterValue}` : undefined
         },
         (payload) => {
           console.log(`Received realtime event for ${table}:`, payload);
