@@ -34,6 +34,11 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
     ? "bg-black bg-opacity-50 text-white"
     : "bg-white bg-opacity-50 text-black";
 
+  // Border style updated to be thinner
+  const borderStyle = isGuest
+    ? "border border-gray-200"  // Thin light border for guest
+    : "border border-hotel-400"; // Thin blue border for staff
+
   // Verificar que la URL sea válida antes de intentar cargarla
   const validateMediaUrl = (url: string) => {
     if (!url || url.trim() === "") return false;
@@ -57,7 +62,7 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
             <img
               src={mediaUrl}
               alt="Imagen enviada"
-              className="max-w-full rounded max-h-40 object-contain"
+              className={`max-w-full rounded max-h-40 object-contain ${borderStyle}`}
               loading="lazy"
               onError={(e) => {
                 console.error("Failed to load image:", mediaUrl, e);
@@ -76,7 +81,7 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
         </div>
       ) : (
         <div className="cursor-pointer flex flex-col" onClick={handleOpen}>
-          <div className="relative bg-black rounded overflow-hidden min-h-[100px] min-w-[150px]">
+          <div className={`relative bg-black rounded overflow-hidden min-h-[100px] min-w-[150px] ${borderStyle}`}>
             {!videoError && isValidUrl ? (
               <video
                 src={mediaUrl}
@@ -109,14 +114,14 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
             <img 
               src={mediaUrl} 
               alt="Imagen enviada" 
-              className="max-w-full max-h-[calc(80vh-2rem)] object-contain"
+              className={`max-w-full max-h-[calc(80vh-2rem)] object-contain ${borderStyle}`}
               onError={() => setImageError(true)}
             />
           ) : mediaType === 'video' && !videoError && isValidUrl ? (
             <video 
               src={mediaUrl} 
               controls 
-              className="max-w-full max-h-[calc(80vh-2rem)]"
+              className={`max-w-full max-h-[calc(80vh-2rem)] ${borderStyle}`}
               autoPlay
               onError={() => setVideoError(true)}
             />

@@ -118,6 +118,19 @@
   }
 }
 
+/* Media message thin borders */
+.media-message-image {
+  @apply border-[1px] border-opacity-50;
+}
+
+.media-message-guest {
+  @apply border-gray-300;
+}
+
+.media-message-staff {
+  @apply border-hotel-400;
+}
+
 /* Chat bubbles - optimized for mobile */
 .chat-bubble-guest {
   @apply bg-gradient-to-r from-hotel-600 to-hotel-500 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl shadow-md;
