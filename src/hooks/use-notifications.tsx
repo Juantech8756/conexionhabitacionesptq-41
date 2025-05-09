@@ -188,9 +188,10 @@ export const useNotifications = (options: UseNotificationsOptions) => {
       }
       
       // Usar SQL directo para insertar en la tabla notification_subscriptions
+      // Definir explícitamente el tipo para evitar inferencia recursiva
       const { error } = await supabase
         .from('notification_subscriptions')
-        .insert([subscriptionData] as any);
+        .insert([subscriptionData]);
         
       if (error) {
         console.error('Error inserting subscription:', error);
@@ -211,13 +212,14 @@ export const useNotifications = (options: UseNotificationsOptions) => {
       setSubscription(null);
       setIsSubscribed(false);
       
-      // Remove from database using raw SQL
+      // Remove from database
       if (options.type === 'guest' && options.guestId) {
+        // Definir explícitamente el tipo de retorno para evitar inferencia recursiva
         const { error } = await supabase
           .from('notification_subscriptions')
           .delete()
           .eq('guestId', options.guestId)
-          .eq('endpoint', subscription.endpoint) as any;
+          .eq('endpoint', subscription.endpoint);
           
         if (error) {
           console.error('Error removing subscription:', error);
@@ -225,11 +227,12 @@ export const useNotifications = (options: UseNotificationsOptions) => {
       } else if (options.type === 'reception') {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // Definir explícitamente el tipo de retorno para evitar inferencia recursiva
           const { error } = await supabase
             .from('notification_subscriptions')
             .delete()
             .eq('userId', user.id)
-            .eq('endpoint', subscription.endpoint) as any;
+            .eq('endpoint', subscription.endpoint);
             
           if (error) {
             console.error('Error removing subscription:', error);
