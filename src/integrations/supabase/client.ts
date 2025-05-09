@@ -14,6 +14,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10
     }
+  },
+  auth: {
+    persistSession: true
   }
 });
 
@@ -29,13 +32,14 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     }
 
     const chatMediaBucket = buckets?.find(bucket => bucket.name === 'chat_media');
+    const audioMessagesBucket = buckets?.find(bucket => bucket.name === 'audio_messages');
     
     // Create chat_media bucket if it doesn't exist
     if (!chatMediaBucket) {
       console.log('Creating chat_media storage bucket...');
       const { data, error } = await supabase.storage.createBucket('chat_media', {
         public: true, // Make sure bucket is public
-        fileSizeLimit: 10485760, // 10MB limit
+        fileSizeLimit: 20971520, // 20MB limit
         allowedMimeTypes: ['image/*', 'video/*']
       });
       
@@ -55,7 +59,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       // Make sure the bucket is public if it exists
       try {
         const { error: updateError } = await supabase.storage.updateBucket('chat_media', {
-          public: true
+          public: true,
+          fileSizeLimit: 20971520 // 20MB limit
         });
         
         if (updateError) {
@@ -65,6 +70,39 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
         }
       } catch (err) {
         console.error('Error updating bucket settings:', err);
+      }
+    }
+    
+    // Create audio_messages bucket if it doesn't exist
+    if (!audioMessagesBucket) {
+      console.log('Creating audio_messages storage bucket...');
+      const { data, error } = await supabase.storage.createBucket('audio_messages', {
+        public: true, // Make sure bucket is public
+        fileSizeLimit: 10485760, // 10MB limit
+        allowedMimeTypes: ['audio/*']
+      });
+      
+      if (error) {
+        console.error('Error creating audio_messages bucket:', error);
+      } else {
+        console.log('Created audio_messages bucket successfully');
+      }
+    } else {
+      console.log('audio_messages bucket already exists');
+      
+      // Make sure the bucket is public if it exists
+      try {
+        const { error: updateError } = await supabase.storage.updateBucket('audio_messages', {
+          public: true
+        });
+        
+        if (updateError) {
+          console.error('Error making audio_messages bucket public:', updateError);
+        } else {
+          console.log('Ensured audio_messages bucket is public');
+        }
+      } catch (err) {
+        console.error('Error updating audio_messages bucket settings:', err);
       }
     }
   } catch (err) {

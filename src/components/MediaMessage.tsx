@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FileImage, FileVideo } from "lucide-react";
@@ -33,11 +34,26 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
     ? "bg-black bg-opacity-50 text-white"
     : "bg-white bg-opacity-50 text-black";
 
+  // Verificar que la URL sea válida antes de intentar cargarla
+  const validateMediaUrl = (url: string) => {
+    if (!url || url.trim() === "") return false;
+    
+    try {
+      new URL(url); // Verificar que la URL tenga un formato válido
+      return true;
+    } catch (e) {
+      console.error("Invalid URL format:", url, e);
+      return false;
+    }
+  };
+
+  const isValidUrl = validateMediaUrl(mediaUrl);
+
   return (
     <>
       {mediaType === 'image' ? (
         <div className="relative cursor-pointer" onClick={handleOpen}>
-          {!imageError ? (
+          {!imageError && isValidUrl ? (
             <img
               src={mediaUrl}
               alt="Imagen enviada"
@@ -61,7 +77,7 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
       ) : (
         <div className="cursor-pointer flex flex-col" onClick={handleOpen}>
           <div className="relative bg-black rounded overflow-hidden min-h-[100px] min-w-[150px]">
-            {!videoError ? (
+            {!videoError && isValidUrl ? (
               <video
                 src={mediaUrl}
                 className="max-h-40 max-w-full"
@@ -89,14 +105,14 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-xl max-h-[80vh] p-1 overflow-hidden">
-          {mediaType === 'image' && !imageError ? (
+          {mediaType === 'image' && !imageError && isValidUrl ? (
             <img 
               src={mediaUrl} 
               alt="Imagen enviada" 
               className="max-w-full max-h-[calc(80vh-2rem)] object-contain"
               onError={() => setImageError(true)}
             />
-          ) : mediaType === 'video' && !videoError ? (
+          ) : mediaType === 'video' && !videoError && isValidUrl ? (
             <video 
               src={mediaUrl} 
               controls 
