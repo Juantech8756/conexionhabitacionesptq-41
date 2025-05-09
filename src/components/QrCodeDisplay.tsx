@@ -1,9 +1,10 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Hotel, ArrowLeft, Download, QrCode } from "lucide-react";
+import { Hotel, ArrowLeft, Download, QrCode, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
@@ -103,6 +104,11 @@ const QrCodeDisplay = () => {
     navigate(-1);
   };
 
+  const openQrDestination = () => {
+    // Open the QR URL in a new tab
+    window.open(qrUrl, '_blank');
+  };
+
   const getRoomTypeText = (type: string | null) => {
     if (!type) return "";
     switch (type.toLowerCase()) {
@@ -174,7 +180,7 @@ const QrCodeDisplay = () => {
                 El código QR lo conectará automáticamente con su habitación sin necesidad de seleccionarla manualmente.
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap justify-center">
               <Button variant="outline" onClick={goBack} className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Volver
@@ -182,6 +188,10 @@ const QrCodeDisplay = () => {
               <Button className="bg-hotel-600 hover:bg-hotel-700 flex items-center gap-2" onClick={handleDownload}>
                 <Download className="h-4 w-4" />
                 Descargar QR
+              </Button>
+              <Button variant="secondary" onClick={openQrDestination} className="flex items-center gap-2">
+                <ExternalLink className="h-4 w-4" />
+                Probar Enlace
               </Button>
             </div>
           </CardFooter>
