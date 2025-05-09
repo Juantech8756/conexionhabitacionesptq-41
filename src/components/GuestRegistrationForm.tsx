@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,60 +39,51 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [preselectedRoom, setPreselectedRoom] = useState<Room | null>(null);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
-
-  // Generate or retrieve device ID for persistency - simplified to fix infinite type issue
-  useEffect(() => {
-    // Get existing or create new device ID
-    const id = localStorage.getItem('device_id') || 
-      `device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
-    // Store it if it doesn't exist
-    if (!localStorage.getItem('device_id')) {
-      localStorage.setItem('device_id', id);
-    }
-    
-    setDeviceId(id);
-  }, []);
   
-  // Separate useEffect for checking existing registration to avoid dependency issues
-  useEffect(() => {
-    // Only proceed if we have a device ID
-    if (!deviceId) return;
+  // Store deviceId directly without state to avoid TypeScript recursion issues
+  const deviceId = (() => {
+    const stored = localStorage.getItem('device_id');
+    if (stored) return stored;
     
-    // Define function to check for existing registration
-    const checkExistingRegistration = async () => {
+    // Create new device ID if not exists
+    const newId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    localStorage.setItem('device_id', newId);
+    return newId;
+  })();
+
+  // Check for existing registration once on component mount
+  useEffect(() => {
+    // Simplified function to check for existing registration
+    const checkRegistration = async () => {
       try {
-        // Check if this device is already registered with a room
         const { data: existingGuest, error } = await supabase
           .from('guests')
-          .select('id, name, room_number, room_id')
+          .select('id, name, room_number')
           .eq('device_id', deviceId)
           .maybeSingle();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error checking registration:", error);
+          return;
+        }
         
-        // If device is already registered
         if (existingGuest) {
-          // Automatically log them in
           toast({
             title: "Ya has registrado esta cabaña",
             description: `Continúas como ${existingGuest.name} en la cabaña ${existingGuest.room_number}`,
             duration: 5000,
           });
           
-          // Redirect to chat
           onRegister(existingGuest.name, existingGuest.room_number, existingGuest.id);
         }
-        
       } catch (error) {
         console.error("Error checking existing registration:", error);
       }
     };
     
-    // Call the function
-    checkExistingRegistration();
-  }, [deviceId, onRegister, toast]);
+    checkRegistration();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   // Fetch available rooms
   useEffect(() => {
@@ -195,7 +186,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
             room_number: selectedRoom.room_number, 
             room_id: selectedRoomId,
             guest_count: parseInt(guestCount),
-            device_id: deviceId // Store device ID to identify this device in the future
+            device_id: deviceId // Use the deviceId directly
           }
         ])
         .select('id')
