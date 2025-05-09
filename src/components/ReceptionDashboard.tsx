@@ -12,6 +12,11 @@ import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 import MediaMessage from "@/components/MediaMessage";
 import MediaUploader from "@/components/MediaUploader";
 import { showGlobalAlert } from "@/hooks/use-alerts";
+import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
+import AudioRecorder from "@/components/AudioRecorder";
+import { useRealtime } from "@/hooks/use-realtime";
+import MessageNotificationBadge from "@/components/MessageNotificationBadge";
+
 type Guest = {
   id: string;
   name: string;
@@ -62,6 +67,8 @@ const ReceptionDashboard = ({
   const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
   const [showGuestList, setShowGuestList] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [recentlyUpdatedGuests, setRecentlyUpdatedGuests] = useState<Record<string, boolean>>({});
+  const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState<number>(Date.now());
   const {
     toast
   } = useToast();
@@ -86,37 +93,139 @@ const ReceptionDashboard = ({
           error
         } = await supabase.from('rooms').select('*');
         if (error) throw error;
+        
         const roomsMap: Record<string, Room> = {};
         data?.forEach(room => {
           roomsMap[room.id] = room;
         });
+        
         setRooms(roomsMap);
       } catch (error) {
         console.error("Error fetching rooms:", error);
       }
     };
+    
     fetchRooms();
-
-    // Subscribe to room changes
-    const roomsChannel = supabase.channel('public:rooms').on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'rooms'
-    }, fetchRooms).subscribe();
-    return () => {
-      supabase.removeChannel(roomsChannel);
-    };
   }, []);
 
-  // Force refresh guest statistics after a staff reply to properly update wait times
-  const refreshGuestStatistics = async () => {
+  // Set up real-time subscriptions for all data
+  const { isConnected } = useRealtime([
+    // Room changes
+    {
+      table: 'rooms',
+      event: '*',
+      callback: async (payload) => {
+        console.log("Room changed:", payload);
+        
+        // Update the single room in our rooms state
+        if (payload.new) {
+          setRooms(prev => ({
+            ...prev,
+            [payload.new.id]: payload.new as Room
+          }));
+        }
+      }
+    },
+    // Guest changes
+    {
+      table: 'guests',
+      event: '*',
+      callback: (payload) => {
+        console.log("Guest changed:", payload);
+        refreshGuestsList();
+      }
+    },
+    // Message changes for all guests (we'll filter as needed)
+    {
+      table: 'messages',
+      event: 'INSERT',
+      callback: (payload) => {
+        const newMessage = payload.new as Message;
+        console.log("New message:", newMessage);
+        
+        // Add visual indicator for guest with new message
+        setRecentlyUpdatedGuests(prev => ({
+          ...prev,
+          [newMessage.guest_id]: true
+        }));
+        
+        // Clear the indicator after 3 seconds
+        setTimeout(() => {
+          setRecentlyUpdatedGuests(prev => ({
+            ...prev,
+            [newMessage.guest_id]: false
+          }));
+        }, 3000);
+        
+        // Update the messages for this guest if we're viewing them
+        if (selectedGuest && selectedGuest.id === newMessage.guest_id) {
+          setMessages(prev => ({
+            ...prev,
+            [selectedGuest.id]: [...(prev[selectedGuest.id] || []), newMessage]
+          }));
+          
+          // Mark previous messages as responded if this is a staff reply
+          if (!newMessage.is_guest) {
+            updateResponseStatus(selectedGuest.id);
+          } else {
+            // If it's a guest message and we're viewing that guest, mark as read in UI
+            setGuests(prevGuests => prevGuests.map(g => {
+              if (g.id === selectedGuest.id) {
+                return {
+                  ...g,
+                  unread_messages: g.unread_messages + 1,
+                  last_activity: newMessage.created_at
+                };
+              }
+              return g;
+            }));
+            
+            // Force refresh response stats after a short delay
+            setTimeout(() => {
+              refreshGuestStatistics();
+            }, 500);
+          }
+          
+          // Scroll to bottom
+          setTimeout(() => scrollToBottom(true), 100);
+        } else {
+          // If we're not viewing this guest, update their unread count
+          setGuests(prevGuests => prevGuests.map(g => {
+            if (g.id === newMessage.guest_id && newMessage.is_guest) {
+              return {
+                ...g,
+                unread_messages: g.unread_messages + 1,
+                last_activity: newMessage.created_at
+              };
+            }
+            return g;
+          }));
+        }
+        
+        setLastUpdateTimestamp(Date.now());
+      }
+    }
+  ], "reception-dashboard-realtime");
+
+  // Force refresh guests list
+  const refreshGuestsList = async () => {
     try {
-      // Join guests and response_statistics to get updated wait times
+      // Join guests and response_statistics to get wait times
       const {
         data: statsData,
         error: statsError
       } = await supabase.from('response_statistics').select('guest_id, guest_name, room_number, pending_messages, wait_time_minutes');
+      
       if (statsError) throw statsError;
+
+      // Get all guests
+      const {
+        data: guestsData,
+        error: guestsError
+      } = await supabase.from('guests').select('id, name, room_number, room_id, created_at');
+      
+      if (guestsError) throw guestsError;
+      if (!guestsData) return;
 
       // Create a map of response statistics by guest_id
       const statsMap: Record<string, any> = {};
@@ -124,121 +233,38 @@ const ReceptionDashboard = ({
         statsMap[stat.guest_id] = stat;
       });
 
-      // Update existing guests with new statistics
-      setGuests(prevGuests => prevGuests.map(guest => {
+      // For each guest, get the latest message timestamp and unread count
+      const enhancedGuests = await Promise.all(guestsData.map(async guest => {
+        // Get latest message timestamp
+        const {
+          data: latestMessage
+        } = await supabase.from('messages').select('created_at').eq('guest_id', guest.id).order('created_at', {
+          ascending: false
+        }).limit(1).single();
+
+        // Get stats from the stats map
         const guestStats = statsMap[guest.id] || {};
+        
         return {
           ...guest,
+          last_activity: latestMessage?.created_at || guest.created_at,
           unread_messages: guestStats.pending_messages || 0,
           wait_time_minutes: guestStats.wait_time_minutes || 0
         };
       }));
 
-      // Also update the selected guest if needed
-      if (selectedGuest) {
-        const updatedStats = statsMap[selectedGuest.id] || {};
-        setSelectedGuest(prev => prev ? {
-          ...prev,
-          unread_messages: updatedStats.pending_messages || 0,
-          wait_time_minutes: updatedStats.wait_time_minutes || 0
-        } : null);
-      }
+      // Sort by last activity
+      enhancedGuests.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
+      
+      setGuests(enhancedGuests);
     } catch (error) {
-      console.error("Error refreshing guest statistics:", error);
+      console.error("Error refreshing guests list:", error);
     }
   };
 
-  // Load guests with response stats
+  // Load guests with response stats - improved with manual refresh trigger
   useEffect(() => {
-    const fetchGuests = async () => {
-      try {
-        // Join guests and response_statistics to get wait times
-        const {
-          data: statsData,
-          error: statsError
-        } = await supabase.from('response_statistics').select('guest_id, guest_name, room_number, pending_messages, wait_time_minutes');
-        if (statsError) throw statsError;
-
-        // Get all guests
-        const {
-          data: guestsData,
-          error: guestsError
-        } = await supabase.from('guests').select('id, name, room_number, room_id, created_at');
-        if (guestsError) throw guestsError;
-        if (!guestsData) return;
-
-        // Create a map of response statistics by guest_id
-        const statsMap: Record<string, any> = {};
-        statsData?.forEach(stat => {
-          statsMap[stat.guest_id] = stat;
-        });
-
-        // For each guest, get the latest message timestamp and unread count
-        const enhancedGuests = await Promise.all(guestsData.map(async guest => {
-          // Get latest message timestamp
-          const {
-            data: latestMessage
-          } = await supabase.from('messages').select('created_at').eq('guest_id', guest.id).order('created_at', {
-            ascending: false
-          }).limit(1).single();
-
-          // Get stats from the stats map
-          const guestStats = statsMap[guest.id] || {};
-          return {
-            ...guest,
-            last_activity: latestMessage?.created_at || guest.created_at,
-            unread_messages: guestStats.pending_messages || 0,
-            wait_time_minutes: guestStats.wait_time_minutes || 0
-          };
-        }));
-
-        // Sort by last activity
-        enhancedGuests.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
-        setGuests(enhancedGuests);
-      } catch (error) {
-        console.error("Error fetching guests:", error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los huéspedes",
-          variant: "destructive"
-        });
-      }
-    };
-    fetchGuests();
-
-    // Subscribe to new guests
-    const guestsChannel = supabase.channel('public:guests').on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'guests'
-    }, fetchGuests).subscribe();
-
-    // Subscribe to new messages (to update unread counts)
-    const messagesChannel = supabase.channel('public:messages').on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages'
-    }, payload => {
-      // Only update wait times for guest messages
-      if ((payload.new as any).is_guest) {
-        fetchGuests();
-      }
-    }).subscribe();
-
-    // Subscribe to message updates (to track when messages are responded to)
-    const messageUpdatesChannel = supabase.channel('public:message_updates').on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'messages'
-    }, () => {
-      // When messages are marked as responded to, refresh statistics
-      refreshGuestStatistics();
-    }).subscribe();
-    return () => {
-      supabase.removeChannel(guestsChannel);
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(messageUpdatesChannel);
-    };
+    refreshGuestsList();
   }, [toast]);
 
   // Load messages for selected guest
@@ -318,45 +344,56 @@ const ReceptionDashboard = ({
   const updateResponseStatus = async (guestId: string) => {
     const now = new Date().toISOString();
     try {
-      // Find all unreplied guest messages
+      // Find all unreplied guest messages in a single call
       const {
         data: pendingMessages,
         error: fetchError
-      } = await supabase.from('messages').select('id, created_at').eq('guest_id', guestId).eq('is_guest', true).is('responded_at', null);
+      } = await supabase
+        .from('messages')
+        .select('id, created_at')
+        .eq('guest_id', guestId)
+        .eq('is_guest', true)
+        .is('responded_at', null);
+      
       if (fetchError) throw fetchError;
       if (!pendingMessages || pendingMessages.length === 0) return;
 
-      // Update each message with response time
-      for (const msg of pendingMessages) {
+      // Prepare updates for batch processing
+      const updatePromises = pendingMessages.map(msg => {
         // Calculate response time in seconds
         const createdAt = new Date(msg.created_at);
         const responseTime = Math.round((new Date().getTime() - createdAt.getTime()) / 1000);
 
-        // Update the message
-        await supabase.from('messages').update({
+        // Update each message individually (could be optimized with batch updates)
+        return supabase.from('messages').update({
           responded_at: now,
           response_time: responseTime
         }).eq('id', msg.id);
-      }
+      });
+      
+      // Execute all updates in parallel
+      await Promise.all(updatePromises);
 
-      // Force refresh wait times from response_statistics
-      setTimeout(() => {
-        refreshGuestStatistics();
-      }, 500);
-
-      // Immediately reset wait time in local state - this provides instant UI feedback
+      // Immediately reset wait time in local state for better UX feedback
       if (selectedGuest && selectedGuest.id === guestId) {
         setSelectedGuest(prev => prev ? {
           ...prev,
-          wait_time_minutes: 0
+          wait_time_minutes: 0,
+          unread_messages: 0
         } : null);
       }
 
       // Also update the guest in the guests list
       setGuests(prevGuests => prevGuests.map(g => g.id === guestId ? {
         ...g,
-        wait_time_minutes: 0
+        wait_time_minutes: 0,
+        unread_messages: 0
       } : g));
+
+      // Force refresh guest statistics after a short delay
+      setTimeout(() => {
+        refreshGuestStatistics();
+      }, 500);
     } catch (error) {
       console.error("Error updating response status:", error);
     }
@@ -838,31 +875,47 @@ const ReceptionDashboard = ({
   }
 
   // Desktop layout with side-by-side panels
-  return <div className="flex h-full">
+  return (
+    <div className="flex h-full">
       <div className="w-1/3 border-r bg-white shadow-sm">
-        <div className="p-4 bg-gradient-to-r from-hotel-600 to-hotel-500 text-white">
+        <div className="p-4 bg-gradient-to-r from-hotel-600 to-hotel-500 text-white flex justify-between items-center">
           <h2 className="text-xl font-semibold flex items-center">
             <User className="mr-2 h-5 w-5" />
             Huéspedes
           </h2>
+          <ConnectionStatusIndicator className="bg-white/10 text-white" />
         </div>
         <ScrollArea className="h-[calc(100%-65px)]">
           <AnimatePresence>
-            {guests.length === 0 ? <motion.div initial={{
-            opacity: 0
-          }} animate={{
-            opacity: 1
-          }} className="p-4 text-gray-500 text-center">
+            {guests.length === 0 ? (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-4 text-gray-500 text-center"
+              >
                 No hay huéspedes registrados
-              </motion.div> : guests.map(guest => <motion.div key={guest.id} initial={{
-            opacity: 0,
-            y: 10
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} transition={{
-            duration: 0.2
-          }} className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${selectedGuest?.id === guest.id ? "bg-blue-50 border-l-4 border-l-hotel-600" : ""}`} onClick={() => selectGuest(guest)}>
+              </motion.div>
+            ) : (
+              guests.map(guest => (
+                <motion.div 
+                  key={guest.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ 
+                    opacity: 1, 
+                    y: 0,
+                    backgroundColor: recentlyUpdatedGuests[guest.id] ? 'rgba(219, 234, 254, 0.8)' : 'transparent'
+                  }}
+                  transition={{
+                    duration: 0.2,
+                    backgroundColor: { duration: 1 }
+                  }}
+                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${
+                    selectedGuest?.id === guest.id 
+                      ? "bg-blue-50 border-l-4 border-l-hotel-600" 
+                      : ""
+                  }`}
+                  onClick={() => selectGuest(guest)}
+                >
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-medium flex items-center flex-wrap">
@@ -871,83 +924,141 @@ const ReceptionDashboard = ({
                           Cabaña {guest.room_number}
                         </span>
                       </p>
+                      
                       {getRoomInfo(guest)}
+                      
                       <p className="text-xs text-gray-500 mt-1">
                         {formatLastActivity(guest.last_activity)}
                       </p>
                     </div>
-                    {guest.unread_messages > 0 && <motion.div initial={{
-                scale: 0.8
-              }} animate={{
-                scale: 1
-              }} className="bg-hotel-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow-md">
-                        {guest.unread_messages}
-                      </motion.div>}
+                    
+                    <MessageNotificationBadge 
+                      count={guest.unread_messages}
+                      waitTime={guest.wait_time_minutes} 
+                    />
                   </div>
-                </motion.div>)}
+                </motion.div>
+              ))
+            )}
           </AnimatePresence>
         </ScrollArea>
       </div>
       
       <div className="flex-1 flex flex-col">
-        {selectedGuest ? <>
+        {selectedGuest ? (
+          <>
             <header className="p-4 bg-white border-b shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-semibold">{selectedGuest.name}</h2>
                   <p className="text-sm text-gray-500">
                     Cabaña {selectedGuest.room_number}
-                    {selectedGuest.wait_time_minutes && selectedGuest.wait_time_minutes > 0 ? <span className="ml-2 text-amber-600">
+                    {selectedGuest.wait_time_minutes && selectedGuest.wait_time_minutes > 0 ? (
+                      <span className="ml-2 text-amber-600">
                         Esperando respuesta: {selectedGuest.wait_time_minutes} min
-                      </span> : null}
+                      </span>
+                    ) : null}
                   </p>
                   {getRoomInfo(selectedGuest)}
                 </div>
-                <Button size="sm" onClick={handleCallGuest} className="bg-green-500 hover:bg-green-600">
-                  <Phone className="h-4 w-4 mr-2" />
-                  Llamar
-                </Button>
+                
+                <div className="flex items-center gap-2">
+                  <ConnectionStatusIndicator />
+                  
+                  <Button size="sm" onClick={handleCallGuest} className="bg-green-500 hover:bg-green-600">
+                    <Phone className="h-4 w-4 mr-2" />
+                    Llamar
+                  </Button>
+                </div>
               </div>
             </header>
             
             <ScrollArea className="flex-grow p-4" ref={scrollContainerRef}>
               <div className="space-y-4 max-w-3xl mx-auto">
-                <AnimatePresence>
-                  {messages[selectedGuest.id]?.map(msg => <motion.div key={msg.id} initial={{
-                opacity: 0,
-                y: 10
-              }} animate={{
-                opacity: 1,
-                y: 0
-              }} transition={{
-                duration: 0.2
-              }} className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'}`}>
-                      <div className={`max-w-[85%] p-3 rounded-lg ${msg.is_guest ? 'bg-white border border-gray-200 text-gray-800' : 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white'}`}>
-                        {msg.is_audio ? <AudioMessagePlayer audioUrl={msg.audio_url || ''} isGuest={!msg.is_guest} isDark={!msg.is_guest} /> : msg.is_media ? <MediaMessage mediaUrl={msg.media_url || ''} mediaType={msg.media_type || 'image'} isGuest={msg.is_guest} /> : <p className="text-sm break-words">{msg.content}</p>}
+                <AnimatePresence initial={false}>
+                  {messages[selectedGuest.id]?.map(msg => (
+                    <motion.div 
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.2
+                      }}
+                      className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'}`}
+                    >
+                      <div className={`max-w-[85%] p-3 rounded-lg ${
+                        msg.is_guest 
+                          ? 'bg-white border border-gray-200 text-gray-800' 
+                          : 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white'
+                      }`}>
+                        {msg.is_audio ? (
+                          <AudioMessagePlayer 
+                            audioUrl={msg.audio_url || ''} 
+                            isGuest={!msg.is_guest}
+                            isDark={!msg.is_guest}
+                          />
+                        ) : msg.is_media ? (
+                          <MediaMessage 
+                            mediaUrl={msg.media_url || ''} 
+                            mediaType={msg.media_type || 'image'} 
+                            isGuest={msg.is_guest} 
+                          />
+                        ) : (
+                          <p className="text-sm break-words">{msg.content}</p>
+                        )}
+                        
+                        <div className="mt-1 text-xs opacity-70 text-right">
+                          {formatTime(msg.created_at)}
+                        </div>
                       </div>
-                    </motion.div>)}
+                    </motion.div>
+                  ))}
                 </AnimatePresence>
+                
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
             
             <div className="p-4 border-t bg-white">
               <div className="flex items-center space-x-2 max-w-3xl mx-auto">
-                <Button type="button" size="icon" variant="outline" onClick={toggleRecording} className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`} disabled={isLoading} title={isRecording ? "Detener grabación" : "Grabar mensaje de voz"}>
-                  {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                </Button>
+                <AudioRecorder
+                  onAudioRecorded={handleAudioRecorded}
+                  onCancel={handleCancelAudio}
+                  disabled={isLoading || !!selectedFile}
+                  title={isRecording ? "Detener grabación" : "Grabar mensaje de voz"}
+                />
                 
-                <MediaUploader guestId={selectedGuest.id} onUploadComplete={handleMediaUploadComplete} disabled={isRecording || isLoading} onFileSelect={handleFileSelect} selectedFile={selectedFile} />
+                <MediaUploader
+                  guestId={selectedGuest.id}
+                  onUploadComplete={handleMediaUploadComplete}
+                  disabled={isLoading || !!audioBlob}
+                  onFileSelect={handleFileSelect}
+                  selectedFile={selectedFile}
+                />
                 
-                <Input placeholder="Escriba su respuesta..." value={replyText} onChange={e => setReplyText(e.target.value)} onKeyPress={e => e.key === "Enter" && !e.shiftKey && handleSend()} className="flex-grow" disabled={isRecording || isLoading} />
+                <Input
+                  placeholder="Escriba su respuesta..."
+                  value={replyText}
+                  onChange={e => setReplyText(e.target.value)}
+                  onKeyPress={e => e.key === "Enter" && !e.shiftKey && handleSend()}
+                  className="flex-grow"
+                  disabled={isLoading || !!audioBlob || !!selectedFile}
+                />
                 
-                <Button type="button" onClick={handleSend} disabled={replyText.trim() === "" && !selectedFile || isRecording || isLoading} className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600">
+                <Button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={(replyText.trim() === "" && !selectedFile && !audioBlob) || isLoading}
+                  className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600"
+                >
                   <Send className="h-4 w-4 mr-2" />
                   Enviar
                 </Button>
               </div>
             </div>
-          </> : <div className="flex items-center justify-center h-full">
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-full">
             <div className="text-center p-6 max-w-md">
               <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-xl font-semibold text-gray-700 mb-2">Seleccione un huésped</h3>
@@ -955,8 +1066,11 @@ const ReceptionDashboard = ({
                 Seleccione un huésped de la lista para ver y responder a sus mensajes.
               </p>
             </div>
-          </div>}
+          </div>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default ReceptionDashboard;

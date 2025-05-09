@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -21,10 +22,15 @@ import {
   MessageSquare,
   Bell,
   Users,
+  RefreshCw,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useRealtime } from "@/hooks/use-realtime";
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 
 type ResponseStat = {
   guest_id: string;
@@ -40,6 +46,8 @@ type ResponseStat = {
 const DashboardStats = () => {
   const [stats, setStats] = useState<ResponseStat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const { toast } = useToast();
   
   const [summary, setSummary] = useState({
@@ -49,92 +57,84 @@ const DashboardStats = () => {
     avgResponseTime: 0,
   });
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      setIsLoading(true);
-      try {
-        // Get statistics from view
-        const { data: responseStats, error: responseError } = await supabase
-          .from("response_statistics")
-          .select("*");
+  const fetchStats = async () => {
+    setIsRefreshing(true);
+    try {
+      // Get statistics from view
+      const { data: responseStats, error: responseError } = await supabase
+        .from("response_statistics")
+        .select("*");
 
-        if (responseError) throw responseError;
+      if (responseError) throw responseError;
 
-        setStats(responseStats || []);
+      setStats(responseStats || []);
 
-        // Calculate summary statistics
-        if (responseStats && responseStats.length > 0) {
-          const totalGuests = responseStats.length;
-          const totalMessages = responseStats.reduce(
-            (sum, stat) => sum + (stat.total_messages || 0),
-            0
-          );
-          const pendingMessages = responseStats.reduce(
-            (sum, stat) => sum + (stat.pending_messages || 0),
-            0
-          );
-          
-          // Calculate average response time from non-null values
-          const validResponseTimes = responseStats
-            .filter(stat => stat.avg_response_time !== null)
-            .map(stat => stat.avg_response_time || 0);
-          
-          const avgResponseTime = validResponseTimes.length > 0
-            ? validResponseTimes.reduce((sum, time) => sum + time, 0) / validResponseTimes.length
-            : 0;
+      // Calculate summary statistics
+      if (responseStats && responseStats.length > 0) {
+        const totalGuests = responseStats.length;
+        const totalMessages = responseStats.reduce(
+          (sum, stat) => sum + (stat.total_messages || 0),
+          0
+        );
+        const pendingMessages = responseStats.reduce(
+          (sum, stat) => sum + (stat.pending_messages || 0),
+          0
+        );
+        
+        // Calculate average response time from non-null values
+        const validResponseTimes = responseStats
+          .filter(stat => stat.avg_response_time !== null)
+          .map(stat => stat.avg_response_time || 0);
+        
+        const avgResponseTime = validResponseTimes.length > 0
+          ? validResponseTimes.reduce((sum, time) => sum + time, 0) / validResponseTimes.length
+          : 0;
 
-          setSummary({
-            totalGuests,
-            totalMessages,
-            pendingMessages,
-            avgResponseTime,
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching statistics:", error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar las estadísticas",
-          variant: "destructive",
+        setSummary({
+          totalGuests,
+          totalMessages,
+          pendingMessages,
+          avgResponseTime,
         });
-      } finally {
-        setIsLoading(false);
       }
-    };
+      
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Error fetching statistics:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las estadísticas",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
 
+  // Initial fetch and setup real-time subscriptions
+  useEffect(() => {
     fetchStats();
-
-    // Set up real-time subscription for messages table to update stats
-    const messagesChannel = supabase
-      .channel("messages-stats-changes")
-      .on(
-        "postgres_changes", 
-        { event: "*", schema: "public", table: "messages" },
-        () => {
-          console.log("Messages changed, refreshing statistics");
-          fetchStats();
-        }
-      )
-      .subscribe();
-
-    // Set up real-time subscription for guests table to update stats
-    const guestsChannel = supabase
-      .channel("guests-stats-changes")
-      .on(
-        "postgres_changes", 
-        { event: "*", schema: "public", table: "guests" },
-        () => {
-          console.log("Guests changed, refreshing statistics");
-          fetchStats();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(guestsChannel);
-    };
   }, [toast]);
+
+  // Set up real-time subscriptions with our custom hook
+  const { isConnected } = useRealtime([
+    { 
+      table: "messages", 
+      event: "*", 
+      callback: () => fetchStats() 
+    },
+    { 
+      table: "guests", 
+      event: "*", 
+      callback: () => fetchStats() 
+    }
+  ], "dashboard-stats-realtime");
+
+  // Handle manual refresh
+  const handleRefresh = () => {
+    fetchStats();
+  };
 
   // Prepare data for chart
   const chartData = stats
@@ -155,55 +155,111 @@ const DashboardStats = () => {
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Format last updated time
+  const formatLastUpdated = () => {
+    return lastUpdated.toLocaleTimeString();
+  };
+
   return (
     <div className="container mx-auto p-4 h-full flex flex-col">
-      <h2 className="text-2xl font-bold mb-6">Estadísticas del Sistema</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold">Estadísticas del Sistema</h2>
+        
+        <div className="flex items-center gap-2">
+          <ConnectionStatusIndicator />
+          
+          <div className="text-xs text-gray-500">
+            Actualizado: {formatLastUpdated()}
+          </div>
+          
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-1"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>Actualizar</span>
+          </Button>
+        </div>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Huéspedes</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.totalGuests}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Mensajes</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.totalMessages}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Mensajes Pendientes</CardTitle>
-            <Bell className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.pendingMessages}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Tiempo Promedio</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatResponseTime(summary.avgResponseTime)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              minutos:segundos
-            </p>
-          </CardContent>
-        </Card>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`card-guests-${summary.totalGuests}`}
+            initial={{ opacity: 0.8, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Total Huéspedes</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{summary.totalGuests}</div>
+              </CardContent>
+            </Card>
+          </motion.div>
+          
+          <motion.div
+            key={`card-messages-${summary.totalMessages}`}
+            initial={{ opacity: 0.8, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2, delay: 0.05 }}
+          >
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Total Mensajes</CardTitle>
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{summary.totalMessages}</div>
+              </CardContent>
+            </Card>
+          </motion.div>
+          
+          <motion.div
+            key={`card-pending-${summary.pendingMessages}`}
+            initial={{ opacity: 0.8, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2, delay: 0.1 }}
+          >
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Mensajes Pendientes</CardTitle>
+                <Bell className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{summary.pendingMessages}</div>
+              </CardContent>
+            </Card>
+          </motion.div>
+          
+          <motion.div
+            key={`card-time-${Math.round(summary.avgResponseTime)}`}
+            initial={{ opacity: 0.8, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2, delay: 0.15 }}
+          >
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Tiempo Promedio</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatResponseTime(summary.avgResponseTime)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  minutos:segundos
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </AnimatePresence>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
@@ -245,7 +301,7 @@ const DashboardStats = () => {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center">
-                <p className="text-muted-foreground">No hay datos suficientes</p>
+                <p className="text-muted-foreground">{isLoading ? "Cargando datos..." : "No hay datos suficientes"}</p>
               </div>
             )}
           </CardContent>
@@ -275,7 +331,10 @@ const DashboardStats = () => {
                   {isLoading ? (
                     <TableRow>
                       <TableCell colSpan={3} className="text-center">
-                        Cargando...
+                        <div className="flex items-center justify-center py-2">
+                          <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                          <span>Cargando...</span>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : stats.filter(s => (s.pending_messages || 0) > 0).length === 0 ? (
@@ -285,22 +344,34 @@ const DashboardStats = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    stats
-                      .filter(stat => (stat.pending_messages || 0) > 0)
-                      .sort((a, b) => (b.pending_messages || 0) - (a.pending_messages || 0))
-                      .map((stat) => (
-                        <TableRow key={stat.guest_id}>
-                          <TableCell>
-                            {stat.guest_name}
-                          </TableCell>
-                          <TableCell>
-                            {stat.room_number}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {stat.pending_messages}
-                          </TableCell>
-                        </TableRow>
-                      ))
+                    <AnimatePresence>
+                      {stats
+                        .filter(stat => (stat.pending_messages || 0) > 0)
+                        .sort((a, b) => (b.pending_messages || 0) - (a.pending_messages || 0))
+                        .map((stat) => (
+                          <motion.tr
+                            key={stat.guest_id}
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="group hover:bg-muted/50"
+                          >
+                            <TableCell className="font-medium">
+                              {stat.guest_name}
+                            </TableCell>
+                            <TableCell>
+                              {stat.room_number}
+                            </TableCell>
+                            <TableCell className="text-right font-semibold">
+                              <span className="inline-flex items-center justify-center bg-amber-100 text-amber-800 rounded-full px-2 py-0.5">
+                                {stat.pending_messages}
+                              </span>
+                            </TableCell>
+                          </motion.tr>
+                        ))
+                      }
+                    </AnimatePresence>
                   )}
                 </TableBody>
               </Table>

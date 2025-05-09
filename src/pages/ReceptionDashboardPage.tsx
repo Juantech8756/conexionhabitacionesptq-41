@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ReceptionDashboard from "@/components/ReceptionDashboard";
@@ -13,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import CallInterface from "@/components/CallInterface";
+import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 
 const ReceptionDashboardPage = () => {
   const navigate = useNavigate();
@@ -158,9 +160,12 @@ const ReceptionDashboardPage = () => {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="p-0 w-[85vw] max-w-[300px]">
-                  <div className="bg-hotel-700 text-white p-4 flex items-center gap-2">
-                    <Hotel className="h-5 w-5" />
-                    <h2 className="text-lg font-medium">Parque Temático Quimbaya</h2>
+                  <div className="bg-hotel-700 text-white p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Hotel className="h-5 w-5" />
+                      <h2 className="text-lg font-medium">Parque Temático Quimbaya</h2>
+                    </div>
+                    <ConnectionStatusIndicator className="bg-white/10" />
                   </div>
                   <nav className="p-4">
                     <ul className="space-y-2">
@@ -212,6 +217,8 @@ const ReceptionDashboardPage = () => {
             <h1 className={`font-bold ${isMobile ? "text-lg" : "text-xl"}`}>Dashboard de Recepción</h1>
           </div>
           <div className="flex items-center space-x-2">
+            {!isMobile && <ConnectionStatusIndicator className="bg-white/10" />}
+            
             {user && !isMobile && (
               <motion.span 
                 initial={{ opacity: 0, x: 20 }}
