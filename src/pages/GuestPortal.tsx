@@ -16,6 +16,7 @@ const GuestPortal = () => {
   const [roomNumber, setRoomNumber] = useState("");
   const [guestId, setGuestId] = useState("");
   const [roomId, setRoomId] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // Add the missing isLoading state
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
@@ -132,7 +133,7 @@ const GuestPortal = () => {
     const fetchRoomData = async () => {
       if (!roomIdFromUrl) return;
       
-      setIsLoading(true);
+      setIsLoading(true); // Now this will work since we've added the state
       try {
         console.log("Fetching room data for room ID:", roomIdFromUrl);
         const { data, error } = await supabase
@@ -159,7 +160,7 @@ const GuestPortal = () => {
       } catch (error) {
         console.error("Error in room data fetch:", error);
       } finally {
-        setIsLoading(false);
+        setIsLoading(false); // Now this will work since we've added the state
       }
     };
 
