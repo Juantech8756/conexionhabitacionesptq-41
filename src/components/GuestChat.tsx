@@ -34,6 +34,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isCallActive, setIsCallActive] = useState(false);
+  const [hasShownWelcomeMessage, setHasShownWelcomeMessage] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -41,18 +42,21 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // Al iniciar el chat, mostrar una alerta de bienvenida
+  // Show a welcome alert when chat starts, but only once
   useEffect(() => {
-    const timer = setTimeout(() => {
-      showGlobalAlert({
-        title: "¡Bienvenido al chat de soporte!",
-        description: "Estamos aquí para ayudarte con cualquier consulta durante tu estancia.",
-        duration: 5000
-      });
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    if (!hasShownWelcomeMessage) {
+      const timer = setTimeout(() => {
+        showGlobalAlert({
+          title: "¡Bienvenido al chat de soporte!",
+          description: "Estamos aquí para ayudarte con cualquier consulta durante tu estancia.",
+          duration: 5000
+        });
+        setHasShownWelcomeMessage(true);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [hasShownWelcomeMessage]);
 
   // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {
@@ -318,7 +322,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             size="icon"
             onClick={() => {
               startCall();
-              // Mostrar alerta sobre la llamada
+              // Show alert about the call
               showGlobalAlert({
                 title: "Llamada a recepción",
                 description: "Conectando con recepción. Por favor espere...",
@@ -390,7 +394,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             onClick={() => {
               toggleRecording();
               if (!isRecording) {
-                // Mostrar alerta sobre grabación de audio
+                // Show alert about recording audio
                 showGlobalAlert({
                   title: "Grabando mensaje de voz",
                   description: "Presione el mismo botón para detener la grabación.",
@@ -440,7 +444,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           guestName={guestName}
           onClose={() => {
             endCall();
-            // Mostrar alerta sobre finalización de llamada
+            // Show alert about call end
             showGlobalAlert({
               title: "Llamada finalizada",
               description: "La llamada con recepción ha terminado.",

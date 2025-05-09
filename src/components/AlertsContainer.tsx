@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, forwardRef, useImperativeHandle } from "react";
+import React, { useState, useCallback, forwardRef, useImperativeHandle, useEffect } from "react";
 import TemporaryAlert from "./TemporaryAlert";
 
 export type AlertType = {
@@ -8,27 +8,61 @@ export type AlertType = {
   description: string;
   variant?: "default" | "destructive";
   duration?: number;
+  timestamp: number;
 };
 
 export interface AlertsContainerHandle {
-  addAlert: (alert: Omit<AlertType, "id">) => string;
+  addAlert: (alert: Omit<AlertType, "id" | "timestamp">) => string;
   removeAlert: (id: string) => void;
 }
+
+const DEFAULT_DURATION = 5000; // 5 seconds default
 
 const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
   const [alerts, setAlerts] = useState<AlertType[]>([]);
 
-  const addAlert = useCallback((alert: Omit<AlertType, "id">) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setAlerts((prev) => [...prev, { ...alert, id }]);
-    return id;
+  // Clean up expired alerts automatically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setAlerts((prev) => prev.filter(alert => {
+        const expiryTime = alert.timestamp + (alert.duration || DEFAULT_DURATION);
+        return now < expiryTime;
+      }));
+    }, 1000);
+    
+    return () => clearInterval(interval);
   }, []);
+
+  const addAlert = useCallback((alert: Omit<AlertType, "id" | "timestamp">) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    const now = Date.now();
+    const duration = alert.duration || DEFAULT_DURATION;
+    
+    // Check for duplicates based on description
+    const isDuplicate = alerts.some(
+      existingAlert => 
+        existingAlert.description === alert.description &&
+        now - existingAlert.timestamp < 5000 // Only consider alerts from last 5 seconds as duplicates
+    );
+    
+    if (!isDuplicate) {
+      setAlerts((prev) => [...prev, { ...alert, id, timestamp: now }]);
+      
+      // Auto-remove after duration
+      setTimeout(() => {
+        setAlerts(prev => prev.filter(a => a.id !== id));
+      }, duration);
+    }
+    
+    return id;
+  }, [alerts]);
 
   const removeAlert = useCallback((id: string) => {
     setAlerts((prev) => prev.filter((alert) => alert.id !== id));
   }, []);
 
-  // Exponer los métodos a través de la referencia
+  // Expose methods through the reference
   useImperativeHandle(ref, () => ({
     addAlert,
     removeAlert

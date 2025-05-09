@@ -1,16 +1,18 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import AlertsContainer, { AlertType } from "@/components/AlertsContainer";
 
-// Crear un singleton para el contenedor de alertas
+// Create a singleton for the alerts container
 let alertsContainerInstance: {
-  addAlert: (alert: Omit<AlertType, "id">) => string;
+  addAlert: (alert: Omit<AlertType, "id" | "timestamp">) => string;
 } | null = null;
+let containerInitialized = false;
 
-// Inicializa el contenedor de alertas si aún no existe
+// Initialize the alerts container if it doesn't exist yet
 const initializeAlertsContainer = () => {
-  if (!alertsContainerInstance && typeof document !== "undefined") {
+  if (!containerInitialized && typeof document !== "undefined") {
+    containerInitialized = true;
     const containerId = "global-alerts-container";
     let container = document.getElementById(containerId);
     
@@ -36,23 +38,30 @@ const initializeAlertsContainer = () => {
   }
 };
 
-// Hook para usar las alertas en cualquier componente
+// Hook to use alerts in any component
 export const useAlerts = () => {
   const [, forceUpdate] = useState({});
   
-  // Asegúrate de que el contenedor existe
-  if (typeof window !== "undefined" && !alertsContainerInstance) {
-    initializeAlertsContainer();
-  }
+  // Make sure container exists
+  useEffect(() => {
+    if (typeof window !== "undefined" && !alertsContainerInstance) {
+      initializeAlertsContainer();
+    }
+  }, []);
   
-  const showAlert = (alert: Omit<AlertType, "id">) => {
-    // Si estamos en el servidor o el contenedor aún no está listo, programa la alerta para más tarde
+  const showAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
+    // If we're on the server or the container isn't ready yet, schedule the alert for later
     if (typeof window === "undefined" || !alertsContainerInstance) {
       setTimeout(() => {
-        if (alertsContainerInstance) {
-          alertsContainerInstance.addAlert(alert);
+        if (!containerInitialized) {
+          initializeAlertsContainer();
         }
-      }, 100);
+        setTimeout(() => {
+          if (alertsContainerInstance) {
+            alertsContainerInstance.addAlert(alert);
+          }
+        }, 100);
+      }, 0);
       return "";
     }
     
@@ -62,10 +71,13 @@ export const useAlerts = () => {
   return { showAlert };
 };
 
-// Versión simplificada para uso global sin hooks
-export const showGlobalAlert = (alert: Omit<AlertType, "id">) => {
+// Simplified version for global use without hooks
+export const showGlobalAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
   if (typeof window !== "undefined") {
-    initializeAlertsContainer();
+    if (!containerInitialized) {
+      initializeAlertsContainer();
+    }
+    
     setTimeout(() => {
       if (alertsContainerInstance) {
         alertsContainerInstance.addAlert(alert);
@@ -73,4 +85,3 @@ export const showGlobalAlert = (alert: Omit<AlertType, "id">) => {
     }, 0);
   }
 };
-

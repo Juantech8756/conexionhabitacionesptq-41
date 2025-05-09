@@ -25,6 +25,7 @@ const GuestPortal = () => {
   const [roomData, setRoomData] = useState<{room_number: string, type: string | null, status: string | null} | null>(null);
   // Flag to prevent duplicate toasts
   const [hasShownRegistrationToast, setHasShownRegistrationToast] = useState(false);
+  const [hasShownOccupiedAlert, setHasShownOccupiedAlert] = useState(false);
 
   // Check if the user has registered previously
   useEffect(() => {
@@ -68,8 +69,8 @@ const GuestPortal = () => {
               setShowWelcome(false);
             }, 1000);
             
-            // Mostrar alerta temporal si la cabaña está ocupada
-            if (data.status === 'occupied') {
+            // Show temporary alert if the cabin is occupied and haven't shown it yet
+            if (data.status === 'occupied' && !hasShownOccupiedAlert) {
               setTimeout(() => {
                 showGlobalAlert({
                   title: "Cabaña no disponible",
@@ -77,6 +78,7 @@ const GuestPortal = () => {
                   variant: "destructive",
                   duration: 6000
                 });
+                setHasShownOccupiedAlert(true);
               }, 1500);
             }
           }
@@ -87,7 +89,7 @@ const GuestPortal = () => {
     };
 
     fetchRoomData();
-  }, [roomIdFromUrl]);
+  }, [roomIdFromUrl, hasShownOccupiedAlert]);
 
   const handleRegister = async (name: string, room: string, id: string) => {
     console.log("Registro exitoso, configurando chat...", {name, room, id});
@@ -122,6 +124,7 @@ const GuestPortal = () => {
     localStorage.removeItem("roomNumber");
     localStorage.removeItem("guestId");
     setHasShownRegistrationToast(false);
+    setHasShownOccupiedAlert(false);
   };
 
   const getRoomTypeText = (type: string | null) => {

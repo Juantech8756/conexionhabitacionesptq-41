@@ -9,7 +9,7 @@ interface TemporaryAlertProps {
   title?: string;
   description: string;
   variant?: "default" | "destructive";
-  duration?: number; // en milisegundos
+  duration?: number; // in milliseconds
   id: string;
   onClose: (id: string) => void;
 }
@@ -18,22 +18,20 @@ const TemporaryAlert = ({
   title,
   description,
   variant = "default",
-  duration = 5000, // 5 segundos por defecto
+  duration = 5000, // 5 seconds default
   id,
   onClose,
 }: TemporaryAlertProps) => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Configura un temporizador para ocultar la alerta después de la duración especificada
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(() => {
         onClose(id);
-      }, 300); // Dar tiempo para la animación de salida
+      }, 300); // Give time for exit animation
     }, duration);
 
-    // Limpia el temporizador si el componente se desmonta
     return () => clearTimeout(timer);
   }, [duration, id, onClose]);
 
@@ -41,7 +39,7 @@ const TemporaryAlert = ({
     setIsVisible(false);
     setTimeout(() => {
       onClose(id);
-    }, 300); // Dar tiempo para la animación de salida
+    }, 300); // Give time for exit animation
   };
 
   return (
@@ -54,7 +52,7 @@ const TemporaryAlert = ({
           transition={{ duration: 0.3 }}
           className="mb-3"
         >
-          <Alert variant={variant} className="relative">
+          <Alert variant={variant} className="relative shadow-md">
             {title && <AlertTitle>{title}</AlertTitle>}
             <AlertDescription>{description}</AlertDescription>
             <Button
@@ -64,7 +62,7 @@ const TemporaryAlert = ({
               onClick={handleClose}
             >
               <X className="h-4 w-4" />
-              <span className="sr-only">Cerrar</span>
+              <span className="sr-only">Close</span>
             </Button>
           </Alert>
         </motion.div>
