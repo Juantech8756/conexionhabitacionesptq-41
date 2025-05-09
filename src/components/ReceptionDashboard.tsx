@@ -908,6 +908,11 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                               isGuest={!msg.is_guest} 
                               isDark={!msg.is_guest}
                             />
+                          ) : msg.is_media ? (
+                            <MediaMessage 
+                              url={msg.media_url || ''} 
+                              type={msg.media_type || 'image'} 
+                            />
                           ) : (
                             <p className="text-sm break-words">{msg.content}</p>
                           )}
@@ -963,3 +968,200 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                   </Button>
                 </div>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  // Desktop layout with side-by-side panels
+  return (
+    <div className="flex h-full">
+      <div className="w-1/3 border-r bg-white shadow-sm">
+        <div className="p-4 bg-gradient-to-r from-hotel-600 to-hotel-500 text-white">
+          <h2 className="text-xl font-semibold flex items-center">
+            <User className="mr-2 h-5 w-5" />
+            Huéspedes
+          </h2>
+        </div>
+        <ScrollArea className="h-[calc(100%-65px)]">
+          <AnimatePresence>
+            {guests.length === 0 ? (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-4 text-gray-500 text-center"
+              >
+                No hay huéspedes registrados
+              </motion.div>
+            ) : (
+              guests.map((guest) => (
+                <motion.div
+                  key={guest.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${
+                    selectedGuest?.id === guest.id ? "bg-blue-50 border-l-4 border-l-hotel-600" : ""
+                  }`}
+                  onClick={() => selectGuest(guest)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium flex items-center flex-wrap">
+                        {guest.name} 
+                        <span className="ml-2 text-sm text-gray-500">
+                          Cabaña {guest.room_number}
+                        </span>
+                      </p>
+                      {getRoomInfo(guest)}
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatLastActivity(guest.last_activity)}
+                      </p>
+                    </div>
+                    {guest.unread_messages > 0 && (
+                      <motion.div 
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        className="bg-hotel-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow-md"
+                      >
+                        {guest.unread_messages}
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        </ScrollArea>
+      </div>
+      
+      <div className="flex-1 flex flex-col">
+        {selectedGuest ? (
+          <>
+            <header className="p-4 bg-white border-b shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">{selectedGuest.name}</h2>
+                  <p className="text-sm text-gray-500">
+                    Cabaña {selectedGuest.room_number}
+                    {selectedGuest.wait_time_minutes && selectedGuest.wait_time_minutes > 0 ? (
+                      <span className="ml-2 text-amber-600">
+                        Esperando respuesta: {selectedGuest.wait_time_minutes} min
+                      </span>
+                    ) : null}
+                  </p>
+                  {getRoomInfo(selectedGuest)}
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleCallGuest}
+                  className="bg-green-500 hover:bg-green-600"
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  Llamar
+                </Button>
+              </div>
+            </header>
+            
+            <ScrollArea className="flex-grow p-4" ref={scrollContainerRef}>
+              <div className="space-y-4 max-w-3xl mx-auto">
+                <AnimatePresence>
+                  {messages[selectedGuest.id]?.map((msg) => (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'}`}
+                    >
+                      <div
+                        className={`max-w-[85%] p-3 rounded-lg ${
+                          msg.is_guest 
+                            ? 'bg-white border border-gray-200 text-gray-800' 
+                            : 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white'
+                        }`}
+                      >
+                        {msg.is_audio ? (
+                          <AudioMessagePlayer 
+                            audioUrl={msg.audio_url || ''} 
+                            isGuest={!msg.is_guest} 
+                            isDark={!msg.is_guest}
+                          />
+                        ) : msg.is_media ? (
+                          <MediaMessage 
+                            url={msg.media_url || ''} 
+                            type={msg.media_type || 'image'} 
+                          />
+                        ) : (
+                          <p className="text-sm break-words">{msg.content}</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+            
+            <div className="p-4 border-t bg-white">
+              <div className="flex items-center space-x-2 max-w-3xl mx-auto">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  onClick={toggleRecording}
+                  className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`}
+                  disabled={isLoading}
+                  title={isRecording ? "Detener grabación" : "Grabar mensaje de voz"}
+                >
+                  {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+                
+                <MediaUploader 
+                  guestId={selectedGuest.id}
+                  onUploadComplete={handleMediaUploadComplete}
+                  disabled={isRecording || isLoading} 
+                  onFileSelect={handleFileSelect}
+                  selectedFile={selectedFile}
+                />
+                
+                <Input
+                  placeholder="Escriba su respuesta..."
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+                  className="flex-grow"
+                  disabled={isRecording || isLoading}
+                />
+                
+                <Button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={(replyText.trim() === "" && !selectedFile) || isRecording || isLoading}
+                  className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center p-6 max-w-md">
+              <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">Seleccione un huésped</h3>
+              <p className="text-gray-500">
+                Seleccione un huésped de la lista para ver y responder a sus mensajes.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ReceptionDashboard;
