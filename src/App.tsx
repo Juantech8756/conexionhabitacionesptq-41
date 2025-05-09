@@ -17,25 +17,23 @@ import QrCodeAdminPage from "./pages/QrCodeAdminPage";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <BrowserRouter>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/guest" element={<GuestPortal />} />
-            <Route path="/reception" element={<ReceptionLogin />} />
-            <Route path="/reception/dashboard" element={<ReceptionDashboardPage />} />
-            <Route path="/qr-code" element={<QrCodeAdminPage />} />
-            <Route path="/qr-code/:roomId" element={<QrCodeDisplay />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </React.StrictMode>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/guest" element={<GuestPortal />} />
+          <Route path="/reception" element={<ReceptionLogin />} />
+          <Route path="/reception/dashboard" element={<ReceptionDashboardPage />} />
+          <Route path="/qr-code" element={<QrCodeAdminPage />} />
+          <Route path="/qr-code/:roomId" element={<QrCodeDisplay />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;

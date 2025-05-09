@@ -9,10 +9,140 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      guests: {
+        Row: {
+          created_at: string | null
+          guest_count: number | null
+          id: string
+          name: string
+          room_id: string | null
+          room_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          guest_count?: number | null
+          id?: string
+          name: string
+          room_id?: string | null
+          room_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          guest_count?: number | null
+          id?: string
+          name?: string
+          room_id?: string | null
+          room_number?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guests_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          audio_url: string | null
+          content: string
+          created_at: string | null
+          guest_id: string
+          id: string
+          is_audio: boolean
+          is_guest: boolean
+          responded_at: string | null
+          response_time: number | null
+        }
+        Insert: {
+          audio_url?: string | null
+          content: string
+          created_at?: string | null
+          guest_id: string
+          id?: string
+          is_audio?: boolean
+          is_guest?: boolean
+          responded_at?: string | null
+          response_time?: number | null
+        }
+        Update: {
+          audio_url?: string | null
+          content?: string
+          created_at?: string | null
+          guest_id?: string
+          id?: string
+          is_audio?: boolean
+          is_guest?: boolean
+          responded_at?: string | null
+          response_time?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "response_statistics"
+            referencedColumns: ["guest_id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          created_at: string | null
+          floor: string | null
+          id: string
+          room_number: string
+          status: string
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          floor?: string | null
+          id?: string
+          room_number: string
+          status?: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          floor?: string | null
+          id?: string
+          room_number?: string
+          status?: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      response_statistics: {
+        Row: {
+          avg_response_time: number | null
+          guest_id: string | null
+          guest_name: string | null
+          max_response_time: number | null
+          pending_messages: number | null
+          room_number: string | null
+          total_messages: number | null
+          wait_time_minutes: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
