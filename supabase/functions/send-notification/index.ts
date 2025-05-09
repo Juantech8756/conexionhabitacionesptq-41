@@ -47,41 +47,21 @@ serve(async (req) => {
     // Get subscriptions based on target type
     let subscriptions;
     if (targetType === 'guest' && targetId) {
-      // Usar RPC para obtener suscripciones
       const { data, error } = await supabaseClient
-        .rpc('get_guest_notification_subscriptions', { p_guest_id: targetId });
+        .from('notification_subscriptions')
+        .select('*')
+        .eq('guestId', targetId);
       
-      if (error) {
-        console.error("Error fetching subscriptions with RPC:", error);
-        // Fallback a SQL directo
-        const { data: fallbackData, error: fallbackError } = await supabaseClient
-          .from('notification_subscriptions')
-          .select('*')
-          .eq('guestId', targetId);
-        
-        if (fallbackError) throw fallbackError;
-        subscriptions = fallbackData;
-      } else {
-        subscriptions = data;
-      }
+      if (error) throw error;
+      subscriptions = data;
     } else if (targetType === 'reception') {
-      // Usar RPC para obtener suscripciones
       const { data, error } = await supabaseClient
-        .rpc('get_reception_notification_subscriptions');
+        .from('notification_subscriptions')
+        .select('*')
+        .not('userId', 'is', null);
       
-      if (error) {
-        console.error("Error fetching subscriptions with RPC:", error);
-        // Fallback a SQL directo
-        const { data: fallbackData, error: fallbackError } = await supabaseClient
-          .from('notification_subscriptions')
-          .select('*')
-          .not('userId', 'is', null);
-        
-        if (fallbackError) throw fallbackError;
-        subscriptions = fallbackData;
-      } else {
-        subscriptions = data;
-      }
+      if (error) throw error;
+      subscriptions = data;
     } else {
       return new Response(
         JSON.stringify({ error: "Invalid target type or missing targetId" }),
