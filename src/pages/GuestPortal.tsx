@@ -38,7 +38,72 @@ const GuestPortal = () => {
       setIsCheckingRegistration(true);
       
       try {
-        // Use the updated checkExistingRegistration that handles cross-device access better
+        // Specifically check for QR scanned room regardless of localStorage state
+        if (roomIdFromUrl) {
+          console.log("QR code scan detected, checking if the room already has a registration");
+          
+          // First, directly check if this room has any guest record
+          const { data: existingRoomGuest, error } = await supabase
+            .from('guests')
+            .select('id, name, room_number, guest_count, room_id')
+            .eq('room_id', roomIdFromUrl)
+            .maybeSingle();
+            
+          if (error) {
+            console.error("Error checking for existing room guests:", error);
+          }
+          
+          // If a guest record exists for this room from any device, use that
+          if (existingRoomGuest) {
+            console.log("Found existing registration for this room:", existingRoomGuest);
+            
+            // Save to localStorage for future visits
+            localStorage.setItem('guest_id', existingRoomGuest.id);
+            localStorage.setItem('guestName', existingRoomGuest.name);
+            localStorage.setItem('roomNumber', existingRoomGuest.room_number);
+            localStorage.setItem('roomId', roomIdFromUrl);
+            
+            // Set up the chat
+            setGuestName(existingRoomGuest.name);
+            setRoomNumber(existingRoomGuest.room_number);
+            setGuestId(existingRoomGuest.id);
+            setRoomId(roomIdFromUrl);
+            setIsRegistered(true);
+            
+            // Show welcome toast if not shown already
+            if (!hasShownRegistrationToast) {
+              toast({
+                title: "Sesión recuperada",
+                description: `Bienvenido a la cabaña ${existingRoomGuest.room_number}`,
+                duration: 3000,
+              });
+              setHasShownRegistrationToast(true);
+            }
+            
+            // Skip the rest of the checks
+            setIsCheckingRegistration(false);
+            return;
+          }
+          
+          // If no direct guest record, check room status
+          const { data: room } = await supabase
+            .from('rooms')
+            .select('status, room_number')
+            .eq('id', roomIdFromUrl)
+            .maybeSingle();
+            
+          if (room && room.status === 'occupied') {
+            console.log("Room is marked as occupied but no guest found. This is inconsistent.");
+            // Show a notification but let registration proceed since no guest record exists
+            toast({
+              title: "Cabaña ocupada",
+              description: "Esta cabaña aparece como ocupada pero no se encontró registro de huésped.",
+              duration: 4000,
+            });
+          }
+        }
+        
+        // Use the updated checkExistingRegistration as fallback
         const existingGuest = await checkExistingRegistration(false, roomIdFromUrl || undefined);
         
         if (existingGuest) {
@@ -58,67 +123,8 @@ const GuestPortal = () => {
             });
             setHasShownRegistrationToast(true);
           }
-        } else if (roomIdFromUrl) {
-          // Specifically for QR scan with no existing registration
-          console.log("QR code scan detected, but no existing registration found. Showing registration form.");
-          setIsRegistered(false);
-          
-          // Pre-check room status
-          const { data: room } = await supabase
-            .from('rooms')
-            .select('status, room_number')
-            .eq('id', roomIdFromUrl)
-            .single();
-            
-          if (room && room.status === 'occupied') {
-            // Double-check if there are any guests for this room
-            // This is a fallback in case our main check missed something
-            const { data: roomGuest } = await supabase
-              .from('guests')
-              .select('id, name, room_number, guest_count, room_id')
-              .eq('room_id', roomIdFromUrl)
-              .maybeSingle();
-              
-            if (roomGuest) {
-              // Found a guest for this room, set up the session
-              console.log("Found guest for occupied room on secondary check:", roomGuest);
-              setGuestName(roomGuest.name);
-              setRoomNumber(roomGuest.room_number);
-              setGuestId(roomGuest.id);
-              setRoomId(roomIdFromUrl);
-              setIsRegistered(true);
-              
-              // Save in localStorage
-              localStorage.setItem('guest_id', roomGuest.id);
-              localStorage.setItem('guestName', roomGuest.name);
-              localStorage.setItem('roomNumber', roomGuest.room_number);
-              localStorage.setItem('roomId', roomIdFromUrl);
-              
-              // Only show welcome toast for existing registrations
-              if (!hasShownRegistrationToast) {
-                toast({
-                  title: "Sesión recuperada",
-                  description: `Bienvenido a la cabaña ${roomGuest.room_number}`,
-                  duration: 3000,
-                });
-                setHasShownRegistrationToast(true);
-              }
-              return;
-            }
-            
-            // Room is marked as occupied but has no guest - this is an inconsistency
-            // Show a single alert (our improved deduplication will prevent multiples)
-            console.log("Room marked as occupied but has no guest registration. Will allow registration.");
-            
-            // Don't show redundant alerts, the new alert system will handle deduplication
-            toast({
-              title: "Cabaña disponible",
-              description: "Aunque la cabaña aparece como ocupada, puede registrarse ahora.",
-              duration: 5000,
-            });
-          }
         } else {
-          console.log("No existing registration found or new room requested via QR, showing form");
+          console.log("No existing registration found, showing form");
           setIsRegistered(false);
         }
       } catch (error) {

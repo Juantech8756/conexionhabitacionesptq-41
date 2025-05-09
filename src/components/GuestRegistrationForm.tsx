@@ -43,6 +43,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   const [preselectedRoom, setPreselectedRoom] = useState<Room | null>(null);
   const location = useLocation();
   const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const [isCheckingExistingGuests, setIsCheckingExistingGuests] = useState(false);
   
   // Load visitor's name from localStorage if it exists
   useEffect(() => {
@@ -53,9 +54,65 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
     }
   }, []);
 
+  // First check: Is there already a guest for this room?
+  useEffect(() => {
+    const checkExistingGuests = async () => {
+      const queryParams = new URLSearchParams(location.search);
+      const roomParam = queryParams.get('room');
+      const roomIdToCheck = roomParam || preselectedRoomId;
+      
+      if (roomIdToCheck) {
+        setIsCheckingExistingGuests(true);
+        console.log("Checking if room already has guests:", roomIdToCheck);
+        
+        try {
+          // Direct check for existing guest for this room
+          const { data: existingGuest, error } = await supabase
+            .from('guests')
+            .select('id, name, room_number, guest_count, room_id')
+            .eq('room_id', roomIdToCheck)
+            .maybeSingle();
+            
+          if (error) {
+            console.error("Error checking for existing guests:", error);
+          }
+          
+          if (existingGuest) {
+            console.log("Room already has a guest registered. Redirecting to chat:", existingGuest);
+            // Save to localStorage
+            localStorage.setItem('guest_id', existingGuest.id);
+            localStorage.setItem('guestName', existingGuest.name);
+            localStorage.setItem('roomNumber', existingGuest.room_number);
+            localStorage.setItem('roomId', roomIdToCheck);
+            
+            // Redirect to chat by calling onRegister
+            onRegister(
+              existingGuest.name,
+              existingGuest.room_number,
+              existingGuest.id,
+              roomIdToCheck
+            );
+            return;
+          }
+        } catch (error) {
+          console.error("Error in existing guests check:", error);
+        } finally {
+          setIsCheckingExistingGuests(false);
+          setInitialCheckDone(true);
+        }
+      } else {
+        setInitialCheckDone(true);
+      }
+    };
+    
+    checkExistingGuests();
+  }, [location.search, preselectedRoomId, onRegister]);
+
   // Check for existing registration once on component mount
   useEffect(() => {
     const handleExistingRegistration = async () => {
+      if (!initialCheckDone) return; // Skip if we haven't done the initial check
+      
       console.log("GuestRegistrationForm: Checking for existing registration");
       
       // Check if we're coming from a QR code scan
@@ -106,10 +163,6 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
             existingGuest.id, 
             existingGuest.room_id || roomIdToCheck
           );
-        } else {
-          // If not registered for this room, show the form with the room preselected
-          console.log("No existing registration for this room. Showing form with preselected room.");
-          setInitialCheckDone(true);
         }
       } else {
         // If no room ID in URL, perform standard check
@@ -125,16 +178,12 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
             existingGuest.id, 
             existingGuest.room_id || ''
           );
-        } else {
-          console.log("No existing registration found. Showing registration form.");
-          setInitialCheckDone(true);
         }
       }
     };
     
     handleExistingRegistration();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialCheckDone, location.search, onRegister, preselectedRoomId]);
 
   // Fetch available rooms
   useEffect(() => {
@@ -241,28 +290,36 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
         guestCount
       });
 
-      // Check if there's an existing guest for this room
-      const { data: existingGuest, error: checkError } = await supabase
+      // Make one final check before registration to ensure room isn't occupied by someone else
+      const { data: checkRoomOccupancy, error: checkError } = await supabase
         .from('guests')
-        .select('id')
+        .select('id, name')
         .eq('room_id', finalRoomId)
         .maybeSingle();
         
       if (checkError) {
-        console.error("Error checking for existing guests:", checkError);
+        console.error("Error checking room occupancy:", checkError);
       }
       
-      // If there's an existing registration, delete it
-      if (existingGuest) {
-        console.log("Found existing guest registration. Deleting before creating new one.");
-        const { error: deleteError } = await supabase
-          .from('guests')
-          .delete()
-          .eq('id', existingGuest.id);
-          
-        if (deleteError) {
-          console.error("Error deleting existing guest:", deleteError);
-        }
+      // If someone else registered while we were on the form
+      if (checkRoomOccupancy) {
+        console.log("Room was occupied by someone else while on the form:", checkRoomOccupancy);
+        
+        // Update localStorage with existing guest info
+        localStorage.setItem('guest_id', checkRoomOccupancy.id);
+        localStorage.setItem('guestName', checkRoomOccupancy.name);
+        localStorage.setItem('roomNumber', selectedRoom.room_number);
+        localStorage.setItem('roomId', finalRoomId);
+        
+        toast({
+          title: "Cabaña ya ocupada",
+          description: "Esta cabaña ha sido registrada por otro huésped. Continuando con ese registro.",
+          duration: 4000,
+        });
+        
+        // Continue with existing registration
+        onRegister(checkRoomOccupancy.name, selectedRoom.room_number, checkRoomOccupancy.id, finalRoomId);
+        return;
       }
 
       // Always update the room to occupied status
@@ -345,7 +402,8 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
     }
   };
 
-  if (!initialCheckDone) {
+  // Add a check for both states to show loading
+  if (isCheckingExistingGuests || !initialCheckDone) {
     // Show loading indicator while checking session
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">

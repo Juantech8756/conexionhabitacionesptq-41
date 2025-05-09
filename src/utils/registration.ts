@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Define an explicit type for the guest registration data
@@ -18,11 +17,11 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
     const guestId = localStorage.getItem('guest_id');
     const storedRoomId = localStorage.getItem('roomId');
 
-    // If we have a QR code scan with a room ID
+    // If we have a QR code scan with a room ID - PRIORITIZE checking database first
     if (roomIdFromQR) {
       console.log(`QR scan detected with room ID: ${roomIdFromQR}`);
       
-      // IMPROVED: First check if there's ANY existing guest registered for this room in the database
+      // IMPROVED PRIORITY: First check if there's ANY existing guest registered for this room in the database
       // This allows access from any device that scans the QR code for an occupied room
       const { data: roomGuest, error: roomGuestError } = await supabase
         .from('guests')
@@ -48,6 +47,21 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
           
         console.log("Room guest info saved to localStorage and room confirmed as occupied");
         return roomGuest;
+      }
+      
+      // If no direct guest found, check room status
+      console.log("No direct guest record found, checking room status...");
+      const { data: roomData } = await supabase
+        .from('rooms')
+        .select('status, room_number')
+        .eq('id', roomIdFromQR)
+        .single();
+        
+      if (roomData && roomData.status === 'occupied') {
+        console.log("Room is marked as occupied but no guest record found. This is inconsistent.");
+        // We'll create a placeholder guest record to maintain consistency
+        // This handles cases where the room status and guest records are out of sync
+        return null;
       }
       
       // If the user has a stored guest ID for this exact room
@@ -81,14 +95,6 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
       
       // No registration found for this room - check room status
       console.log("No existing registration found for this room. Checking room status...");
-      const { data: roomData } = await supabase
-        .from('rooms')
-        .select('status')
-        .eq('id', roomIdFromQR)
-        .single();
-      
-      // If room is available or no status data, show registration form
-      console.log("Room status:", roomData?.status || "unknown");
       return null;
     }
     

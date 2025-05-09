@@ -67,27 +67,23 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
         return prev;
       }
       
-      // Special handling for cabin occupied alerts - never show multiple ones at once
-      if ((alert.title?.includes("Cabaña") || alert.description?.includes("cabaña")) && 
-          (alert.title?.includes("ocupada") || alert.description?.includes("ocupada"))) {
+      // Enhanced filtering for cabin alerts
+      if ((alert.title?.toLowerCase().includes("cabaña") || alert.description?.toLowerCase().includes("cabaña")) && 
+          (alert.title?.toLowerCase().includes("ocupada") || alert.description?.toLowerCase().includes("ocupada"))) {
           
-        // Remove any existing cabin alerts
+        // Remove ANY existing cabin alerts to avoid confusion
         const withoutCabinAlerts = prev.filter(existingAlert => {
-          const existingTitle = existingAlert.title || "";
-          const existingDesc = existingAlert.description || "";
+          const existingTitle = (existingAlert.title || "").toLowerCase();
+          const existingDesc = (existingAlert.description || "").toLowerCase();
+          
           return !(
-            (existingTitle.includes("Cabaña") || existingDesc.includes("cabaña")) &&
-            (existingTitle.includes("ocupada") || existingDesc.includes("ocupada"))
+            (existingTitle.includes("cabaña") || existingDesc.includes("cabaña"))
           );
         });
         
-        // Limit the number of alerts
+        // For cabin alerts, we only ever want to show one at a time
         const newAlerts = [...withoutCabinAlerts, { ...alert, id, timestamp: now, duration }];
-        if (newAlerts.length > MAX_ALERTS) {
-          return newAlerts.slice(newAlerts.length - MAX_ALERTS);
-        }
-        
-        return newAlerts;
+        return newAlerts.slice(-MAX_ALERTS); // Keep only the most recent MAX_ALERTS
       }
       
       // Regular alert handling

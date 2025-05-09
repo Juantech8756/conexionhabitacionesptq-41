@@ -14,6 +14,9 @@ let containerInitialized = false;
 const recentAlertMap = new Map<string, number>();
 const MAX_ALERT_LIFETIME = 5000; // Maximum lifetime for any alert (5 seconds)
 
+// Cache for QR code scan sessions to prevent multiple alerts on the same device
+const qrScanSessions = new Map<string, boolean>();
+
 // Initialize the alerts container if it doesn't exist yet
 const initializeAlertsContainer = () => {
   if (!containerInitialized && typeof document !== "undefined") {
@@ -47,16 +50,27 @@ const initializeAlertsContainer = () => {
 const shouldShowAlert = (alertKey: string, duration: number): boolean => {
   const now = Date.now();
   
-  // Special handling for cabin occupied alerts - check storage first
-  if (alertKey.includes("Cabaña") && alertKey.includes("ocupada")) {
+  // Check for QR scan related alerts
+  if (alertKey.includes("QR") || (alertKey.includes("Cabaña") && alertKey.includes("ocupada"))) {
+    // Create a unique key for this QR scan session
     const sessionKey = `cabin-alert-${alertKey}`;
-    // Completely suppress these alerts if they've been shown once in this session
-    if (sessionStorage.getItem(sessionKey)) {
-      console.log("Completely suppressing duplicate cabin alert:", alertKey);
+    
+    // Check if we've already shown this alert in this browser session
+    if (sessionStorage.getItem(sessionKey) || qrScanSessions.has(sessionKey)) {
+      console.log("Suppressing duplicate QR scan/cabin alert:", alertKey);
       return false;
     }
-    // Mark as shown in session storage - until browser tab is closed/refreshed
-    sessionStorage.setItem(sessionKey, now.toString());
+    
+    // Mark this alert as shown for this session
+    sessionStorage.setItem(sessionKey, "shown");
+    qrScanSessions.set(sessionKey, true);
+    
+    // Clean up the in-memory cache after the alert duration
+    setTimeout(() => {
+      qrScanSessions.delete(sessionKey);
+    }, duration);
+    
+    return true;
   }
   
   // Regular deduplication for any alert
@@ -78,6 +92,26 @@ const shouldShowAlert = (alertKey: string, duration: number): boolean => {
   }, duration);
   
   return true;
+};
+
+// Function to clear all cabin alert sessions - useful when logging out or resetting state
+export const clearCabinAlertSessions = () => {
+  // Clear sessionStorage entries
+  if (typeof sessionStorage !== "undefined") {
+    const keys = Object.keys(sessionStorage);
+    keys.forEach(key => {
+      if (key.startsWith('cabin-alert-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  }
+  
+  // Clear in-memory cache
+  for (const key of qrScanSessions.keys()) {
+    if (key.startsWith('cabin-alert-')) {
+      qrScanSessions.delete(key);
+    }
+  }
 };
 
 // Hook to use alerts in any component
