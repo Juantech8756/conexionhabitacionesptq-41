@@ -11,9 +11,17 @@ interface AudioRecorderProps {
   isGuest?: boolean;
   isDark?: boolean;
   disabled?: boolean;
+  title?: string;  // Added title prop
 }
 
-const AudioRecorder = ({ onAudioRecorded, onCancel, isGuest = false, isDark = false, disabled = false }: AudioRecorderProps) => {
+const AudioRecorder = ({ 
+  onAudioRecorded, 
+  onCancel, 
+  isGuest = false, 
+  isDark = false, 
+  disabled = false,
+  title
+}: AudioRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -123,7 +131,7 @@ const AudioRecorder = ({ onAudioRecorded, onCancel, isGuest = false, isDark = fa
           onClick={toggleRecording}
           className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`}
           disabled={disabled}
-          title={isRecording ? "Detener grabación" : "Grabar mensaje de voz"}
+          title={title || (isRecording ? "Detener grabación" : "Grabar mensaje de voz")}
         >
           {isRecording ? (
             <MicOff className="h-4 w-4" />
