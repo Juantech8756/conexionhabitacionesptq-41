@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -128,6 +127,76 @@
       @apply py-1 px-1;
     }
   }
+}
+
+/* Improved sidebar sheet styles */
+.sidebar-sheet-content {
+  @apply p-0 border-r-0 shadow-xl w-[85vw] max-w-[280px] bg-white;
+}
+
+.sidebar-header {
+  @apply bg-gradient-to-r from-hotel-800 to-hotel-600 p-4 flex items-center justify-between;
+}
+
+/* Enhanced mobile sheet close button */
+.sheet-close-button {
+  @apply text-white rounded-full w-8 h-8 flex items-center justify-center;
+  @apply hover:bg-white/20 transition-colors;
+  @apply focus:ring-2 focus:ring-white/30 focus:outline-none;
+}
+
+.sheet-close-icon {
+  @apply h-4 w-4 text-white;
+}
+
+/* Enhanced connection status indicator */
+.connection-indicator {
+  @apply flex items-center gap-1 text-xs rounded-full px-1.5 py-0.5;
+  @apply transition-all duration-300;
+}
+
+.connection-indicator-minimal {
+  @apply w-2 h-2 rounded-full;
+}
+
+/* Dashboard header layout improvements */
+.dashboard-header {
+  @apply flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 mb-4;
+}
+
+.dashboard-actions {
+  @apply flex items-center gap-2 ml-auto;
+}
+
+/* Stats card grid responsive improvements */
+.stats-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4;
+}
+
+/* Stats layout improvements */
+.stats-header-content {
+  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2;
+}
+
+.stats-info-group {
+  @apply flex items-center gap-3;
+}
+
+.stats-actions {
+  @apply flex items-center gap-2 ml-auto sm:ml-0;
+}
+
+/* Mobile sheet close button refinements */
+.sheet-close-improvement {
+  @apply rounded-full h-6 w-6 flex items-center justify-center text-white;
+  @apply hover:bg-white/20 transition-colors border-none;
+}
+
+/* Fixed dashboard header with contrast */
+.dashboard-header-improved {
+  @apply flex justify-between items-center;
+  @apply bg-gradient-to-r from-hotel-700 to-hotel-500;
+  @apply py-3 px-4 text-white;
 }
 
 /* Media message thin borders - enhanced with reduced opacity */

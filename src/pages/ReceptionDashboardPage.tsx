@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ReceptionDashboard from "@/components/ReceptionDashboard";
@@ -130,6 +129,13 @@ const ReceptionDashboardPage = () => {
     setSelectedGuest(null);
   };
 
+  // Mobile slide-in menu from left
+  const mobileSidebarVariants = {
+    hidden: { x: '-100%', opacity: 0 },
+    visible: { x: '0%', opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 30 } },
+    exit: { x: '-100%', opacity: 0, transition: { duration: 0.2, ease: 'easeInOut' } }
+  };
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
@@ -161,7 +167,7 @@ const ReceptionDashboardPage = () => {
               <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="mr-2 text-white hover:bg-white/20">
-                    <Menu className="h-5 w-5" />
+                    <Menu className="h-5 w-5 text-white" />
                     <span className="sr-only">Menú</span>
                   </Button>
                 </SheetTrigger>
@@ -176,12 +182,12 @@ const ReceptionDashboardPage = () => {
                         animate={{ scale: 1, rotate: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        <Hotel className="h-5 w-5" />
+                        <Hotel className="h-5 w-5 text-white" />
                       </motion.div>
                       <h2 className="text-lg font-medium">Parque Temático Quimbaya</h2>
                     </div>
-                    <SheetClose className="rounded-full w-7 h-7 bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
-                      <X className="h-4 w-4" />
+                    <SheetClose className="rounded-full w-7 h-7 flex items-center justify-center hover:bg-white/20 transition-colors">
+                      <X className="h-4 w-4 text-white" />
                     </SheetClose>
                   </div>
                   <nav className="p-0">
@@ -276,7 +282,7 @@ const ReceptionDashboardPage = () => {
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              <Hotel className="h-6 w-6 mr-2" />
+              <Hotel className="h-6 w-6 mr-2 text-white" />
               <h1 className={`font-bold ${isMobile ? "text-lg" : "text-xl"} text-white`}>
                 Dashboard de Recepción
               </h1>
@@ -284,7 +290,7 @@ const ReceptionDashboardPage = () => {
           </motion.div>
           
           <div className="flex items-center space-x-2">
-            {!isMobile && <ConnectionStatusIndicator className="bg-white/10" />}
+            {!isMobile && <ConnectionStatusIndicator className="bg-white/10 text-white" />}
             
             {user && !isMobile && (
               <motion.span 

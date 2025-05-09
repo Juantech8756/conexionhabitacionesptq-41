@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -135,6 +134,18 @@ export default {
                 'fade-in-right': {
                     '0%': { opacity: '0', transform: 'translateX(-10px)' },
                     '100%': { opacity: '1', transform: 'translateX(0)' }
+                },
+                'float-subtle': {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-2px)' }
+                },
+                'shimmer': {
+                    '0%': { backgroundPosition: '-400px 0' },
+                    '100%': { backgroundPosition: '400px 0' }
+                },
+                'ripple': {
+                    '0%': { transform: 'scale(0)', opacity: '1' },
+                    '100%': { transform: 'scale(4)', opacity: '0' }
                 }
 			},
 			animation: {
@@ -147,7 +158,10 @@ export default {
                 'fade-in-up': 'fade-in-up 0.5s ease-out',
                 'fade-in-down': 'fade-in-down 0.5s ease-out',
                 'fade-in-left': 'fade-in-left 0.5s ease-out',
-                'fade-in-right': 'fade-in-right 0.5s ease-out'
+                'fade-in-right': 'fade-in-right 0.5s ease-out',
+                'float-subtle': 'float-subtle 3s ease-in-out infinite',
+                'shimmer': 'shimmer 2s linear infinite',
+                'ripple': 'ripple 0.6s linear'
 			},
             fontFamily: {
                 sans: ['Inter var', 'system-ui', 'sans-serif'],

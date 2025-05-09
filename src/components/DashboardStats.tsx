@@ -162,20 +162,21 @@ const DashboardStats = () => {
 
   return (
     <div className="container mx-auto p-4 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
         <h2 className="text-2xl font-bold">Estadísticas del Sistema</h2>
         
-        <div className="flex items-center gap-2">
-          <ConnectionStatusIndicator />
-          
-          <div className="text-xs text-gray-500">
-            Actualizado: {formatLastUpdated()}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end">
+          <div className="text-xs text-gray-500 order-2 sm:order-1 flex items-center">
+            <span className="mr-1">Actualizado:</span>
+            {formatLastUpdated()}
           </div>
+          
+          <ConnectionStatusIndicator className="order-1 sm:order-2" />
           
           <Button
             size="sm"
             variant="outline"
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 ml-auto sm:ml-0 order-3"
             onClick={handleRefresh}
             disabled={isRefreshing}
           >
