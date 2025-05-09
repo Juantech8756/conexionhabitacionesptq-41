@@ -187,13 +187,22 @@ export const useNotifications = (options: UseNotificationsOptions) => {
         }
       }
       
-      // Save to database
+      // Usar RPC para insertar en la tabla notification_subscriptions
       const { error } = await supabase
-        .from('notification_subscriptions')
-        .insert([subscriptionData]);
-      
+        .rpc('insert_notification_subscription', subscriptionData);
+        
+      // Si hay un error con RPC, intentar método alternativo
       if (error) {
-        throw error;
+        console.log('Fallback to direct insert:', error);
+        
+        // Método alternativo: insert directo con raw SQL
+        const { error: insertError } = await supabase
+          .from('notification_subscriptions')
+          .insert([subscriptionData]);
+          
+        if (insertError) {
+          throw insertError;
+        }
       }
       
       console.log('Subscription saved to database');
@@ -211,21 +220,29 @@ export const useNotifications = (options: UseNotificationsOptions) => {
       setSubscription(null);
       setIsSubscribed(false);
       
-      // Remove from database
+      // Remove from database using raw SQL
       if (options.type === 'guest' && options.guestId) {
-        await supabase
-          .from('notification_subscriptions')
-          .delete()
-          .eq('guestId', options.guestId)
-          .eq('endpoint', subscription.endpoint);
+        const { error } = await supabase
+          .rpc('delete_notification_subscription', {
+            p_guest_id: options.guestId,
+            p_endpoint: subscription.endpoint
+          });
+          
+        if (error) {
+          console.error('Error removing subscription:', error);
+        }
       } else if (options.type === 'reception') {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await supabase
-            .from('notification_subscriptions')
-            .delete()
-            .eq('userId', user.id)
-            .eq('endpoint', subscription.endpoint);
+          const { error } = await supabase
+            .rpc('delete_notification_subscription', {
+              p_user_id: user.id,
+              p_endpoint: subscription.endpoint
+            });
+            
+          if (error) {
+            console.error('Error removing subscription:', error);
+          }
         }
       }
     } catch (error) {

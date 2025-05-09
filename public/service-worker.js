@@ -106,7 +106,7 @@ self.addEventListener('notificationclick', (event) => {
   
   if (notificationData) {
     // If we have guest or reception specific data
-    if (notificationData.type === 'guest-message' && notificationData.guestId) {
+    if (notificationData.type === 'guest-message' && notificationData.roomId) {
       urlToOpen = `/guest?roomId=${notificationData.roomId || ''}`;
     } else if (notificationData.type === 'reception-message' && notificationData.guestId) {
       urlToOpen = `/reception/dashboard?guestId=${notificationData.guestId}`;

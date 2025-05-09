@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,28 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showNotificationsPrompt, setShowNotificationsPrompt] = useState(false);
   
+  // Obtener el roomId de la tabla de huéspedes
+  const [roomId, setRoomId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Obtener el roomId basado en el guestId
+    const fetchRoomId = async () => {
+      const { data, error } = await supabase
+        .from('guests')
+        .select('room_id')
+        .eq('id', guestId)
+        .single();
+      
+      if (data && data.room_id) {
+        setRoomId(data.room_id);
+      }
+    };
+    
+    if (guestId) {
+      fetchRoomId();
+    }
+  }, [guestId]);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -54,7 +77,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     type: 'guest',
     guestId,
     roomNumber,
-    roomId: roomId
+    roomId: roomId || undefined
   });
 
   // Show a welcome alert when chat starts, but only once

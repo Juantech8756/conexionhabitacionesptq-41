@@ -107,6 +107,45 @@ export type Database = {
           },
         ]
       }
+      notification_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          guestid: string | null
+          id: string
+          p256dh: string
+          roomid: string | null
+          roomnumber: string | null
+          useragent: string | null
+          userid: string | null
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          guestid?: string | null
+          id?: string
+          p256dh: string
+          roomid?: string | null
+          roomnumber?: string | null
+          useragent?: string | null
+          userid?: string | null
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          guestid?: string | null
+          id?: string
+          p256dh?: string
+          roomid?: string | null
+          roomnumber?: string | null
+          useragent?: string | null
+          userid?: string | null
+        }
+        Relationships: []
+      }
       rooms: {
         Row: {
           created_at: string | null
