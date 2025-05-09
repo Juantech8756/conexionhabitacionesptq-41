@@ -40,8 +40,6 @@ const initializeAlertsContainer = () => {
 
 // Hook to use alerts in any component
 export const useAlerts = () => {
-  const [, forceUpdate] = useState({});
-  
   // Make sure container exists
   useEffect(() => {
     if (typeof window !== "undefined" && !alertsContainerInstance) {

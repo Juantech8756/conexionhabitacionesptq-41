@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import GuestRegistrationForm from "@/components/GuestRegistrationForm";
@@ -89,7 +88,12 @@ const GuestPortal = () => {
     };
 
     fetchRoomData();
-  }, [roomIdFromUrl, hasShownOccupiedAlert]);
+    
+    // Clean up function to reset the shown alert flag when component unmounts or roomId changes
+    return () => {
+      setHasShownOccupiedAlert(false);
+    };
+  }, [roomIdFromUrl]);
 
   const handleRegister = async (name: string, room: string, id: string) => {
     console.log("Registro exitoso, configurando chat...", {name, room, id});

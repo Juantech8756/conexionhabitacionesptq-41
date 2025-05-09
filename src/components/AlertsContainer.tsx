@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, forwardRef, useImperativeHandle, useEffect } from "react";
 import TemporaryAlert from "./TemporaryAlert";
 
@@ -39,24 +38,31 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
     const now = Date.now();
     const duration = alert.duration || DEFAULT_DURATION;
     
-    // Check for duplicates based on description
-    const isDuplicate = alerts.some(
-      existingAlert => 
-        existingAlert.description === alert.description &&
-        now - existingAlert.timestamp < 5000 // Only consider alerts from last 5 seconds as duplicates
-    );
-    
-    if (!isDuplicate) {
-      setAlerts((prev) => [...prev, { ...alert, id, timestamp: now }]);
+    // More aggressive duplicate prevention based on title and description
+    setAlerts((prev) => {
+      // Check if there's already a similar alert (by title and description)
+      const existingSimilar = prev.find(
+        existingAlert => 
+          (existingAlert.title === alert.title && existingAlert.description === alert.description) ||
+          existingAlert.description === alert.description
+      );
       
-      // Auto-remove after duration
-      setTimeout(() => {
-        setAlerts(prev => prev.filter(a => a.id !== id));
-      }, duration);
-    }
+      // If a similar alert exists, don't add a new one
+      if (existingSimilar) {
+        return prev;
+      }
+      
+      // Otherwise, add the new alert
+      return [...prev, { ...alert, id, timestamp: now }];
+    });
+    
+    // Auto-remove after duration
+    setTimeout(() => {
+      setAlerts(prev => prev.filter(a => a.id !== id));
+    }, duration);
     
     return id;
-  }, [alerts]);
+  }, []);
 
   const removeAlert = useCallback((id: string) => {
     setAlerts((prev) => prev.filter((alert) => alert.id !== id));
