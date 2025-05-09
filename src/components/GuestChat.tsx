@@ -77,6 +77,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   useEffect(() => {
     const fetchMessages = async () => {
       try {
+        console.log("Fetching messages for guest ID:", guestId);
+        
         const { data, error } = await supabase
           .from('messages')
           .select('*')
@@ -84,6 +86,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           .order('created_at', { ascending: true });
         
         if (error) throw error;
+        
+        console.log("Messages fetched:", data?.length || 0);
         
         if (data.length === 0) {
           // Add welcome message if no messages exist
@@ -97,12 +101,17 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             created_at: new Date().toISOString()
           };
           
+          console.log("Creating welcome message for new chat");
+          
           const { error: insertError } = await supabase
             .from('messages')
             .insert([welcomeMessage]);
             
           if (!insertError) {
+            console.log("Welcome message created successfully");
             setMessages([welcomeMessage as MessageType]);
+          } else {
+            console.error("Error creating welcome message:", insertError);
           }
         } else {
           // Cast data to ensure it matches MessageType
@@ -110,6 +119,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             ...msg,
             media_type: msg.media_type as 'image' | 'video' | undefined
           }));
+          console.log("Typed messages:", typedMessages);
           setMessages(typedMessages as MessageType[]);
         }
       } catch (error) {
@@ -137,12 +147,15 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             filter: `guest_id=eq.${guestId}`
           },
           (payload) => {
+            console.log("New message received via realtime:", payload);
+            
             // Ensure we cast the entire payload to MessageType with correct media_type
             const newMessage: MessageType = {
               ...payload.new as any,
               media_type: payload.new.media_type as 'image' | 'video' | undefined
             };
             
+            console.log("Processed new message:", newMessage);
             setMessages(prev => [...prev, newMessage]);
             
             // Si recibimos un nuevo mensaje de recepción, mostrar alerta
@@ -191,6 +204,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         is_media: false
       };
       
+      console.log("Sending text message:", newMessage);
+      
       const { error } = await supabase
         .from('messages')
         .insert([newMessage]);
@@ -227,16 +242,27 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       
       console.log("Sending media message:", newMessage);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('messages')
-        .insert([newMessage]);
+        .insert([newMessage])
+        .select();
       
       if (error) {
         console.error("Error inserting media message:", error);
         throw error;
       }
       
-      console.log("Media message inserted successfully");
+      console.log("Media message inserted successfully:", data);
+      
+      // Manually add the message to the state to ensure it appears immediately
+      if (data && data.length > 0) {
+        const insertedMessage = {
+          ...data[0],
+          media_type: data[0].media_type as 'image' | 'video' | undefined
+        };
+        
+        setMessages(prev => [...prev, insertedMessage as MessageType]);
+      }
       
       scrollToBottom(false);
       
@@ -362,6 +388,37 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     setIsCallActive(false);
   };
 
+  // Helper function to debug message rendering
+  const renderMessage = (msg: MessageType) => {
+    console.log("Rendering message:", msg);
+    
+    if (msg.is_audio) {
+      console.log("Rendering audio message with URL:", msg.audio_url);
+      return (
+        <AudioMessagePlayer 
+          audioUrl={msg.audio_url || ''} 
+          isGuest={msg.is_guest}
+          isDark={msg.is_guest}
+        />
+      );
+    } 
+    
+    if (msg.is_media && msg.media_url && msg.media_type) {
+      console.log("Rendering media message with URL:", msg.media_url, "type:", msg.media_type);
+      return (
+        <MediaMessage
+          mediaUrl={msg.media_url}
+          mediaType={msg.media_type}
+          isGuest={msg.is_guest}
+        />
+      );
+    }
+    
+    // Regular text message
+    console.log("Rendering text message:", msg.content);
+    return <p className="text-sm break-words">{msg.content}</p>;
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
@@ -430,21 +487,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
                         : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
                     } ${msg.is_audio || msg.is_media ? 'p-0 overflow-hidden' : 'p-3'}`}
                   >
-                    {msg.is_audio ? (
-                      <AudioMessagePlayer 
-                        audioUrl={msg.audio_url || ''} 
-                        isGuest={msg.is_guest}
-                        isDark={msg.is_guest}
-                      />
-                    ) : msg.is_media && msg.media_url && msg.media_type ? (
-                      <MediaMessage
-                        mediaUrl={msg.media_url}
-                        mediaType={msg.media_type}
-                        isGuest={msg.is_guest}
-                      />
-                    ) : (
-                      <p className="text-sm break-words">{msg.content}</p>
-                    )}
+                    {renderMessage(msg)}
                   </div>
                 </motion.div>
               ))

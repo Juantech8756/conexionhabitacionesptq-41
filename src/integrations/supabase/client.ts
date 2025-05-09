@@ -17,10 +17,12 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
-// Crear el bucket chat_media al iniciar la aplicación
-async function createChatMediaBucket() {
+// Create necessary storage buckets when the application starts
+async function createStorageBuckets() {
   try {
-    // Verificar si el bucket ya existe
+    console.log("Initializing storage buckets...");
+    
+    // Check if buckets exist
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
     if (listError) {
@@ -28,12 +30,12 @@ async function createChatMediaBucket() {
       return;
     }
     
-    // Buscar el bucket chat_media
+    // Check and create chat_media bucket
     const chatMediaBucket = buckets?.find(bucket => bucket.name === 'chat_media');
     
-    // Si no existe, intentar crearlo
     if (!chatMediaBucket) {
       console.log('Creating chat_media storage bucket...');
+      
       try {
         const { data, error } = await supabase.storage.createBucket('chat_media', {
           public: true,
@@ -43,49 +45,84 @@ async function createChatMediaBucket() {
         
         if (error) {
           console.error('Error creating chat_media bucket:', error);
-          // Si el error es por política de RLS, no podemos hacer mucho desde el cliente
+          // If the error is due to RLS policy, we can't do much from the client
           if (error.message?.includes('row-level security policy')) {
             console.warn('Unable to create bucket due to Row Level Security policy. This might need to be created in the Supabase dashboard.');
           }
         } else {
-          console.log('Created chat_media bucket successfully');
+          console.log('Created chat_media bucket successfully:', data);
         }
       } catch (createErr) {
-        console.error('Failed to create bucket:', createErr);
+        console.error('Failed to create chat_media bucket:', createErr);
       }
     } else {
       console.log('chat_media bucket already exists');
       
-      // Asegurar que sea público
+      // Ensure it's public
       try {
-        await supabase.storage.updateBucket('chat_media', {
+        const { data, error } = await supabase.storage.updateBucket('chat_media', {
           public: true,
           fileSizeLimit: 10485760,
           allowedMimeTypes: ['image/*', 'video/*']
         });
+        
+        if (error) {
+          console.error('Error updating chat_media bucket settings:', error);
+        } else {
+          console.log('Updated chat_media bucket successfully:', data);
+        }
       } catch (updateErr) {
         console.error('Error updating bucket settings:', updateErr);
       }
     }
     
-    // Intentar crear el bucket audio_messages también
+    // Create audio_messages bucket if it doesn't exist
     const audioMessagesBucket = buckets?.find(bucket => bucket.name === 'audio_messages');
     
     if (!audioMessagesBucket) {
+      console.log('Creating audio_messages storage bucket...');
+      
       try {
-        await supabase.storage.createBucket('audio_messages', {
+        const { data, error } = await supabase.storage.createBucket('audio_messages', {
           public: true,
           fileSizeLimit: 10485760,
           allowedMimeTypes: ['audio/*']
         });
+        
+        if (error) {
+          console.error('Error creating audio_messages bucket:', error);
+        } else {
+          console.log('Created audio_messages bucket successfully:', data);
+        }
       } catch (audioErr) {
         console.error('Failed to create audio_messages bucket:', audioErr);
       }
+    } else {
+      console.log('audio_messages bucket already exists');
+      
+      // Ensure it's public
+      try {
+        const { data, error } = await supabase.storage.updateBucket('audio_messages', {
+          public: true,
+          fileSizeLimit: 10485760,
+          allowedMimeTypes: ['audio/*']
+        });
+        
+        if (error) {
+          console.error('Error updating audio_messages bucket settings:', error);
+        } else {
+          console.log('Updated audio_messages bucket successfully:', data);
+        }
+      } catch (updateErr) {
+        console.error('Error updating audio_messages bucket settings:', updateErr);
+      }
     }
+    
+    console.log("Storage buckets initialization complete");
   } catch (err) {
     console.error('Failed to initialize storage:', err);
   }
 }
 
-// Ejecutar la función de inicialización
-createChatMediaBucket();
+// Execute initialization function
+createStorageBuckets();

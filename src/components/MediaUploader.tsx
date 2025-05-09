@@ -89,7 +89,7 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
     });
 
     try {
-      console.log("Starting file upload...");
+      console.log("Starting file upload for guest ID:", guestId);
       
       // Determine file type
       const fileType = selectedFile.type.startsWith('image/') ? 'image' : 'video';
@@ -100,28 +100,27 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
 
       console.log("Uploading to path:", filePath);
       
-      // Asegurar que el bucket exista
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      
-      if (bucketsError) {
-        console.error("Error listing buckets:", bucketsError);
-        throw bucketsError;
-      }
-      
-      const chatMediaBucket = buckets?.find(b => b.name === 'chat_media');
-      
-      if (!chatMediaBucket) {
-        console.log("Creating chat_media bucket...");
-        const { data, error } = await supabase.storage.createBucket('chat_media', {
-          public: true,
-          fileSizeLimit: 10485760, // 10MB
-          allowedMimeTypes: ['image/*', 'video/*']
-        });
+      // Make sure the bucket exists
+      try {
+        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
         
-        if (error) {
-          console.error("Error creating bucket:", error);
-          // Continuar de todos modos, podría existir pero no ser visible para el usuario actual
+        if (bucketsError) {
+          console.error("Error listing buckets:", bucketsError);
+        } else {
+          const chatMediaBucket = buckets?.find(b => b.name === 'chat_media');
+          
+          if (!chatMediaBucket) {
+            console.log("Creating chat_media bucket...");
+            await supabase.storage.createBucket('chat_media', {
+              public: true,
+              fileSizeLimit: 10485760, // 10MB
+              allowedMimeTypes: ['image/*', 'video/*']
+            });
+          }
         }
+      } catch (bucketError) {
+        console.error("Error checking/creating bucket:", bucketError);
+        // Continue anyway, as the bucket might exist but not be visible to the user
       }
       
       // Upload to Supabase Storage

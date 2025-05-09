@@ -30,8 +30,8 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
     setImageError(false);
     setVideoError(false);
     setZoomLevel(1);
-    console.log(`MediaMessage rendering with URL: ${mediaUrl} and type: ${mediaType}`);
-  }, [mediaUrl, mediaType]);
+    console.log(`MediaMessage rendering with URL: ${mediaUrl} and type: ${mediaType} for ${isGuest ? 'guest' : 'staff'}`);
+  }, [mediaUrl, mediaType, isGuest]);
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -61,14 +61,24 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
     document.body.removeChild(link);
   };
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    console.error("Failed to load image:", mediaUrl, e);
+    setImageError(true);
+  };
+
+  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    console.error("Failed to load video:", mediaUrl, e);
+    setVideoError(true);
+  };
+
   // Style based on whether it's a guest or staff message
   const messageStyle = isGuest 
-    ? "bg-white border border-gray-200 text-gray-800" 
-    : "bg-gradient-to-r from-hotel-600 to-hotel-500 text-white";
+    ? "bg-gradient-to-r from-hotel-600 to-hotel-500 text-white" 
+    : "bg-white border border-gray-200 text-gray-800";
 
   const imageLabelStyle = isGuest
-    ? "bg-black bg-opacity-50 text-white"
-    : "bg-white bg-opacity-50 text-black";
+    ? "bg-white bg-opacity-50 text-black"
+    : "bg-black bg-opacity-50 text-white";
 
   return (
     <>
@@ -82,10 +92,7 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
                   alt="Imagen enviada"
                   className="w-full h-full object-cover rounded"
                   loading="lazy"
-                  onError={(e) => {
-                    console.error("Failed to load image:", mediaUrl, e);
-                    setImageError(true);
-                  }}
+                  onError={handleImageError}
                 />
               </AspectRatio>
             </div>
@@ -107,10 +114,7 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
                 src={mediaUrl}
                 className="max-h-40 max-w-full object-cover"
                 preload="metadata"
-                onError={(e) => {
-                  console.error("Failed to load video:", mediaUrl, e);
-                  setVideoError(true);
-                }}
+                onError={handleVideoError}
               />
             ) : (
               <div className="flex items-center justify-center h-full w-full p-4">
@@ -183,7 +187,7 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
                     transform: `scale(${zoomLevel})`,
                     transformOrigin: 'center center',
                   }}
-                  onError={() => setImageError(true)}
+                  onError={handleImageError}
                 />
               </div>
             </div>
@@ -194,7 +198,7 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
                 controls 
                 className="max-w-full max-h-[calc(90vh-2rem)]"
                 autoPlay
-                onError={() => setVideoError(true)}
+                onError={handleVideoError}
               />
             </div>
           ) : (
