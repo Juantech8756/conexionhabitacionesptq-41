@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import GuestRegistrationForm from "@/components/GuestRegistrationForm";
@@ -16,7 +17,7 @@ const GuestPortal = () => {
   const [roomNumber, setRoomNumber] = useState("");
   const [guestId, setGuestId] = useState("");
   const [roomId, setRoomId] = useState("");
-  const [isLoading, setIsLoading] = useState(false); // Add the missing isLoading state
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
@@ -48,7 +49,7 @@ const GuestPortal = () => {
           setRoomId(existingGuest.room_id || '');
           setIsRegistered(true);
           
-          // Show toast for returning users only once
+          // Only show welcome toast for returning users, but not banner alerts
           if (!hasShownRegistrationToast) {
             toast({
               title: "Sesión recuperada",
@@ -65,7 +66,7 @@ const GuestPortal = () => {
           // Pre-check room status
           const { data: room } = await supabase
             .from('rooms')
-            .select('status')
+            .select('status, room_number')
             .eq('id', roomIdFromUrl)
             .single();
             
@@ -93,6 +94,7 @@ const GuestPortal = () => {
               localStorage.setItem('roomNumber', roomGuest.room_number);
               localStorage.setItem('roomId', roomIdFromUrl);
               
+              // Only show welcome toast for existing registrations
               if (!hasShownRegistrationToast) {
                 toast({
                   title: "Sesión recuperada",
@@ -105,8 +107,10 @@ const GuestPortal = () => {
             }
             
             // Room is marked as occupied but has no guest - this is an inconsistency
-            // We'll allow registration but show a notification
+            // Show a single alert (our improved deduplication will prevent multiples)
             console.log("Room marked as occupied but has no guest registration. Will allow registration.");
+            
+            // Don't show redundant alerts, the new alert system will handle deduplication
             toast({
               title: "Cabaña disponible",
               description: "Aunque la cabaña aparece como ocupada, puede registrarse ahora.",
@@ -133,7 +137,7 @@ const GuestPortal = () => {
     const fetchRoomData = async () => {
       if (!roomIdFromUrl) return;
       
-      setIsLoading(true); // Now this will work since we've added the state
+      setIsLoading(true);
       try {
         console.log("Fetching room data for room ID:", roomIdFromUrl);
         const { data, error } = await supabase
@@ -150,22 +154,26 @@ const GuestPortal = () => {
         if (data) {
           console.log("Room data fetched:", data);
           setRoomData(data);
-          setShowWelcome(true);
           
-          // Show welcome animation for 1.5s
-          setTimeout(() => {
-            setShowWelcome(false);
-          }, 1500);
+          // Only show welcome animation when not already registered for this room
+          if (!isRegistered) {
+            setShowWelcome(true);
+            
+            // Show welcome animation for 1.5s
+            setTimeout(() => {
+              setShowWelcome(false);
+            }, 1500);
+          }
         }
       } catch (error) {
         console.error("Error in room data fetch:", error);
       } finally {
-        setIsLoading(false); // Now this will work since we've added the state
+        setIsLoading(false);
       }
     };
 
     fetchRoomData();
-  }, [roomIdFromUrl]);
+  }, [roomIdFromUrl, isRegistered]);
 
   const handleRegister = async (name: string, room: string, id: string, newRoomId: string) => {
     console.log("Registration successful, setting up chat...", {name, room, id, newRoomId});
@@ -220,6 +228,14 @@ const GuestPortal = () => {
     if (roomData) {
       const alertKey = `cabin-alert-Cabaña no disponible-La cabaña ${roomData.room_number} está ocupada.`;
       sessionStorage.removeItem(alertKey);
+      
+      // Clear any other cabin alert keys
+      const keys = Object.keys(sessionStorage);
+      keys.forEach(key => {
+        if (key.startsWith('cabin-alert-')) {
+          sessionStorage.removeItem(key);
+        }
+      });
     }
   };
 

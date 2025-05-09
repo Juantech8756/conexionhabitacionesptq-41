@@ -57,8 +57,8 @@ const TemporaryAlert = ({
           className="mb-3"
         >
           <Alert variant={variant} className="relative shadow-md">
-            {title && <AlertTitle>{title}</AlertTitle>}
-            <AlertDescription>{description}</AlertDescription>
+            {title && <AlertTitle className="pr-6">{title}</AlertTitle>}
+            <AlertDescription className="pr-6">{description}</AlertDescription>
             <Button
               variant="ghost"
               size="icon"

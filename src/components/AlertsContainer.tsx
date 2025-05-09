@@ -63,11 +63,34 @@ const AlertsContainer = forwardRef<AlertsContainerHandle, {}>((_, ref) => {
       
       // Don't add duplicates
       if (existingSimilar) {
-        console.log('Preventing duplicate alert:', alert);
+        console.log('Preventing duplicate alert in container:', alert);
         return prev;
       }
       
-      // Limit the number of alerts by removing the oldest ones if necessary
+      // Special handling for cabin occupied alerts - never show multiple ones at once
+      if ((alert.title?.includes("Cabaña") || alert.description?.includes("cabaña")) && 
+          (alert.title?.includes("ocupada") || alert.description?.includes("ocupada"))) {
+          
+        // Remove any existing cabin alerts
+        const withoutCabinAlerts = prev.filter(existingAlert => {
+          const existingTitle = existingAlert.title || "";
+          const existingDesc = existingAlert.description || "";
+          return !(
+            (existingTitle.includes("Cabaña") || existingDesc.includes("cabaña")) &&
+            (existingTitle.includes("ocupada") || existingDesc.includes("ocupada"))
+          );
+        });
+        
+        // Limit the number of alerts
+        const newAlerts = [...withoutCabinAlerts, { ...alert, id, timestamp: now, duration }];
+        if (newAlerts.length > MAX_ALERTS) {
+          return newAlerts.slice(newAlerts.length - MAX_ALERTS);
+        }
+        
+        return newAlerts;
+      }
+      
+      // Regular alert handling
       const newAlerts = [...prev, { ...alert, id, timestamp: now, duration }];
       if (newAlerts.length > MAX_ALERTS) {
         return newAlerts.slice(newAlerts.length - MAX_ALERTS);

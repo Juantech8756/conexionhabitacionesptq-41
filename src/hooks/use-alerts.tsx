@@ -10,8 +10,8 @@ let alertsContainerInstance: {
 } | null = null;
 let containerInitialized = false;
 
-// Storage of recent alerts to prevent duplicates
-const recentAlertDescriptions = new Set<string>();
+// Storage of recent alerts to prevent duplicates - use a Map for better control
+const recentAlertMap = new Map<string, number>();
 const MAX_ALERT_LIFETIME = 5000; // Maximum lifetime for any alert (5 seconds)
 
 // Initialize the alerts container if it doesn't exist yet
@@ -43,6 +43,43 @@ const initializeAlertsContainer = () => {
   }
 };
 
+// Helper to check if an alert should be shown or suppressed
+const shouldShowAlert = (alertKey: string, duration: number): boolean => {
+  const now = Date.now();
+  
+  // Special handling for cabin occupied alerts - check storage first
+  if (alertKey.includes("Cabaña") && alertKey.includes("ocupada")) {
+    const sessionKey = `cabin-alert-${alertKey}`;
+    // Completely suppress these alerts if they've been shown once in this session
+    if (sessionStorage.getItem(sessionKey)) {
+      console.log("Completely suppressing duplicate cabin alert:", alertKey);
+      return false;
+    }
+    // Mark as shown in session storage - until browser tab is closed/refreshed
+    sessionStorage.setItem(sessionKey, now.toString());
+  }
+  
+  // Regular deduplication for any alert
+  if (recentAlertMap.has(alertKey)) {
+    console.log("Suppressing duplicate alert:", alertKey);
+    return false;
+  }
+  
+  // Record this alert with timestamp
+  recentAlertMap.set(alertKey, now);
+  
+  // Schedule cleanup
+  setTimeout(() => {
+    const timestamp = recentAlertMap.get(alertKey);
+    // Only delete if it's the same timestamp (avoid race conditions)
+    if (timestamp === now) {
+      recentAlertMap.delete(alertKey);
+    }
+  }, duration);
+  
+  return true;
+};
+
 // Hook to use alerts in any component
 export const useAlerts = () => {
   // Make sure container exists
@@ -53,36 +90,17 @@ export const useAlerts = () => {
   }, []);
   
   const showAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
-    // Enforce maximum duration - shorter to avoid persistent alerts
+    // Enforce maximum duration
     const duration = Math.min(alert.duration || 5000, MAX_ALERT_LIFETIME);
     const alertWithLimit = { ...alert, duration };
     
-    // Global level alert deduplication
+    // Generate alert key
     const alertKey = `${alert.title || ""}-${alert.description}`;
     
-    // Special handling for cabin occupied alerts - don't show repeatedly
-    if (alertKey.includes("Cabaña") && alertKey.includes("ocupada")) {
-      // Only show once per session by storing in sessionStorage
-      const sessionKey = `cabin-alert-${alertKey}`;
-      if (sessionStorage.getItem(sessionKey)) {
-        console.log("Preventing duplicate cabin alert:", alertKey);
-        return "";
-      }
-      sessionStorage.setItem(sessionKey, "shown");
-    }
-    // Regular deduplication for other alerts
-    else if (recentAlertDescriptions.has(alertKey)) {
-      console.log("Preventing duplicate alert:", alertKey);
+    // Check if we should show this alert
+    if (!shouldShowAlert(alertKey, duration)) {
       return "";
     }
-    
-    // Add to recent alerts
-    recentAlertDescriptions.add(alertKey);
-    
-    // Auto-clear from recent alerts after expiry - shorter time
-    setTimeout(() => {
-      recentAlertDescriptions.delete(alertKey);
-    }, duration);
     
     // If we're on the server or the container isn't ready yet, schedule the alert for later
     if (typeof window === "undefined" || !alertsContainerInstance) {
@@ -108,36 +126,17 @@ export const useAlerts = () => {
 // Simplified version for global use without hooks
 export const showGlobalAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
   if (typeof window !== "undefined") {
-    // Enforce maximum duration - shorter to avoid persistent alerts
+    // Enforce maximum duration
     const duration = Math.min(alert.duration || 5000, MAX_ALERT_LIFETIME);
     const alertWithLimit = { ...alert, duration };
     
-    // Global level alert deduplication
+    // Generate alert key
     const alertKey = `${alert.title || ""}-${alert.description}`;
     
-    // Special handling for cabin occupied alerts
-    if (alertKey.includes("Cabaña") && alertKey.includes("ocupada")) {
-      // Only show once per session by storing in sessionStorage
-      const sessionKey = `cabin-alert-${alertKey}`;
-      if (sessionStorage.getItem(sessionKey)) {
-        console.log("Preventing duplicate cabin alert:", alertKey);
-        return;
-      }
-      sessionStorage.setItem(sessionKey, "shown");
-    }
-    // Regular deduplication for other alerts
-    else if (recentAlertDescriptions.has(alertKey)) {
-      console.log("Preventing duplicate global alert:", alertKey);
+    // Check if we should show this alert
+    if (!shouldShowAlert(alertKey, duration)) {
       return;
     }
-    
-    // Add to recent alerts
-    recentAlertDescriptions.add(alertKey);
-    
-    // Auto-clear from recent alerts after expiry
-    setTimeout(() => {
-      recentAlertDescriptions.delete(alertKey);
-    }, duration);
     
     if (!containerInitialized) {
       initializeAlertsContainer();
