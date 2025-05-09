@@ -1,7 +1,8 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Paperclip, X, Loader2 } from "lucide-react";
+import { Paperclip, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { showGlobalAlert } from "@/hooks/use-alerts";
 
@@ -88,7 +89,7 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
     });
 
     try {
-      console.log("Starting file upload for guest ID:", guestId);
+      console.log("Starting file upload...");
       
       // Determine file type
       const fileType = selectedFile.type.startsWith('image/') ? 'image' : 'video';
@@ -99,37 +100,11 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
 
       console.log("Uploading to path:", filePath);
       
-      // Make sure the bucket exists
-      try {
-        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-        
-        if (bucketsError) {
-          console.error("Error listing buckets:", bucketsError);
-        } else {
-          const chatMediaBucket = buckets?.find(b => b.name === 'chat_media');
-          
-          if (!chatMediaBucket) {
-            console.log("Creating chat_media bucket...");
-            await supabase.storage.createBucket('chat_media', {
-              public: true,
-              fileSizeLimit: 10485760, // 10MB
-              allowedMimeTypes: ['image/*', 'video/*']
-            });
-          }
-        }
-      } catch (bucketError) {
-        console.error("Error checking/creating bucket:", bucketError);
-        // Continue anyway, as the bucket might exist but not be visible to the user
-      }
-      
       // Upload to Supabase Storage
       const { data, error } = await supabase
         .storage
         .from('chat_media')
-        .upload(filePath, selectedFile, {
-          cacheControl: '3600',
-          upsert: false
-        });
+        .upload(filePath, selectedFile);
 
       if (error) {
         console.error("Upload error:", error);
@@ -234,7 +209,7 @@ const MediaUploader = ({ guestId, onUploadComplete, disabled = false }: MediaUpl
             disabled={isUploading}
           >
             {isUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-white" />
             ) : (
               "Enviar"
             )}

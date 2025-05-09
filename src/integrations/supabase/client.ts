@@ -17,76 +17,43 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
-// Create necessary storage buckets when the application starts
-async function createStorageBuckets() {
+// Check and create necessary storage buckets
+(async function initializeStorage() {
   try {
-    console.log("Initializing storage buckets...");
-    
-    // Check if buckets exist
+    // Check if chat_media bucket exists
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
     if (listError) {
       console.error('Error checking storage buckets:', listError);
       return;
     }
-    
-    // Create or update chat_media bucket
-    const createOrUpdateBucket = async (bucketName: string, mimeTypes: string[], exists: boolean = false) => {
-      try {
-        if (!exists) {
-          console.log(`Creating ${bucketName} storage bucket...`);
-          const { data, error } = await supabase.storage.createBucket(bucketName, {
-            public: true,
-            fileSizeLimit: 10485760, // 10MB limit
-            allowedMimeTypes: mimeTypes
-          });
-          
-          if (error) {
-            console.error(`Error creating ${bucketName} bucket:`, error);
-            if (error.message?.includes('row-level security policy')) {
-              console.warn('Unable to create bucket due to Row Level Security policy. This might need to be created in the Supabase dashboard.');
-            }
-          } else {
-            console.log(`Created ${bucketName} bucket successfully:`, data);
-          }
-        } else {
-          console.log(`${bucketName} bucket already exists`);
-          
-          // Ensure it's public
-          try {
-            const { data, error } = await supabase.storage.updateBucket(bucketName, {
-              public: true,
-              fileSizeLimit: 10485760,
-              allowedMimeTypes: mimeTypes
-            });
-            
-            if (error) {
-              console.error(`Error updating ${bucketName} bucket settings:`, error);
-            } else {
-              console.log(`Updated ${bucketName} bucket successfully:`, data);
-            }
-          } catch (updateErr) {
-            console.error(`Error updating ${bucketName} bucket settings:`, updateErr);
-          }
-        }
-      } catch (err) {
-        console.error(`Failed to create/update ${bucketName} bucket:`, err);
-      }
-    };
-    
-    // Check and create/update chat_media bucket
+
     const chatMediaBucket = buckets?.find(bucket => bucket.name === 'chat_media');
-    await createOrUpdateBucket('chat_media', ['image/*', 'video/*'], !!chatMediaBucket);
     
-    // Check and create/update audio_messages bucket
-    const audioMessagesBucket = buckets?.find(bucket => bucket.name === 'audio_messages');
-    await createOrUpdateBucket('audio_messages', ['audio/*'], !!audioMessagesBucket);
-    
-    console.log("Storage buckets initialization complete");
+    // Create chat_media bucket if it doesn't exist
+    if (!chatMediaBucket) {
+      console.log('Creating chat_media storage bucket...');
+      const { data, error } = await supabase.storage.createBucket('chat_media', {
+        public: true,
+        fileSizeLimit: 10485760, // 10MB limit
+        allowedMimeTypes: ['image/*', 'video/*']
+      });
+      
+      if (error) {
+        console.error('Error creating chat_media bucket:', error);
+        
+        // If the error is due to RLS policy, we can't do much client-side
+        if (error.message.includes('row-level security policy')) {
+          console.warn('Unable to create bucket due to Row Level Security policy. This might need to be created in the Supabase dashboard.');
+        }
+      } else {
+        console.log('Created chat_media bucket successfully');
+      }
+    }
+
+    // Set up RLS and public access policies for the bucket if needed
+    // Note: This is handled server-side and would require additional SQL queries
   } catch (err) {
     console.error('Failed to initialize storage:', err);
   }
-}
-
-// Execute initialization function
-createStorageBuckets();
+})();

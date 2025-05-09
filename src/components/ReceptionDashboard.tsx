@@ -277,8 +277,6 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
         
         if (error) throw error;
         
-        console.log("Fetched messages for guest", selectedGuest.id, data);
-        
         // Cast data to ensure it matches Message type
         const typedMessages = data.map(msg => ({
           ...msg,
@@ -315,17 +313,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
           filter: `guest_id=eq.${selectedGuest.id}`
         },
         (payload) => {
-          console.log("New message received via real-time:", payload);
-          
-          // Ensure we properly cast the media_type field
-          const newMessage = {
-            ...payload.new as any,
-            media_type: payload.new.media_type as 'image' | 'video' | undefined
-          };
-          
-          console.log("Processed new message:", newMessage);
-          
-          // Important: Update messages state to include the new message
+          const newMessage = payload.new as Message;
           setMessages(prev => ({
             ...prev,
             [selectedGuest.id]: [...(prev[selectedGuest.id] || []), newMessage]
@@ -339,7 +327,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
           // Update unread count for guests
           setGuests(prev => 
             prev.map(g => {
-              if (g.id === selectedGuest.id && newMessage.is_guest) {
+              if (g.id === selectedGuest.id && (payload.new as any).is_guest) {
                 return { ...g, unread_messages: g.unread_messages + 1 };
               }
               return g;
@@ -623,8 +611,6 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
   const handleMediaUploadComplete = async (mediaUrl: string, mediaType: 'image' | 'video') => {
     if (!selectedGuest) return;
     
-    setIsLoading(true);
-    
     try {
       // Create a new media message
       const newMessage = {
@@ -637,35 +623,11 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
         media_type: mediaType
       };
       
-      console.log("Sending media message:", newMessage);
-      
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('messages')
-        .insert([newMessage])
-        .select();
+        .insert([newMessage]);
       
-      if (error) {
-        console.error("Error inserting media message:", error);
-        throw error;
-      }
-      
-      console.log("Media message inserted successfully:", data);
-      
-      // Manually add the message to the state to ensure it appears immediately
-      if (data && data.length > 0) {
-        const insertedMessage = {
-          ...data[0],
-          media_type: data[0].media_type as 'image' | 'video' | undefined
-        };
-        
-        setMessages(prev => ({
-          ...prev,
-          [selectedGuest.id]: [...(prev[selectedGuest.id] || []), insertedMessage]
-        }));
-        
-        // Scroll to bottom for immediate feedback
-        setTimeout(() => scrollToBottom(false), 100);
-      }
+      if (error) throw error;
       
       // Mark all pending messages as responded
       await updateResponseStatus(selectedGuest.id);
@@ -683,11 +645,6 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
       setTimeout(() => {
         refreshGuestStatistics();
       }, 500);
-      
-      toast({
-        title: mediaType === 'image' ? "Imagen enviada" : "Video enviado",
-        description: "El archivo se ha enviado correctamente.",
-      });
     } catch (error) {
       console.error("Error sending media message:", error);
       toast({
@@ -695,8 +652,6 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
         description: "No se pudo enviar el mensaje multimedia",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -1047,14 +1002,11 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                                 isDark={!msg.is_guest}
                               />
                             ) : msg.is_media ? (
-                              <>
-                                <MediaMessage
-                                  mediaUrl={msg.media_url || ''}
-                                  mediaType={msg.media_type || 'image'}
-                                  isGuest={msg.is_guest}
-                                />
-                                {console.log("Rendering media message:", msg.media_url, msg.media_type, msg.is_guest)}
-                              </>
+                              <MediaMessage
+                                mediaUrl={msg.media_url || ''}
+                                mediaType={msg.media_type || 'image'}
+                                isGuest={msg.is_guest}
+                              />
                             ) : (
                               <p>{msg.content}</p>
                             )}
