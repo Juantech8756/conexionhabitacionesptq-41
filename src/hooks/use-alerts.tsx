@@ -50,9 +50,16 @@ const initializeAlertsContainer = () => {
 const shouldShowAlert = (alertKey: string, duration: number): boolean => {
   const now = Date.now();
   
+  // ENHANCED SUPPRESSION: Specifically suppress "cabaña ocupada" alerts
+  if (alertKey.includes("Cabaña") && 
+     (alertKey.includes("ocupada") || alertKey.includes("no se encontró"))) {
+    // Always suppress these alerts - don't even store them in session
+    console.log("Suppressing cabin occupancy alert completely:", alertKey);
+    return false;
+  }
+  
   // Check for QR scan related alerts or session recovery alerts
   if (alertKey.includes("QR") || 
-      (alertKey.includes("Cabaña") && alertKey.includes("ocupada")) ||
       alertKey.includes("Sesión recuperada") ||
       alertKey.includes("Bienvenido al chat") ||
       alertKey.includes("¡Registro exitoso!")) {
@@ -188,3 +195,4 @@ export const showGlobalAlert = (alert: Omit<AlertType, "id" | "timestamp">) => {
     }, 0);
   }
 };
+

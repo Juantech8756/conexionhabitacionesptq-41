@@ -81,12 +81,8 @@ const GuestPortal = () => {
             
           if (room && room.status === 'occupied') {
             console.log("Room is marked as occupied but no guest found. This is inconsistent.");
-            // Show a notification but let registration proceed since no guest record exists
-            toast({
-              title: "Cabaña ocupada",
-              description: "Esta cabaña aparece como ocupada pero no se encontró registro de huésped.",
-              duration: 4000,
-            });
+            // IMPORTANT: REMOVED toast notification for occupied cabins
+            // The alerts are now completely suppressed in the use-alerts.tsx hook
           }
         }
         
