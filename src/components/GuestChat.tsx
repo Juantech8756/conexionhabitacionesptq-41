@@ -138,10 +138,16 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             filter: `guest_id=eq.${guestId}`
           },
           (payload) => {
-            setMessages(prev => [...prev, payload.new as MessageType]);
+            // Ensure payload.new.media_type has the correct type
+            const newMessage = {
+              ...payload.new,
+              media_type: payload.new.media_type as 'image' | 'video' | undefined
+            };
+            
+            setMessages(prev => [...prev, newMessage as MessageType]);
             
             // Si recibimos un nuevo mensaje de recepción, mostrar alerta
-            if (!payload.new.is_guest) {
+            if (!newMessage.is_guest) {
               showGlobalAlert({
                 title: "Nuevo mensaje de recepción",
                 description: "Has recibido un nuevo mensaje de nuestro equipo.",
@@ -220,11 +226,28 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         media_type: mediaType
       };
       
-      const { error } = await supabase
-        .from('messages')
-        .insert([newMessage]);
+      console.log("Sending media message:", newMessage);
       
-      if (error) throw error;
+      const { error, data } = await supabase
+        .from('messages')
+        .insert([newMessage])
+        .select();
+      
+      if (error) {
+        console.error("Error inserting media message:", error);
+        throw error;
+      }
+      
+      console.log("Media message inserted successfully:", data);
+      
+      // Manually add the message to the messages array for immediate feedback
+      if (data && data.length > 0) {
+        const newMsg = {
+          ...data[0],
+          media_type: data[0].media_type as 'image' | 'video'
+        };
+        setMessages(prev => [...prev, newMsg as MessageType]);
+      }
       
       scrollToBottom(false);
     } catch (error) {
