@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getDeviceId, checkExistingRegistration } from "@/utils/registration";
 
 interface GuestRegistrationFormProps {
   onRegister: (guestName: string, roomNumber: string, guestId: string) => void;
@@ -40,50 +41,29 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
   const isMobile = useIsMobile();
   const [preselectedRoom, setPreselectedRoom] = useState<Room | null>(null);
   
-  // Store deviceId directly without state to avoid TypeScript recursion issues
-  const deviceId = (() => {
-    const stored = localStorage.getItem('device_id');
-    if (stored) return stored;
-    
-    // Create new device ID if not exists
-    const newId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem('device_id', newId);
-    return newId;
-  })();
+  // Store deviceId in a ref to avoid it being part of dependency arrays
+  const deviceIdRef = useRef<string>(getDeviceId());
 
   // Check for existing registration once on component mount
   useEffect(() => {
-    // Simplified function to check for existing registration
-    const checkRegistration = async () => {
-      try {
-        const { data: existingGuest, error } = await supabase
-          .from('guests')
-          .select('id, name, room_number')
-          .eq('device_id', deviceId)
-          .maybeSingle();
-          
-        if (error) {
-          console.error("Error checking registration:", error);
-          return;
-        }
+    const handleExistingRegistration = async () => {
+      const existingGuest = await checkExistingRegistration(deviceIdRef.current);
+      
+      if (existingGuest) {
+        toast({
+          title: "Ya has registrado esta cabaña",
+          description: `Continúas como ${existingGuest.name} en la cabaña ${existingGuest.room_number}`,
+          duration: 5000,
+        });
         
-        if (existingGuest) {
-          toast({
-            title: "Ya has registrado esta cabaña",
-            description: `Continúas como ${existingGuest.name} en la cabaña ${existingGuest.room_number}`,
-            duration: 5000,
-          });
-          
-          onRegister(existingGuest.name, existingGuest.room_number, existingGuest.id);
-        }
-      } catch (error) {
-        console.error("Error checking existing registration:", error);
+        onRegister(existingGuest.name, existingGuest.room_number, existingGuest.id);
       }
     };
     
-    checkRegistration();
+    handleExistingRegistration();
+  // We're using refs instead of dependencies to avoid the circular reference issue
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
+  }, []);
 
   // Fetch available rooms
   useEffect(() => {
@@ -186,7 +166,7 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
             room_number: selectedRoom.room_number, 
             room_id: selectedRoomId,
             guest_count: parseInt(guestCount),
-            device_id: deviceId // Use the deviceId directly
+            device_id: deviceIdRef.current // Use the deviceId from ref
           }
         ])
         .select('id')
