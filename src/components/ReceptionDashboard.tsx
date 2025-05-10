@@ -273,17 +273,21 @@ const ReceptionDashboard = ({
     refreshGuestsList();
   }, [toast]);
 
-  // Load messages for selected guest
+  // Load messages for selected guest - MODIFIED to remove duplicate subscription
   useEffect(() => {
     if (!selectedGuest) return;
+    
     const fetchMessages = async () => {
       try {
         const {
           data,
           error
-        } = await supabase.from('messages').select('*').eq('guest_id', selectedGuest.id).order('created_at', {
-          ascending: true
-        });
+        } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('guest_id', selectedGuest.id)
+          .order('created_at', { ascending: true });
+          
         if (error) throw error;
 
         // Cast data to ensure it matches Message type
@@ -291,6 +295,7 @@ const ReceptionDashboard = ({
           ...msg,
           media_type: msg.media_type as 'image' | 'video' | undefined
         }));
+        
         setMessages(prev => ({
           ...prev,
           [selectedGuest.id]: typedMessages as Message[]
@@ -307,43 +312,10 @@ const ReceptionDashboard = ({
         });
       }
     };
+    
     fetchMessages();
 
-    // Subscribe to new messages for this guest
-    const channel = supabase.channel(`guest-${selectedGuest.id}-messages`).on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-      filter: `guest_id=eq.${selectedGuest.id}`
-    }, payload => {
-      const newMessage = payload.new as Message;
-      setMessages(prev => ({
-        ...prev,
-        [selectedGuest.id]: [...(prev[selectedGuest.id] || []), newMessage]
-      }));
-
-      // Mark previous messages as responded if this is a staff reply
-      if (!newMessage.is_guest) {
-        updateResponseStatus(selectedGuest.id);
-      }
-
-      // Update unread count for guests
-      setGuests(prev => prev.map(g => {
-        if (g.id === selectedGuest.id && (payload.new as any).is_guest) {
-          return {
-            ...g,
-            unread_messages: g.unread_messages + 1
-          };
-        }
-        return g;
-      }));
-
-      // Scroll to bottom when new message arrives
-      setTimeout(() => scrollToBottom(true), 100);
-    }).subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // No need for cleanup function since we're not creating a channel here anymore
   }, [selectedGuest, toast]);
 
   // Update response status for messages when staff replies
