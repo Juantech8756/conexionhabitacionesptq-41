@@ -1,6 +1,11 @@
 
 import { useState, useEffect, useRef } from "react";
-import { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { 
+  RealtimeChannel, 
+  RealtimePostgresChangesPayload,
+  REALTIME_LISTEN_TYPES,
+  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT
+} from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
@@ -117,15 +122,32 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       const pgChannelName = `${uniquePrefix}-pg-${index}-${table}-${event}`;
       console.log(`Creating postgres channel: ${pgChannelName} for ${table}:${event}`);
       
-      // Create a channel for postgres_changes
+      // Create a separate channel specifically for postgres changes
       const pgChannel = supabase.channel(pgChannelName);
       
-      // FIXED: Chain the .on() call directly with .subscribe() at the end
+      // Convert event type to Supabase's enum value
+      let realtimeEvent: any;
+      switch (event) {
+        case 'INSERT':
+          realtimeEvent = REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT;
+          break;
+        case 'UPDATE':
+          realtimeEvent = REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE;
+          break;
+        case 'DELETE':
+          realtimeEvent = REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE;
+          break;
+        case '*':
+          realtimeEvent = REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.ALL;
+          break;
+      }
+      
+      // Subscribe with proper typing using Supabase constants
       pgChannel
         .on(
-          'postgres_changes',
+          REALTIME_LISTEN_TYPES.POSTGRES_CHANGES,
           {
-            event: event,
+            event: realtimeEvent,
             schema: 'public',
             table: table,
             ...(filter && filterValue ? { filter: `${filter}=eq.${filterValue}` } : {})

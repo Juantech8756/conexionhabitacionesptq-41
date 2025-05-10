@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Wifi, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { REALTIME_LISTEN_TYPES } from "@supabase/supabase-js";
 
 interface ConnectionStatusIndicatorProps {
   className?: string;
@@ -23,19 +24,19 @@ const ConnectionStatusIndicator = ({
 
     // Listen to connection status changes
     const subscription = channel
-      .on('system', {
+      .on(REALTIME_LISTEN_TYPES.SYSTEM, {
         event: 'connected'
       }, () => {
         setIsConnected(true);
         setIsReconnecting(false);
       })
-      .on('system', {
+      .on(REALTIME_LISTEN_TYPES.SYSTEM, {
         event: 'disconnected'
       }, () => {
         setIsConnected(false);
         setIsReconnecting(false);
       })
-      .on('system', {
+      .on(REALTIME_LISTEN_TYPES.SYSTEM, {
         event: 'connecting'
       }, () => {
         setIsReconnecting(true);
