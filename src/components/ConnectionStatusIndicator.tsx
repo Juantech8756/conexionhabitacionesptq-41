@@ -79,7 +79,7 @@ const ConnectionStatusIndicator = ({
   return <div className={cn("flex items-center gap-1.5 text-xs font-medium", className)}>
       <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : isReconnecting ? "bg-amber-500 animate-pulse" : "bg-red-500")} />
       
-      {isConnected ? <span className="text-zinc-200">Conectado</span> : isReconnecting ? <span className="text-amber-600 animate-pulse">Reconectando...</span> : <span className="text-red-600">Desconectado</span>}
+      {isConnected ? <span className="text-gray-950">Conectado</span> : isReconnecting ? <span className="text-amber-600 animate-pulse">Reconectando...</span> : <span className="text-red-600">Desconectado</span>}
     </div>;
 };
 export default ConnectionStatusIndicator;
