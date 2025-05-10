@@ -42,54 +42,50 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     const baseChannelName = channelName || 
       `realtime-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     
-    // IMPORTANT: We need to create separate channels for each purpose
-    // 1. Create a dedicated channel ONLY for system events
-    const systemChannel = supabase.channel(`${baseChannelName}-system`);
+    // Create a connection status channel
+    const connectionChannel = supabase.channel(`${baseChannelName}-connection`);
     
-    console.log(`Creating system channel: ${baseChannelName}-system`);
-    
-    // Set up system events on their own dedicated channel
-    systemChannel
-      .on('system', { event: 'connected' }, () => {
-        console.log(`System channel connected`);
-        setIsConnected(true);
-      });
-    
-    // Subscribe to the system channel
-    systemChannel.subscribe((status) => {
-      console.log(`System channel subscription status: ${status}`);
+    // Handle the 'connected' event on its own channel
+    connectionChannel.on('system', { event: 'connected' }, () => {
+      console.log('Connection status channel: connected');
+      setIsConnected(true);
     });
     
-    // Add disconnect handling on a separate channel subscription
-    // This must be separate in Supabase 2.49.4 due to typings
+    // Subscribe to the connection channel
+    connectionChannel.subscribe((status) => {
+      console.log(`Connection status channel subscription status: ${status}`);
+    });
+    
+    // Add to channels collection for cleanup
+    channelsRef.current.push(connectionChannel);
+    
+    // Create a separate disconnect channel
     const disconnectChannel = supabase.channel(`${baseChannelName}-disconnect`);
     
-    disconnectChannel
-      .on('system', { event: 'disconnected' }, () => {
-        console.log(`System disconnected`);
-        setIsConnected(false);
-
-        // Set up auto reconnection
-        if (retryTimeoutRef.current === null) {
-          retryTimeoutRef.current = window.setTimeout(() => {
-            console.log('Attempting to reconnect...');
-            reconnect();
-            retryTimeoutRef.current = null;
-          }, 3000);
-        }
-      });
+    // Handle the 'disconnected' event on its own channel
+    disconnectChannel.on('system', { event: 'disconnected' }, () => {
+      console.log('Disconnect channel: disconnected');
+      setIsConnected(false);
+      
+      // Set up auto reconnection
+      if (retryTimeoutRef.current === null) {
+        retryTimeoutRef.current = window.setTimeout(() => {
+          console.log('Attempting to reconnect...');
+          reconnect();
+          retryTimeoutRef.current = null;
+        }, 3000);
+      }
+    });
     
     // Subscribe to the disconnect channel
     disconnectChannel.subscribe((status) => {
       console.log(`Disconnect channel subscription status: ${status}`);
     });
     
-    // Store both system channels for cleanup
-    channelsRef.current.push(systemChannel);
+    // Add to channels collection for cleanup
     channelsRef.current.push(disconnectChannel);
     
-    // 2. Create individual channels for each postgres_changes subscription
-    // Each postgres subscription MUST have its own dedicated channel with a single `.on()` call
+    // Create individual channels for each postgres_changes subscription
     subscriptions.forEach((subscription, index) => {
       const { table, event, filter, filterValue, callback } = subscription;
       
@@ -97,18 +93,14 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       const pgChannelName = `${baseChannelName}-pg-${table}-${event}-${index}`;
       console.log(`Creating postgres channel: ${pgChannelName}`);
       
-      // Create a dedicated channel just for this specific postgres_changes subscription
+      // Create a dedicated channel for this specific postgres_changes subscription
       const pgChannel = supabase.channel(pgChannelName);
       
       // Prepare filter configuration if needed
       const filterConfig = filter && filterValue ? 
         { filter: `${filter}=eq.${filterValue}` } : {};
       
-      console.log(`Adding subscription to ${table} for event ${event}`, 
-        filter && filterValue ? filterConfig : "no filter");
-      
-      // CRITICAL: Each postgres_changes subscription requires its own
-      // dedicated channel and immediate subscribe call
+      // Configure the postgres_changes event on this channel
       pgChannel.on(
         'postgres_changes',
         {
@@ -123,12 +115,12 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
         }
       );
       
-      // We must subscribe immediately after the .on() call
+      // Subscribe to this postgres channel
       pgChannel.subscribe((status) => {
         console.log(`Postgres channel ${pgChannelName} subscription status: ${status}`);
       });
       
-      // Store the postgres channel for cleanup
+      // Add to channels collection for cleanup
       channelsRef.current.push(pgChannel);
     });
 
