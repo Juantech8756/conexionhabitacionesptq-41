@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,7 @@ import { sendNotificationToReception, formatMessageNotification } from "@/utils/
 import NotificationPermissionRequest from "@/components/NotificationPermissionRequest";
 import AudioRecorder from "@/components/AudioRecorder";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 interface GuestChatProps {
   guestName: string;
@@ -163,8 +163,21 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       if (data && data.length > 0) {
         console.log(`Sondeo encontró ${data.length} mensajes nuevos`);
         
+        // Transformar los datos para asegurarnos que cumplan con MessageType
+        const typedMessages: MessageType[] = data.map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          is_guest: msg.is_guest,
+          is_audio: msg.is_audio,
+          audio_url: msg.audio_url,
+          is_media: msg.is_media || false,
+          media_url: msg.media_url,
+          media_type: msg.media_type as 'image' | 'video' | undefined,
+          created_at: msg.created_at || new Date().toISOString(),
+        }));
+        
         // Actualizar mensajes locales con los nuevos mensajes
-        setMessages(prev => [...prev, ...data]);
+        setMessages(prev => [...prev, ...typedMessages]);
         
         // Scroll hacia abajo para mostrar los nuevos mensajes
         setTimeout(() => scrollToBottom(true), 100);
@@ -255,17 +268,31 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         console.log('Nuevo mensaje recibido en tiempo real:', payload);
         
         // Sólo añadir el mensaje si no lo tenemos ya
-        const newMessage = payload.new as MessageType;
+        const newMsg = payload.new;
         
-        setMessages(prev => {
-          if (!prev.some(msg => msg.id === newMessage.id)) {
-            return [...prev, newMessage];
-          }
-          return prev;
-        });
-        
-        // Scroll hacia abajo para mostrar el nuevo mensaje
-        setTimeout(() => scrollToBottom(true), 100);
+        if (newMsg) {
+          const typedMessage: MessageType = {
+            id: newMsg.id,
+            content: newMsg.content,
+            is_guest: newMsg.is_guest,
+            is_audio: newMsg.is_audio,
+            audio_url: newMsg.audio_url,
+            is_media: newMsg.is_media || false,
+            media_url: newMsg.media_url,
+            media_type: newMsg.media_type as 'image' | 'video' | undefined,
+            created_at: newMsg.created_at || new Date().toISOString(),
+          };
+          
+          setMessages(prev => {
+            if (!prev.some(msg => msg.id === typedMessage.id)) {
+              return [...prev, typedMessage];
+            }
+            return prev;
+          });
+          
+          // Scroll hacia abajo para mostrar el nuevo mensaje
+          setTimeout(() => scrollToBottom(true), 100);
+        }
       })
       .subscribe((status) => {
         console.log(`Canal de mensajes estatus: ${status}`);
@@ -300,9 +327,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         
         if (data.length === 0) {
           // Add welcome message if no messages exist
-          const welcomeMessage = {
+          const welcomeMessage: MessageType = {
             id: 'welcome',
-            guest_id: guestId,
             content: `¡Hola ${guestName}! Bienvenido/a al Parque Temático Quimbaya. ¿En qué podemos ayudarte?`,
             is_guest: false,
             is_audio: false,
@@ -312,7 +338,20 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           
           setMessages([welcomeMessage]);
         } else {
-          setMessages(data);
+          // Transformamos para garantizar tipos correctos
+          const typedMessages: MessageType[] = data.map(msg => ({
+            id: msg.id,
+            content: msg.content,
+            is_guest: msg.is_guest,
+            is_audio: msg.is_audio,
+            audio_url: msg.audio_url,
+            is_media: msg.is_media || false,
+            media_url: msg.media_url,
+            media_type: msg.media_type as 'image' | 'video' | undefined,
+            created_at: msg.created_at || new Date().toISOString(),
+          }));
+          
+          setMessages(typedMessages);
         }
         
         // Scroll to bottom after messages load
@@ -339,9 +378,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     setMessage("");
     
     // Agregar mensaje optimista a la UI inmediatamente
-    const optimisticMessage = {
+    const optimisticMessage: MessageType = {
       id: localId,
-      guest_id: guestId,
       content: messageText,
       is_guest: true,
       is_audio: false,
@@ -408,9 +446,21 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       
       console.log("Mensaje enviado exitosamente:", data);
       
+      const typedMessage: MessageType = {
+        id: data.id,
+        content: data.content,
+        is_guest: data.is_guest,
+        is_audio: data.is_audio,
+        audio_url: data.audio_url,
+        is_media: data.is_media || false,
+        media_url: data.media_url,
+        media_type: data.media_type as 'image' | 'video' | undefined,
+        created_at: data.created_at || new Date().toISOString(),
+      };
+      
       // Actualizar mensajes locales reemplazando el mensaje optimista
       setMessages(prev => prev.map(msg => 
-        msg.id === localId ? data : msg
+        msg.id === localId ? typedMessage : msg
       ));
       
       // Remover de pendientes
@@ -439,9 +489,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     const localId = `local-audio-${Date.now()}`;
     
     // Agregar mensaje optimista a la UI
-    const optimisticMessage = {
+    const optimisticMessage: MessageType = {
       id: localId,
-      guest_id: guestId,
       content: "Mensaje de voz",
       is_guest: true,
       is_audio: true,
@@ -525,9 +574,22 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       
       console.log("Mensaje de audio enviado exitosamente:", messageData);
       
+      // Crear una versión tipada del mensaje
+      const typedMessage: MessageType = {
+        id: messageData.id,
+        content: messageData.content,
+        is_guest: messageData.is_guest,
+        is_audio: messageData.is_audio,
+        audio_url: messageData.audio_url,
+        is_media: messageData.is_media || false,
+        media_url: messageData.media_url,
+        media_type: messageData.media_type as 'image' | 'video' | undefined,
+        created_at: messageData.created_at || new Date().toISOString(),
+      };
+      
       // Actualizar mensajes locales
       setMessages(prev => prev.map(msg => 
-        msg.id === localId ? messageData : msg
+        msg.id === localId ? typedMessage : msg
       ));
       
       // Remover de pendientes
@@ -562,6 +624,10 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   const handleCallEnd = () => {
     setIsCallActive(false);
+  };
+
+  const handleCloseNotificationPrompt = () => {
+    setShowNotificationsPrompt(false);
   };
 
   // Obtener hora formateada para los mensajes
@@ -608,7 +674,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       {/* Prompt de notificaciones */}
       {showNotificationsPrompt && (
         <NotificationPermissionRequest
-          onClose={() => setShowNotificationsPrompt(false)}
+          onDismiss={handleCloseNotificationPrompt}
         />
       )}
 
