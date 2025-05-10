@@ -16,7 +16,7 @@ import { sendNotificationToReception, formatMessageNotification } from "@/utils/
 import NotificationPermissionRequest from "@/components/NotificationPermissionRequest";
 import AudioRecorder from "@/components/AudioRecorder";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
-import { RealtimeChannel, REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 interface GuestChatProps {
   guestName: string;
