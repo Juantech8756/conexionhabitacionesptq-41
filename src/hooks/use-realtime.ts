@@ -1,10 +1,10 @@
 
 import { useState, useEffect, useRef } from "react";
-import { RealtimeChannel } from "@supabase/supabase-js";
+import { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
-type SubscriptionCallback = (payload: any) => void;
+type SubscriptionCallback = (payload: RealtimePostgresChangesPayload<any>) => void;
 
 interface RealtimeSubscription {
   table: string;
@@ -113,32 +113,33 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
   const createPostgresChannels = (uniquePrefix: string, subscriptions: RealtimeSubscription[]) => {
     subscriptions.forEach((subscription, index) => {
       const { table, event, filter, filterValue, callback } = subscription;
-      const filterObj = filter ? { [filter]: filterValue } : {};
       
       const pgChannelName = `${uniquePrefix}-pg-${index}-${table}-${event}`;
-      console.log(`Creating postgres channel: ${pgChannelName} for ${table}:${event}`, filterObj);
+      console.log(`Creating postgres channel: ${pgChannelName} for ${table}:${event}`);
       
-      // Important: Create a separate channel for each postgres_changes subscription
+      // Create a properly typed channel for postgres_changes
       const pgChannel = supabase.channel(pgChannelName);
       
-      // Configure channel with postgres_changes event only
-      pgChannel
-        .on(
-          'postgres_changes', // This is a string literal, not a TypeScript type
-          {
-            event: event,
-            schema: 'public',
-            table: table,
-            ...(filter && filterValue ? { filter: `${filter}=eq.${filterValue}` } : {})
-          },
-          (payload) => {
-            console.log(`Received realtime event for ${table}:`, payload);
-            callback(payload);
-          }
-        )
-        .subscribe((status) => {
-          console.log(`Postgres channel ${pgChannelName} subscription status: ${status}`);
-        });
+      // Use the correct syntax for postgres_changes
+      // TypeScript requires we use a specific syntax here
+      const channel = pgChannel.on(
+        'postgres_changes',
+        {
+          event: event,
+          schema: 'public',
+          table: table,
+          ...(filter && filterValue ? { filter: `${filter}=eq.${filterValue}` } : {})
+        },
+        (payload) => {
+          console.log(`Received realtime event for ${table}:`, payload);
+          callback(payload);
+        }
+      );
+      
+      // Subscribe to the channel
+      channel.subscribe((status) => {
+        console.log(`Postgres channel ${pgChannelName} subscription status: ${status}`);
+      });
       
       // Store the channel reference for cleanup
       channelsRef.current.push(pgChannel);
