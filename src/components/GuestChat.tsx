@@ -109,9 +109,9 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         console.log('Guest chat realtime disconnected');
         setIsRealtimeConnected(false);
       })
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         console.log(`Guest chat connection status: ${status}`);
-        // Fix for TypeScript - use string comparisons since status is a string value
+        // Fix for TypeScript - use string comparisons for status
         if (status === 'SUBSCRIBED') {
           setIsRealtimeConnected(true);
         } else if (status !== 'SUBSCRIBED' && status !== 'SUBSCRIBING') {
