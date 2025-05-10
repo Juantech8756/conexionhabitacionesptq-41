@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +16,7 @@ import { sendNotificationToReception, formatMessageNotification } from "@/utils/
 import NotificationPermissionRequest from "@/components/NotificationPermissionRequest";
 import AudioRecorder from "@/components/AudioRecorder";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
-import { RealtimeChannel } from "@supabase/supabase-js";
+import { RealtimeChannel, REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 
 interface GuestChatProps {
   guestName: string;
@@ -112,11 +111,11 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       })
       .subscribe((status) => {
         console.log(`Guest chat connection status: ${status}`);
-        // Fix for TypeScript error - ensure we're using the correct comparison
-        // The status can be any string, so we should do a direct string comparison
-        if (status === "SUBSCRIBED") {
+        // Fix for TypeScript - use the enum type from Supabase
+        if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
           setIsRealtimeConnected(true);
-        } else if (status !== "SUBSCRIBED" && status !== "SUBSCRIBING") {
+        } else if (status !== REALTIME_SUBSCRIBE_STATES.SUBSCRIBED && 
+                   status !== REALTIME_SUBSCRIBE_STATES.SUBSCRIBING) {
           setIsRealtimeConnected(false);
         }
       });
