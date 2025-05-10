@@ -25,6 +25,8 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
   const channelsRef = useRef<RealtimeChannel[]>([]);
   const systemChannelRef = useRef<RealtimeChannel | null>(null);
   const retryTimeoutRef = useRef<number | null>(null);
+  const lastEventTimeRef = useRef<number>(Date.now());
+  const [forcedReconnect, setForcedReconnect] = useState<number>(0);
 
   useEffect(() => {
     // Cleanup previous channels if they exist
@@ -59,6 +61,18 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     // 2. Create individual channels for each postgres_changes subscription
     createPostgresChannels(uniquePrefix, subscriptions);
 
+    // Setup periodic health check to force reconnect if no events received
+    const healthCheckInterval = setInterval(() => {
+      const timeSinceLastEvent = Date.now() - lastEventTimeRef.current;
+      
+      // If it's been more than 2 minutes since we got any event, force a reconnect
+      if (timeSinceLastEvent > 120000) {
+        console.log("No events received for 2+ minutes, forcing reconnect");
+        setForcedReconnect(prev => prev + 1); // This will trigger a useEffect
+        lastEventTimeRef.current = Date.now(); // Reset timer
+      }
+    }, 60000); // Check every minute
+
     // Cleanup function
     return () => {
       console.log(`Cleaning up ${channelsRef.current.length} channels and system channel`);
@@ -78,8 +92,10 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
         window.clearTimeout(retryTimeoutRef.current);
         retryTimeoutRef.current = null;
       }
+      
+      clearInterval(healthCheckInterval);
     };
-  }, [subscriptions, channelName]);
+  }, [subscriptions, channelName, forcedReconnect]);
 
   // Create a dedicated channel for system events (connection status)
   const createSystemChannel = (uniquePrefix: string) => {
@@ -96,6 +112,8 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
         setIsConnected(true);
         // Reset connection attempts on successful connection
         setConnectionAttempts(0);
+        // Update last event time
+        lastEventTimeRef.current = Date.now();
       })
       .on(REALTIME_LISTEN_TYPES.SYSTEM, { event: 'disconnected' }, () => {
         console.log(`System channel ${systemChannelName} disconnected`);
@@ -116,6 +134,12 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       })
       .subscribe((status) => {
         console.log(`System channel subscription status: ${status}`);
+        // Update last event time on any status change
+        lastEventTimeRef.current = Date.now();
+        
+        if (status === 'SUBSCRIBED') {
+          setIsConnected(true);
+        }
       });
     
     systemChannelRef.current = systemChannel;
@@ -160,12 +184,16 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
             ...(filter && filterValue ? { filter: `${filter}=eq.${filterValue}` } : {})
           },
           (payload) => {
+            // Update last event timestamp to indicate we're receiving data
+            lastEventTimeRef.current = Date.now();
             console.log(`Received realtime event for ${table}:`, payload);
             callback(payload);
           }
         )
         .subscribe((status) => {
           console.log(`Postgres channel ${pgChannelName} subscription status: ${status}`);
+          // Update last event time on any status change
+          lastEventTimeRef.current = Date.now();
         });
       
       // Store the channel reference for cleanup

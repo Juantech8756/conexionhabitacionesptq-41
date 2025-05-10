@@ -45,12 +45,34 @@ const ConnectionStatusIndicator = ({
       })
       .subscribe((status) => {
         console.log(`Connection status channel subscription status: ${status}`);
+        // Asumimos conectados cuando el estatus es SUBSCRIBED
+        if (status === 'SUBSCRIBED') {
+          setIsConnected(true);
+          setIsReconnecting(false);
+        }
       });
 
+    // Heartbeat para verificar conexión periódicamente
+    const heartbeatInterval = setInterval(() => {
+      if (channel && !isReconnecting) {
+        // Sending a tiny ping through the channel to verify connection
+        channel.send({
+          type: 'broadcast',
+          event: 'heartbeat',
+          payload: { timestamp: Date.now() }
+        }).then(() => {
+          setIsConnected(true);
+        }).catch(() => {
+          setIsConnected(false);
+        });
+      }
+    }, 30000); // Cada 30 segundos
+
     return () => {
+      clearInterval(heartbeatInterval);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [isReconnecting]);
 
   // For minimal variant (icon only)
   if (variant === "minimal") {

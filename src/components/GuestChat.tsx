@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,8 @@ import { showGlobalAlert } from "@/hooks/use-alerts";
 import { useNotifications } from "@/hooks/use-notifications";
 import { sendNotificationToReception, formatMessageNotification } from "@/utils/notification";
 import NotificationPermissionRequest from "@/components/NotificationPermissionRequest";
+import AudioRecorder from "@/components/AudioRecorder";
+import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 
 interface GuestChatProps {
   guestName: string;
@@ -34,16 +37,27 @@ type MessageType = {
   created_at: string;
 };
 
+// Estados locales para seguimiento de mensajes
+type MessageStatus = 'sending' | 'sent' | 'error';
+type PendingMessage = {
+  localId: string;
+  type: 'text' | 'audio' | 'media';
+  content: string;
+  audioBlob?: Blob;
+  mediaFile?: File;
+  status: MessageStatus;
+  retryCount: number;
+};
+
 const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<MessageType[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isCallActive, setIsCallActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showNotificationsPrompt, setShowNotificationsPrompt] = useState(false);
+  const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
+  const [lastPollTime, setLastPollTime] = useState(Date.now());
   
   // Obtener el roomId de la tabla de huéspedes
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -79,6 +93,136 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     roomId: roomId || undefined
   });
 
+  // Comprobar conexión en tiempo real
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  
+  useEffect(() => {
+    // Configurar un canal para monitorear la conexión en tiempo real
+    const channel = supabase.channel('guest-connection-monitor');
+    
+    channel
+      .on('system', { event: 'connected' }, () => {
+        console.log('Guest chat realtime connected');
+        setIsRealtimeConnected(true);
+      })
+      .on('system', { event: 'disconnected' }, () => {
+        console.log('Guest chat realtime disconnected');
+        setIsRealtimeConnected(false);
+      })
+      .subscribe((status) => {
+        console.log(`Guest chat connection status: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          setIsRealtimeConnected(true);
+        } else if (status !== 'SUBSCRIBED' && status !== 'SUBSCRIBING') {
+          setIsRealtimeConnected(false);
+        }
+      });
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Sistema de sondeo de respaldo para asegurar que se reciban mensajes
+  useEffect(() => {
+    const pollInterval = setInterval(() => {
+      // Sólo sondeamos si hace más de 10 segundos del último sondeo
+      if (Date.now() - lastPollTime > 10000) {
+        pollNewMessages();
+        setLastPollTime(Date.now());
+      }
+      
+      // También reintentamos enviar mensajes pendientes
+      retryPendingMessages();
+      
+    }, 15000); // Sondeo cada 15 segundos
+    
+    return () => clearInterval(pollInterval);
+  }, [lastPollTime, pendingMessages]);
+
+  // Función para sondear mensajes nuevos
+  const pollNewMessages = async () => {
+    try {
+      console.log("Sondeando mensajes nuevos...");
+      
+      if (!messages.length) return;
+      
+      // Obtenemos la fecha del último mensaje
+      const latestMessageDate = new Date(messages[messages.length - 1]?.created_at || 0);
+      
+      // Buscar mensajes más recientes que el último que tenemos
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('guest_id', guestId)
+        .gt('created_at', latestMessageDate.toISOString())
+        .order('created_at', { ascending: true });
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        console.log(`Sondeo encontró ${data.length} mensajes nuevos`);
+        
+        // Actualizar mensajes locales con los nuevos mensajes
+        setMessages(prev => [...prev, ...data]);
+        
+        // Scroll hacia abajo para mostrar los nuevos mensajes
+        setTimeout(() => scrollToBottom(true), 100);
+      }
+    } catch (err) {
+      console.error("Error sondeando mensajes:", err);
+    }
+  };
+
+  // Función para reintentar enviar mensajes pendientes
+  const retryPendingMessages = async () => {
+    if (pendingMessages.length === 0) return;
+    
+    console.log(`Reintentando enviar ${pendingMessages.length} mensajes pendientes...`);
+    
+    // Procesamos un mensaje a la vez para evitar sobrecarga
+    const messageToRetry = pendingMessages.find(msg => msg.status === 'error');
+    if (!messageToRetry) return;
+    
+    // Actualizamos el estado a 'sending'
+    setPendingMessages(prev => prev.map(msg => 
+      msg.localId === messageToRetry.localId 
+        ? { ...msg, status: 'sending', retryCount: msg.retryCount + 1 }
+        : msg
+    ));
+    
+    try {
+      if (messageToRetry.type === 'text') {
+        await sendMessageToServer(messageToRetry.localId, messageToRetry.content);
+      } else if (messageToRetry.type === 'audio' && messageToRetry.audioBlob) {
+        await uploadAudio(messageToRetry.localId, messageToRetry.audioBlob);
+      } else if (messageToRetry.type === 'media' && messageToRetry.mediaFile) {
+        // Implementar manejo de reintento para medios
+      }
+    } catch (err) {
+      console.error(`Error reintentando mensaje ${messageToRetry.localId}:`, err);
+      
+      // Si ya se ha intentado más de 3 veces, lo marcamos como error permanente
+      if (messageToRetry.retryCount >= 3) {
+        toast({
+          title: "Error al enviar mensaje",
+          description: "No se pudo enviar el mensaje después de varios intentos",
+          variant: "destructive"
+        });
+        
+        // Removemos el mensaje de pendientes después de demasiados intentos
+        setPendingMessages(prev => prev.filter(msg => msg.localId !== messageToRetry.localId));
+      } else {
+        // Actualizamos el estado a 'error' para reintentar más tarde
+        setPendingMessages(prev => prev.map(msg => 
+          msg.localId === messageToRetry.localId 
+            ? { ...msg, status: 'error' }
+            : msg
+        ));
+      }
+    }
+  };
+
   // Show a welcome alert when chat starts, but only once
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -96,6 +240,41 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     
     return () => clearTimeout(timer);
   }, [permission, isSubscribed]);
+
+  // Configuración del canal en tiempo real para mensajes
+  useEffect(() => {
+    const messageChannel = supabase.channel(`guest-messages-${guestId}`);
+    
+    messageChannel
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `guest_id=eq.${guestId}`
+      }, (payload) => {
+        console.log('Nuevo mensaje recibido en tiempo real:', payload);
+        
+        // Sólo añadir el mensaje si no lo tenemos ya
+        const newMessage = payload.new as MessageType;
+        
+        setMessages(prev => {
+          if (!prev.some(msg => msg.id === newMessage.id)) {
+            return [...prev, newMessage];
+          }
+          return prev;
+        });
+        
+        // Scroll hacia abajo para mostrar el nuevo mensaje
+        setTimeout(() => scrollToBottom(true), 100);
+      })
+      .subscribe((status) => {
+        console.log(`Canal de mensajes estatus: ${status}`);
+      });
+    
+    return () => {
+      supabase.removeChannel(messageChannel);
+    };
+  }, [guestId]);
 
   // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {
@@ -131,460 +310,397 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             created_at: new Date().toISOString()
           };
           
-          const { error: insertError } = await supabase
-            .from('messages')
-            .insert([welcomeMessage]);
-            
-          if (!insertError) {
-            setMessages([welcomeMessage as MessageType]);
-          }
+          setMessages([welcomeMessage]);
         } else {
-          // Cast data to ensure it matches MessageType
-          const typedMessages = data.map(msg => ({
-            ...msg,
-            media_type: msg.media_type as 'image' | 'video' | undefined
-          }));
-          setMessages(typedMessages as MessageType[]);
+          setMessages(data);
         }
+        
+        // Scroll to bottom after messages load
+        setTimeout(() => scrollToBottom(false), 100);
       } catch (error) {
         console.error("Error fetching messages:", error);
         toast({
           title: "Error",
           description: "No se pudieron cargar los mensajes",
-          variant: "destructive",
+          variant: "destructive"
         });
       }
     };
     
-    if (guestId) {
-      fetchMessages();
-      
-      // Subscribe to new messages
-      const channel = supabase
-        .channel('messages-channel')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `guest_id=eq.${guestId}`
-          },
-          (payload) => {
-            // Ensure we cast the entire payload to MessageType with correct media_type
-            const newMessage: MessageType = {
-              ...payload.new as any,
-              media_type: payload.new.media_type as 'image' | 'video' | undefined
-            };
-            
-            setMessages(prev => [...prev, newMessage]);
-            
-            // Si recibimos un nuevo mensaje de recepción, mostrar alerta
-            if (!newMessage.is_guest) {
-              showGlobalAlert({
-                title: "Nuevo mensaje de recepción",
-                description: "Has recibido un nuevo mensaje de nuestro equipo.",
-                duration: 3000
-              });
-            }
-          }
-        )
-        .subscribe();
-      
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    fetchMessages();
   }, [guestId, guestName, toast]);
-
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Focus input field when component mounts
-  useEffect(() => {
-    if (inputRef.current) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 500);
-    }
-  }, []);
-
+  
+  // Enviar mensaje de texto
   const sendMessage = async () => {
-    if (message.trim() === "" || isLoading) return;
+    if (message.trim() === "") return;
     
-    setIsLoading(true);
+    const messageText = message.trim();
+    const localId = `local-${Date.now()}`;
+    setMessage("");
+    
+    // Agregar mensaje optimista a la UI inmediatamente
+    const optimisticMessage = {
+      id: localId,
+      guest_id: guestId,
+      content: messageText,
+      is_guest: true,
+      is_audio: false,
+      is_media: false,
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
+    
+    // Agregar a pendientes
+    setPendingMessages(prev => [
+      ...prev, 
+      {
+        localId,
+        type: 'text',
+        content: messageText,
+        status: 'sending',
+        retryCount: 0
+      }
+    ]);
+    
+    // Scroll hacia abajo para mostrar el mensaje nuevo
+    setTimeout(() => scrollToBottom(true), 100);
     
     try {
+      await sendMessageToServer(localId, messageText);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      
+      // Marcar como error para reintentar más tarde
+      setPendingMessages(prev => prev.map(msg => 
+        msg.localId === localId 
+          ? { ...msg, status: 'error' }
+          : msg
+      ));
+      
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el mensaje. Se reintentará automáticamente.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Función para enviar mensaje al servidor
+  const sendMessageToServer = async (localId: string, messageText: string) => {
+    try {
+      // Configurar el nuevo mensaje
       const newMessage = {
         guest_id: guestId,
-        content: message,
+        content: messageText,
         is_guest: true,
-        is_audio: false,
-        is_media: false
+        is_audio: false
       };
       
-      const { error } = await supabase
+      // Insertar en la base de datos
+      const { data, error } = await supabase
         .from('messages')
-        .insert([newMessage]);
+        .insert([newMessage])
+        .select()
+        .single();
       
       if (error) throw error;
       
-      // Send notification to reception
-      sendNotificationToReception(
-        formatMessageNotification(
-          true, // isGuest
-          message,
-          guestName,
-          roomNumber,
-          guestId
-        )
-      );
+      console.log("Mensaje enviado exitosamente:", data);
       
-      setMessage("");
-      scrollToBottom(false);
-    } catch (error) {
-      console.error("Error sending message:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar el mensaje",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      // Actualizar mensajes locales reemplazando el mensaje optimista
+      setMessages(prev => prev.map(msg => 
+        msg.id === localId ? data : msg
+      ));
+      
+      // Remover de pendientes
+      setPendingMessages(prev => prev.filter(msg => msg.localId !== localId));
+      
+      // Enviar notificación a recepción
+      await sendNotificationToReception(formatMessageNotification(
+        true,
+        messageText,
+        guestName,
+        roomNumber,
+        guestId
+      ));
+      
+      return data;
+    } catch (err) {
+      console.error("Error en sendMessageToServer:", err);
+      throw err;
     }
   };
 
-  const handleMediaUpload = async (mediaUrl: string, mediaType: 'image' | 'video') => {
+  // Handle audio recording
+  const handleAudioRecorded = async (audioBlob: Blob) => {
+    if (!guestId) return;
+    
+    const localId = `local-audio-${Date.now()}`;
+    
+    // Agregar mensaje optimista a la UI
+    const optimisticMessage = {
+      id: localId,
+      guest_id: guestId,
+      content: "Mensaje de voz",
+      is_guest: true,
+      is_audio: true,
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
+    
+    // Agregar a pendientes
+    setPendingMessages(prev => [
+      ...prev, 
+      {
+        localId,
+        type: 'audio',
+        content: "Mensaje de voz",
+        audioBlob,
+        status: 'sending',
+        retryCount: 0
+      }
+    ]);
+    
+    // Scroll hacia abajo
+    setTimeout(() => scrollToBottom(true), 100);
+    
+    try {
+      await uploadAudio(localId, audioBlob);
+    } catch (error) {
+      console.error("Error uploading audio:", error);
+      
+      // Marcar como error para reintentar
+      setPendingMessages(prev => prev.map(msg => 
+        msg.localId === localId 
+          ? { ...msg, status: 'error' }
+          : msg
+      ));
+      
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el mensaje de voz. Se reintentará automáticamente.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Función para subir audio al servidor
+  const uploadAudio = async (localId: string, audioBlob: Blob) => {
     setIsLoading(true);
     
     try {
-      const newMessage = {
+      // Subir a Supabase Storage
+      const fileName = `audio_${Date.now()}_guest.webm`;
+      const { data: uploadData, error: uploadError } = await supabase
+        .storage
+        .from('audio_messages')
+        .upload(fileName, audioBlob);
+        
+      if (uploadError) throw uploadError;
+
+      // Obtener URL pública
+      const { data: publicUrlData } = supabase
+        .storage
+        .from('audio_messages')
+        .getPublicUrl(fileName);
+
+      // Agregar mensaje con audio
+      const newAudioMessage = {
         guest_id: guestId,
-        content: mediaType === 'image' ? "Imagen compartida" : "Video compartido",
+        content: "Mensaje de voz",
         is_guest: true,
-        is_audio: false,
-        is_media: true,
-        media_url: mediaUrl,
-        media_type: mediaType
+        is_audio: true,
+        audio_url: publicUrlData.publicUrl
       };
       
-      console.log("Sending media message:", newMessage);
-      
-      const { error, data } = await supabase
+      const { data: messageData, error: messageError } = await supabase
         .from('messages')
-        .insert([newMessage])
-        .select();
+        .insert([newAudioMessage])
+        .select()
+        .single();
+        
+      if (messageError) throw messageError;
       
-      if (error) {
-        console.error("Error inserting media message:", error);
-        throw error;
-      }
+      console.log("Mensaje de audio enviado exitosamente:", messageData);
       
-      console.log("Media message inserted successfully:", data);
+      // Actualizar mensajes locales
+      setMessages(prev => prev.map(msg => 
+        msg.id === localId ? messageData : msg
+      ));
       
-      // Manually add the message to the messages array for immediate feedback
-      if (data && data.length > 0) {
-        const newMsg: MessageType = {
-          ...data[0],
-          media_type: data[0].media_type as 'image' | 'video' | undefined
-        };
-        setMessages(prev => [...prev, newMsg]);
-      }
+      // Remover de pendientes
+      setPendingMessages(prev => prev.filter(msg => msg.localId !== localId));
       
-      scrollToBottom(false);
-    } catch (error) {
-      console.error("Error sending media message:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar el archivo",
-        variant: "destructive",
-      });
+      // Enviar notificación a recepción
+      await sendNotificationToReception(formatMessageNotification(
+        true,
+        "Mensaje de voz",
+        guestName,
+        roomNumber,
+        guestId
+      ));
+      
+      return messageData;
+    } catch (err) {
+      console.error("Error en uploadAudio:", err);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFileSelect = (file: File | null) => {
-    setSelectedFile(file);
+  const handleCancelAudio = () => {
+    // Simplemente resetear cualquier estado de audio
+    console.log("Grabación de audio cancelada");
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-      
-      recorder.ondataavailable = (e) => {
-        chunks.push(e.data);
-      };
-      
-      recorder.onstop = async () => {
-        setIsLoading(true);
-        
-        try {
-          const audioBlob = new Blob(chunks, { type: "audio/webm" });
-          
-          // Upload audio to Supabase Storage
-          const fileName = `audio_${Date.now()}_${guestId}.webm`;
-          const { data: uploadData, error: uploadError } = await supabase
-            .storage
-            .from('audio_messages')
-            .upload(fileName, audioBlob);
-          
-          if (uploadError) throw uploadError;
-          
-          // Get public URL for the uploaded file
-          const { data: publicUrlData } = supabase
-            .storage
-            .from('audio_messages')
-            .getPublicUrl(fileName);
-          
-          // Insert message with audio URL
-          const newAudioMessage = {
-            guest_id: guestId,
-            content: "Mensaje de voz",
-            is_guest: true,
-            is_audio: true,
-            audio_url: publicUrlData.publicUrl
-          };
-          
-          const { error: messageError } = await supabase
-            .from('messages')
-            .insert([newAudioMessage]);
-          
-          if (messageError) throw messageError;
-          
-          setAudioChunks([]);
-          scrollToBottom(false);
-        } catch (error) {
-          console.error("Error uploading audio:", error);
-          toast({
-            title: "Error",
-            description: "No se pudo enviar el mensaje de voz",
-            variant: "destructive",
-          });
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      
-      recorder.start();
-      setAudioRecorder(recorder);
-      setAudioChunks(chunks);
-      setIsRecording(true);
-      
-      toast({
-        title: "Grabando audio",
-        description: "Hable ahora. Pulse el botón de nuevo para detener la grabación.",
-      });
-    } catch (err) {
-      console.error("Error accessing microphone:", err);
-      toast({
-        title: "Error de acceso al micrófono",
-        description: "No se pudo acceder al micrófono. Verifique los permisos del navegador.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    if (audioRecorder) {
-      audioRecorder.stop();
-      setIsRecording(false);
-      
-      // Stop all audio tracks
-      audioRecorder.stream.getTracks().forEach(track => track.stop());
-    }
-  };
-
-  const toggleRecording = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
-  };
-
-  const startCall = () => {
+  const handleCallStart = () => {
     setIsCallActive(true);
   };
 
-  const endCall = () => {
+  const handleCallEnd = () => {
     setIsCallActive(false);
   };
 
+  // Obtener hora formateada para los mensajes
+  const getFormattedTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-full relative">
+      {/* Estado de conexión */}
+      <div className={`absolute top-0 right-0 z-50 p-1 m-1 bg-white/80 rounded-full shadow-sm ${isRealtimeConnected ? 'bg-opacity-70' : 'bg-opacity-100'}`}>
+        <ConnectionStatusIndicator variant="minimal" className="h-5 w-5" />
+      </div>
+      
       {/* Header */}
-      <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-3 shadow-sm text-white">
-        <div className="flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="mr-2 text-white hover:bg-white/20"
-            onClick={onBack}
+      <header className="bg-gradient-to-r from-hotel-700 to-hotel-500 p-3 text-white shadow-sm flex items-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
+          className="mr-2 text-white hover:bg-white/20"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h2 className="text-lg font-semibold">Recepción</h2>
+          <p className="text-xs text-white/80">
+            Cabaña {roomNumber} - {guestName}
+          </p>
+        </div>
+        <div className="ml-auto">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleCallStart}
+            className="text-white hover:bg-white/20"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <Phone className="h-5 w-5" />
           </Button>
-          <div className="flex-grow">
-            <h2 className="text-base font-semibold">Recepción</h2>
-            <p className="text-xs text-white/90">
-              Cabaña {roomNumber} - {guestName}
-            </p>
-          </div>
-          <div className="flex items-center">
-            {showNotificationsPrompt && !isSubscribed && permission !== 'granted' && permission !== 'denied' && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowNotificationsPrompt(true)}
-                className="text-white hover:bg-white/20 mr-2"
-                title="Activar notificaciones"
-              >
-                <Bell className="h-5 w-5" />
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                startCall();
-                // Show alert about the call
-                showGlobalAlert({
-                  title: "Llamada a recepción",
-                  description: "Conectando con recepción. Por favor espere...",
-                  duration: 3000
-                });
-              }}
-              className="text-white hover:bg-white/20"
-              title="Llamar a recepción"
-            >
-              <Phone className="h-5 w-5" />
-            </Button>
-          </div>
         </div>
       </header>
 
-      {/* Notification Permission Banner */}
-      {showNotificationsPrompt && !isSubscribed && permission !== 'granted' && permission !== 'denied' && (
-        <div className="px-3 pt-3">
-          <NotificationPermissionRequest 
-            type="guest"
-            guestId={guestId}
-            roomNumber={roomNumber}
-            onPermissionChange={() => setShowNotificationsPrompt(false)}
-          />
-        </div>
+      {/* Prompt de notificaciones */}
+      {showNotificationsPrompt && (
+        <NotificationPermissionRequest
+          onClose={() => setShowNotificationsPrompt(false)}
+        />
       )}
 
-      {/* Messages Area */}
-      <div className="flex-grow overflow-auto p-3" ref={scrollContainerRef}>
-        <div className="space-y-3 pb-4">
-          <AnimatePresence>
-            {messages.length === 0 ? (
+      {/* Chat content */}
+      <div
+        className="flex-grow overflow-y-auto p-4 bg-gray-50"
+        ref={scrollContainerRef}
+      >
+        <div className="space-y-3 max-w-3xl mx-auto">
+          <AnimatePresence initial={false}>
+            {messages.map((msg) => (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center text-gray-500 mt-10 p-6"
+                key={msg.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className={`flex ${msg.is_guest ? "justify-end" : "justify-start"}`}
               >
-                <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>No hay mensajes aún. ¡Inicia la conversación!</p>
-              </motion.div>
-            ) : (
-              messages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className={`flex ${msg.is_guest ? 'justify-end' : 'justify-start'}`}
+                <div
+                  className={`max-w-[85%] p-3 rounded-lg ${
+                    msg.is_guest
+                      ? "bg-gradient-to-r from-hotel-500 to-hotel-600 text-white"
+                      : "bg-white border border-gray-200 text-gray-800"
+                  }`}
                 >
-                  <div
-                    className={`max-w-[85%] rounded-lg shadow-sm ${
-                      msg.is_guest 
-                        ? 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white rounded-tr-none' 
-                        : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
-                    } ${msg.is_audio || msg.is_media ? 'p-0 overflow-hidden' : 'p-3'}`}
-                  >
-                    {msg.is_audio ? (
-                      <AudioMessagePlayer 
-                        audioUrl={msg.audio_url || ''} 
-                        isGuest={msg.is_guest}
-                        isDark={msg.is_guest}
-                      />
-                    ) : msg.is_media && msg.media_url && msg.media_type ? (
-                      <MediaMessage
-                        mediaUrl={msg.media_url}
-                        mediaType={msg.media_type}
-                        isGuest={msg.is_guest}
-                      />
+                  {msg.is_audio ? (
+                    <AudioMessagePlayer
+                      audioUrl={msg.audio_url || ""}
+                      isGuest={msg.is_guest}
+                      isDark={msg.is_guest}
+                    />
+                  ) : msg.is_media ? (
+                    <MediaMessage
+                      mediaUrl={msg.media_url || ""}
+                      mediaType={msg.media_type || "image"}
+                      isGuest={msg.is_guest}
+                    />
+                  ) : (
+                    <p className="text-sm break-words">{msg.content}</p>
+                  )}
+                  <div className="mt-1 text-xs opacity-70 text-right">
+                    {msg.id.startsWith('local') ? (
+                      <span>Enviando...</span>
                     ) : (
-                      <p className="text-sm break-words">{msg.content}</p>
+                      getFormattedTime(msg.created_at)
                     )}
                   </div>
-                </motion.div>
-              ))
-            )}
+                </div>
+                
+                {/* Indicadores de estado para mensajes pendientes */}
+                {msg.id.startsWith('local') && (
+                  <div className="self-end ml-2">
+                    {pendingMessages.find(pm => pm.localId === msg.id)?.status === 'sending' && (
+                      <div className="h-2 w-2 bg-amber-400 rounded-full animate-pulse" title="Enviando..." />
+                    )}
+                    {pendingMessages.find(pm => pm.localId === msg.id)?.status === 'error' && (
+                      <div className="h-2 w-2 bg-red-500 rounded-full" title="Error al enviar" />
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            ))}
           </AnimatePresence>
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="p-3 border-t bg-white shadow-inner">
+      {/* Input area */}
+      <div className="p-3 bg-white border-t shadow-inner">
         <div className="flex items-center space-x-2">
-          <Button
-            type="button"
-            size="icon"
-            variant="outline"
-            onClick={() => {
-              toggleRecording();
-              if (!isRecording) {
-                // Show alert about recording audio
-                showGlobalAlert({
-                  title: "Grabando mensaje de voz",
-                  description: "Presione el mismo botón para detener la grabación.",
-                  variant: "default",
-                  duration: 5000
-                });
-              }
-            }}
-            className={`flex-shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300 animate-pulse' : ''}`}
+          <AudioRecorder 
+            onAudioRecorded={handleAudioRecorded}
+            onCancel={handleCancelAudio}
             disabled={isLoading}
-          >
-            {isRecording ? (
-              <MicOff className="h-4 w-4" />
-            ) : (
-              <Mic className="h-4 w-4" />
-            )}
-          </Button>
-          
-          <MediaUploader 
-            guestId={guestId} 
-            onUploadComplete={handleMediaUpload} 
-            disabled={isRecording || isLoading}
-            onFileSelect={handleFileSelect}
-            selectedFile={selectedFile}
+            title="Grabar mensaje de voz"
           />
           
           <Input
-            placeholder="Escriba su mensaje..."
+            ref={inputRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            placeholder="Escribe un mensaje..."
+            className="flex-grow"
             onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-            className="flex-grow shadow-sm text-sm"
-            disabled={isRecording || isLoading}
-            ref={inputRef}
+            disabled={isLoading}
           />
           
           <Button
-            type="button"
-            size="icon"
+            disabled={message.trim() === "" || isLoading}
             onClick={sendMessage}
-            disabled={message.trim() === "" || isRecording || isLoading}
-            className="flex-shrink-0 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600"
+            className="bg-hotel-600 hover:bg-hotel-700"
           >
             <Send className="h-4 w-4" />
           </Button>
@@ -592,23 +708,24 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       </div>
 
       {/* Call interface */}
-      {isCallActive && (
-        <CallInterface 
-          isGuest={true}
-          guestId={guestId}
-          roomNumber={roomNumber}
-          guestName={guestName}
-          onClose={() => {
-            endCall();
-            // Show alert about call end
-            showGlobalAlert({
-              title: "Llamada finalizada",
-              description: "La llamada con recepción ha terminado.",
-              duration: 3000
-            });
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {isCallActive && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="absolute inset-0 z-50"
+          >
+            <CallInterface
+              isGuest={true}
+              guestId={guestId}
+              roomNumber={roomNumber}
+              guestName={guestName}
+              onClose={handleCallEnd}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
