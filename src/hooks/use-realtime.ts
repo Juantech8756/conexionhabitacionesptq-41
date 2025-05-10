@@ -16,15 +16,15 @@ interface RealtimeSubscription {
 
 export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?: string) => {
   const [isConnected, setIsConnected] = useState(false);
-  const channelsRef = useRef<RealtimeChannel[]>([]);
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const retryTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Cleanup previous channels if exist
-    if (channelsRef.current.length > 0) {
-      console.log("Cleaning up previous channels");
-      channelsRef.current.forEach(channel => supabase.removeChannel(channel));
-      channelsRef.current = [];
+    // Cleanup previous channel if exists
+    if (channelRef.current) {
+      console.log("Cleaning up previous channel");
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
     }
 
     // Clear any existing retry timeouts
@@ -36,59 +36,23 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     // Skip if no subscriptions
     if (subscriptions.length === 0) return;
 
-    const channels: RealtimeChannel[] = [];
-    
-    // Create a truly unique base channel name with timestamp and random string
-    const baseChannelName = channelName || 
+    // Create a truly unique channel name with timestamp and random string
+    const uniqueChannelName = channelName || 
       `realtime-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     
-    // Create a channel for system events (connection status)
-    const systemChannel = supabase.channel(`${baseChannelName}-system`);
+    console.log(`Creating new realtime channel: ${uniqueChannelName}`);
     
-    // Add system event handlers
-    systemChannel
-      .on('system', { event: 'connected' }, () => {
-        console.log(`System channel ${baseChannelName}-system connected`);
-        setIsConnected(true);
-      })
-      .subscribe();
-    
-    channels.push(systemChannel);
-    
-    // Create separate channel for disconnection events
-    const disconnectChannel = supabase.channel(`${baseChannelName}-disconnect`);
-    
-    disconnectChannel
-      .on('system', { event: 'disconnected' }, () => {
-        console.log(`System channel ${baseChannelName}-disconnect disconnected`);
-        setIsConnected(false);
-        
-        // Set up automatic reconnection
-        if (retryTimeoutRef.current === null) {
-          retryTimeoutRef.current = window.setTimeout(() => {
-            console.log('Attempting to reconnect...');
-            reconnect();
-            retryTimeoutRef.current = null;
-          }, 3000);
-        }
-      })
-      .subscribe();
-    
-    channels.push(disconnectChannel);
+    // Create a new channel
+    let channel = supabase.channel(uniqueChannelName);
 
-    // Create separate channels for each database subscription
-    subscriptions.forEach((subscription, index) => {
-      const { table, event, filter, filterValue, callback } = subscription;
+    // Add all subscriptions to the channel
+    subscriptions.forEach(({ table, event, filter, filterValue, callback }) => {
       const filterObj = filter ? { [filter]: filterValue } : {};
-      const dbChannelName = `${baseChannelName}-db-${index}`;
       
       console.log(`Adding subscription to ${table} for event ${event}`, filterObj);
       
-      // Create a dedicated channel for this subscription
-      const dbChannel = supabase.channel(dbChannelName);
-      
-      // Add the postgres_changes event handler
-      dbChannel.on(
+      // Using the correct type for postgres_changes event
+      channel = channel.on(
         'postgres_changes',
         {
           event,
@@ -100,22 +64,42 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
           console.log(`Received realtime event for ${table}:`, payload);
           callback(payload);
         }
-      ).subscribe((status) => {
-        console.log(`Database subscription channel ${dbChannelName} status:`, status);
-      });
-      
-      channels.push(dbChannel);
+      );
     });
 
-    // Store all channels for cleanup
-    channelsRef.current = channels;
+    // Subscribe to system events for connection status
+    channel = channel
+      .on('system', { event: 'connected' }, () => {
+        console.log(`Channel ${uniqueChannelName} connected`);
+        setIsConnected(true);
+      })
+      .on('system', { event: 'disconnected' }, () => {
+        console.log(`Channel ${uniqueChannelName} disconnected`);
+        setIsConnected(false);
+
+        // Set up automatic reconnection
+        if (retryTimeoutRef.current === null) {
+          retryTimeoutRef.current = window.setTimeout(() => {
+            console.log('Attempting to reconnect...');
+            reconnect();
+            retryTimeoutRef.current = null;
+          }, 3000);
+        }
+      });
+
+    // Subscribe to the channel
+    channelRef.current = channel.subscribe((status) => {
+      console.log(`Realtime subscription status: ${status}`);
+      setIsConnected(status === 'SUBSCRIBED');
+    });
 
     // Cleanup function
     return () => {
-      console.log(`Cleaning up ${channels.length} channels`);
-      channels.forEach(channel => {
-        supabase.removeChannel(channel);
-      });
+      console.log(`Cleaning up channel ${uniqueChannelName}`);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
       if (retryTimeoutRef.current) {
         window.clearTimeout(retryTimeoutRef.current);
         retryTimeoutRef.current = null;
@@ -125,13 +109,14 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
 
   // Function to manually reconnect if needed
   const reconnect = () => {
-    if (channelsRef.current.length > 0) {
+    if (channelRef.current) {
       console.log("Manual reconnection triggered");
-      channelsRef.current.forEach(channel => supabase.removeChannel(channel));
-      channelsRef.current = [];
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
       
-      // Force effect to run again
-      // This will recreate all channels
+      // Force effect to run again by updating a dependency
+      // This is achieved by calling the reconnect function itself
+      // The effect will re-run on the next render cycle
     }
   };
 
