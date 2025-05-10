@@ -51,6 +51,7 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     const systemChannelName = `${uniquePrefix}-system`;
     console.log(`Creating system channel: ${systemChannelName}`);
     
+    // Important: For system events, use a dedicated channel with no postgres_changes
     const systemChannel = supabase.channel(systemChannelName);
     
     // Subscribe to system events for connection status
@@ -86,8 +87,10 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       const pgChannelName = `${uniquePrefix}-pg-${index}-${table}-${event}`;
       console.log(`Creating postgres channel: ${pgChannelName} for ${table}:${event}`, filterObj);
       
+      // Important: Create a separate channel for each postgres_changes subscription
       const pgChannel = supabase.channel(pgChannelName);
       
+      // Only attach postgres_changes to this channel, not system events
       pgChannel.on(
         'postgres_changes',
         {

@@ -18,6 +18,7 @@ const ConnectionStatusIndicator = ({
 
   useEffect(() => {
     // Set up listeners for real-time connection status
+    // Important: Only attaching system events to this channel, no postgres_changes
     const channel = supabase.channel('connection-status');
 
     // Listen to connection status changes
