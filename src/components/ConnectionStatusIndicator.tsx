@@ -1,46 +1,37 @@
-
 import { useState, useEffect } from "react";
 import { Wifi, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-
 interface ConnectionStatusIndicatorProps {
   className?: string;
   variant?: "default" | "minimal";
 }
-
 const ConnectionStatusIndicator = ({
   className,
   variant = "default"
 }: ConnectionStatusIndicatorProps) => {
   const [isConnected, setIsConnected] = useState(true);
   const [isReconnecting, setIsReconnecting] = useState(false);
-
   useEffect(() => {
     // Set up listeners for real-time connection status
     const channel = supabase.channel('connection-status');
 
     // Listen to connection status changes
-    channel
-      .on('system', {
-        event: 'connected'
-      }, () => {
-        setIsConnected(true);
-        setIsReconnecting(false);
-      })
-      .on('system', {
-        event: 'disconnected'
-      }, () => {
-        setIsConnected(false);
-        setIsReconnecting(false);
-      })
-      .on('system', {
-        event: 'connecting'
-      }, () => {
-        setIsReconnecting(true);
-      })
-      .subscribe();
-
+    const subscription = channel.on('system', {
+      event: 'connected'
+    }, () => {
+      setIsConnected(true);
+      setIsReconnecting(false);
+    }).on('system', {
+      event: 'disconnected'
+    }, () => {
+      setIsConnected(false);
+      setIsReconnecting(false);
+    }).on('system', {
+      event: 'connecting'
+    }, () => {
+      setIsReconnecting(true);
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
@@ -54,24 +45,6 @@ const ConnectionStatusIndicator = ({
   }
 
   // Default variant with text
-  return <div className={cn("flex items-center gap-2 px-2 py-1 rounded-lg text-xs", isConnected ? "bg-green-50 text-green-600" : isReconnecting ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600", className)}>
-      {isConnected ? (
-        <>
-          <Wifi className="h-3 w-3" />
-          <span>Conectado</span>
-        </>
-      ) : isReconnecting ? (
-        <>
-          <Wifi className="h-3 w-3 animate-pulse" />
-          <span>Reconectando...</span>
-        </>
-      ) : (
-        <>
-          <WifiOff className="h-3 w-3" />
-          <span>Desconectado</span>
-        </>
-      )}
-    </div>;
+  return;
 };
-
 export default ConnectionStatusIndicator;

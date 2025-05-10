@@ -23,7 +23,6 @@ export const sendNotificationToGuest = async (
   try {
     console.log('Sending notification to guest:', guestId);
     // Call the edge function to send the notification
-    // Using guestid instead of guestId for the correct column name in database
     const { data, error } = await supabase.functions.invoke('send-notification', {
       body: {
         targetType: 'guest',
