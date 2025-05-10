@@ -42,28 +42,27 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     const baseChannelName = channelName || 
       `realtime-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     
-    // Create dedicated connection channel with only one event type (system+connected)
-    const connectionChannel = supabase.channel(`${baseChannelName}-connection`);
-    connectionChannel.on(
-      'system', 
+    // Create a channel just for the "connected" system event
+    const connectedChannel = supabase.channel(`${baseChannelName}-connected`);
+    connectedChannel.on(
+      'system',
       { event: 'connected' }, 
       () => {
-        console.log('Connection status channel: connected');
+        console.log('Connected system event received');
         setIsConnected(true);
       }
-    );
-    connectionChannel.subscribe((status) => {
-      console.log(`Connection status channel subscription status: ${status}`);
+    ).subscribe((status) => {
+      console.log(`Connected channel status: ${status}`);
     });
-    channelsRef.current.push(connectionChannel);
+    channelsRef.current.push(connectedChannel);
     
-    // Create dedicated disconnection channel with only one event type (system+disconnected)
-    const disconnectChannel = supabase.channel(`${baseChannelName}-disconnect`);
-    disconnectChannel.on(
-      'system', 
+    // Create a separate channel just for the "disconnected" system event
+    const disconnectedChannel = supabase.channel(`${baseChannelName}-disconnected`);
+    disconnectedChannel.on(
+      'system',
       { event: 'disconnected' }, 
       () => {
-        console.log('Disconnect channel: disconnected');
+        console.log('Disconnected system event received');
         setIsConnected(false);
         
         // Set up auto reconnection
@@ -75,29 +74,25 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
           }, 3000);
         }
       }
-    );
-    disconnectChannel.subscribe((status) => {
-      console.log(`Disconnect channel subscription status: ${status}`);
+    ).subscribe((status) => {
+      console.log(`Disconnected channel status: ${status}`);
     });
-    channelsRef.current.push(disconnectChannel);
+    channelsRef.current.push(disconnectedChannel);
     
     // Create individual channels for each postgres_changes subscription
     subscriptions.forEach((subscription, index) => {
       const { table, event, filter, filterValue, callback } = subscription;
       
-      // Create a unique name for this specific postgres channel
-      const pgChannelName = `${baseChannelName}-pg-${table}-${event}-${index}`;
-      console.log(`Creating postgres channel: ${pgChannelName}`);
-      
-      // Create a dedicated channel for this specific postgres_changes subscription
-      const pgChannel = supabase.channel(pgChannelName);
+      // Each postgres_changes subscription gets its own dedicated channel
+      const channelName = `${baseChannelName}-pg-${table}-${event}-${index}`;
+      const channel = supabase.channel(channelName);
       
       // Prepare filter configuration if needed
       const filterConfig = filter && filterValue ? 
         { filter: `${filter}=eq.${filterValue}` } : {};
       
-      // Configure ONLY postgres_changes event on this channel (not mixed with system events)
-      pgChannel.on(
+      // Only configure postgres_changes event on this channel
+      channel.on(
         'postgres_changes',
         {
           event: event,
@@ -106,23 +101,19 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
           ...filterConfig
         },
         (payload) => {
-          console.log(`Received realtime event for ${table}:`, payload);
+          console.log(`Received ${event} event for ${table}:`, payload);
           callback(payload);
         }
-      );
-      
-      // Subscribe to this postgres channel
-      pgChannel.subscribe((status) => {
-        console.log(`Postgres channel ${pgChannelName} subscription status: ${status}`);
+      ).subscribe((status) => {
+        console.log(`Postgres channel ${channelName} status: ${status}`);
       });
       
-      // Add to channels collection for cleanup
-      channelsRef.current.push(pgChannel);
+      channelsRef.current.push(channel);
     });
 
     // Cleanup function
     return () => {
-      console.log(`Cleaning up all channels`);
+      console.log("Cleaning up all channels");
       channelsRef.current.forEach(channel => {
         supabase.removeChannel(channel);
       });
