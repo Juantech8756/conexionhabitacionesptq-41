@@ -111,6 +111,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       })
       .subscribe((status) => {
         console.log(`Guest chat connection status: ${status}`);
+        // Fix for TypeScript error - ensure we're using type-safe comparison
         if (status === 'SUBSCRIBED') {
           setIsRealtimeConnected(true);
         } else if (status !== 'SUBSCRIBED' && status !== 'SUBSCRIBING') {
@@ -163,18 +164,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       if (data && data.length > 0) {
         console.log(`Sondeo encontró ${data.length} mensajes nuevos`);
         
-        // Transformar los datos para asegurarnos que cumplan con MessageType
-        const typedMessages: MessageType[] = data.map(msg => ({
-          id: msg.id,
-          content: msg.content,
-          is_guest: msg.is_guest,
-          is_audio: msg.is_audio,
-          audio_url: msg.audio_url,
-          is_media: msg.is_media || false,
-          media_url: msg.media_url,
-          media_type: msg.media_type as 'image' | 'video' | undefined,
-          created_at: msg.created_at || new Date().toISOString(),
-        }));
+        // Transform the data using our mapping function
+        const typedMessages: MessageType[] = data.map(mapDatabaseMessageToTypedMessage);
         
         // Actualizar mensajes locales con los nuevos mensajes
         setMessages(prev => [...prev, ...typedMessages]);
@@ -271,17 +262,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         const newMsg = payload.new;
         
         if (newMsg) {
-          const typedMessage: MessageType = {
-            id: newMsg.id,
-            content: newMsg.content,
-            is_guest: newMsg.is_guest,
-            is_audio: newMsg.is_audio,
-            audio_url: newMsg.audio_url,
-            is_media: newMsg.is_media || false,
-            media_url: newMsg.media_url,
-            media_type: newMsg.media_type as 'image' | 'video' | undefined,
-            created_at: newMsg.created_at || new Date().toISOString(),
-          };
+          const typedMessage = mapDatabaseMessageToTypedMessage(newMsg);
           
           setMessages(prev => {
             if (!prev.some(msg => msg.id === typedMessage.id)) {
@@ -313,6 +294,21 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     }
   };
 
+  // Function to map database message to correct MessageType with proper type validation
+  const mapDatabaseMessageToTypedMessage = (dbMessage: any): MessageType => {
+    return {
+      id: dbMessage.id,
+      content: dbMessage.content,
+      is_guest: dbMessage.is_guest,
+      is_audio: dbMessage.is_audio,
+      audio_url: dbMessage.audio_url,
+      is_media: dbMessage.is_media || false,
+      media_url: dbMessage.media_url,
+      media_type: (dbMessage.media_type as 'image' | 'video' | undefined),
+      created_at: dbMessage.created_at || new Date().toISOString(),
+    };
+  };
+
   // Fetch messages on initial load
   useEffect(() => {
     const fetchMessages = async () => {
@@ -338,18 +334,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           
           setMessages([welcomeMessage]);
         } else {
-          // Transformamos para garantizar tipos correctos
-          const typedMessages: MessageType[] = data.map(msg => ({
-            id: msg.id,
-            content: msg.content,
-            is_guest: msg.is_guest,
-            is_audio: msg.is_audio,
-            audio_url: msg.audio_url,
-            is_media: msg.is_media || false,
-            media_url: msg.media_url,
-            media_type: msg.media_type as 'image' | 'video' | undefined,
-            created_at: msg.created_at || new Date().toISOString(),
-          }));
+          // Transform using our mapping function
+          const typedMessages: MessageType[] = data.map(mapDatabaseMessageToTypedMessage);
           
           setMessages(typedMessages);
         }
@@ -626,6 +612,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     setIsCallActive(false);
   };
 
+  // Update the handle close notification prompt
   const handleCloseNotificationPrompt = () => {
     setShowNotificationsPrompt(false);
   };
@@ -671,9 +658,14 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </header>
 
-      {/* Prompt de notificaciones */}
+      {/* Notification Permission Banner */}
       {showNotificationsPrompt && (
         <NotificationPermissionRequest
+          type="guest"
+          guestId={guestId}
+          roomId={roomId || undefined}
+          roomNumber={roomNumber}
+          onPermissionChange={() => setShowNotificationsPrompt(false)}
           onDismiss={handleCloseNotificationPrompt}
         />
       )}

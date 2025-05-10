@@ -11,6 +11,7 @@ interface NotificationPermissionRequestProps {
   roomId?: string;
   roomNumber?: string;
   onPermissionChange?: (granted: boolean) => void;
+  onDismiss?: () => void;
   className?: string;
 }
 
@@ -20,6 +21,7 @@ const NotificationPermissionRequest = ({
   roomId,
   roomNumber,
   onPermissionChange,
+  onDismiss,
   className
 }: NotificationPermissionRequestProps) => {
   const [showRequest, setShowRequest] = useState(true);
@@ -53,6 +55,10 @@ const NotificationPermissionRequest = ({
     
     if (onPermissionChange) {
       onPermissionChange(false);
+    }
+    
+    if (onDismiss) {
+      onDismiss();
     }
   };
   
