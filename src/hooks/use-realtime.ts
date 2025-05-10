@@ -117,29 +117,27 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       const pgChannelName = `${uniquePrefix}-pg-${index}-${table}-${event}`;
       console.log(`Creating postgres channel: ${pgChannelName} for ${table}:${event}`);
       
-      // Create a properly typed channel for postgres_changes
+      // Create a channel for postgres_changes
       const pgChannel = supabase.channel(pgChannelName);
       
-      // Use the correct syntax for postgres_changes
-      // TypeScript requires we use a specific syntax here
-      const channel = pgChannel.on(
-        'postgres_changes',
-        {
-          event: event,
-          schema: 'public',
-          table: table,
-          ...(filter && filterValue ? { filter: `${filter}=eq.${filterValue}` } : {})
-        },
-        (payload) => {
-          console.log(`Received realtime event for ${table}:`, payload);
-          callback(payload);
-        }
-      );
-      
-      // Subscribe to the channel
-      channel.subscribe((status) => {
-        console.log(`Postgres channel ${pgChannelName} subscription status: ${status}`);
-      });
+      // FIXED: Chain the .on() call directly with .subscribe() at the end
+      pgChannel
+        .on(
+          'postgres_changes',
+          {
+            event: event,
+            schema: 'public',
+            table: table,
+            ...(filter && filterValue ? { filter: `${filter}=eq.${filterValue}` } : {})
+          },
+          (payload) => {
+            console.log(`Received realtime event for ${table}:`, payload);
+            callback(payload);
+          }
+        )
+        .subscribe((status) => {
+          console.log(`Postgres channel ${pgChannelName} subscription status: ${status}`);
+        });
       
       // Store the channel reference for cleanup
       channelsRef.current.push(pgChannel);
