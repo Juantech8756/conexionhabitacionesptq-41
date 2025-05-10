@@ -47,7 +47,36 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     const uniquePrefix = channelName || 
       `realtime-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
     
-    // 1. Create a separate system channel for connection status
+    // 1. Create a separate system channel ONLY for connection status
+    createSystemChannel(uniquePrefix);
+    
+    // 2. Create individual channels for each postgres_changes subscription
+    createPostgresChannels(uniquePrefix, subscriptions);
+
+    // Cleanup function
+    return () => {
+      console.log(`Cleaning up ${channelsRef.current.length} channels and system channel`);
+      
+      // Clean up all postgres channels
+      channelsRef.current.forEach(channel => supabase.removeChannel(channel));
+      channelsRef.current = [];
+      
+      // Clean up system channel
+      if (systemChannelRef.current) {
+        supabase.removeChannel(systemChannelRef.current);
+        systemChannelRef.current = null;
+      }
+      
+      // Clear any timeouts
+      if (retryTimeoutRef.current) {
+        window.clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+    };
+  }, [subscriptions, channelName]);
+
+  // Create a dedicated channel for system events (connection status)
+  const createSystemChannel = (uniquePrefix: string) => {
     const systemChannelName = `${uniquePrefix}-system`;
     console.log(`Creating system channel: ${systemChannelName}`);
     
@@ -78,8 +107,10 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       });
     
     systemChannelRef.current = systemChannel;
-    
-    // 2. Create individual channels for each postgres_changes subscription
+  };
+
+  // Create separate channels for each postgres_changes subscription
+  const createPostgresChannels = (uniquePrefix: string, subscriptions: RealtimeSubscription[]) => {
     subscriptions.forEach((subscription, index) => {
       const { table, event, filter, filterValue, callback } = subscription;
       const filterObj = filter ? { [filter]: filterValue } : {};
@@ -110,28 +141,7 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       // Store the channel reference
       channelsRef.current.push(pgChannel);
     });
-
-    // Cleanup function
-    return () => {
-      console.log(`Cleaning up ${channelsRef.current.length} channels and system channel`);
-      
-      // Clean up all postgres channels
-      channelsRef.current.forEach(channel => supabase.removeChannel(channel));
-      channelsRef.current = [];
-      
-      // Clean up system channel
-      if (systemChannelRef.current) {
-        supabase.removeChannel(systemChannelRef.current);
-        systemChannelRef.current = null;
-      }
-      
-      // Clear any timeouts
-      if (retryTimeoutRef.current) {
-        window.clearTimeout(retryTimeoutRef.current);
-        retryTimeoutRef.current = null;
-      }
-    };
-  }, [subscriptions, channelName]);
+  };
 
   // Function to manually reconnect if needed
   const reconnect = () => {
