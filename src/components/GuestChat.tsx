@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,10 +112,11 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       })
       .subscribe((status) => {
         console.log(`Guest chat connection status: ${status}`);
-        // Fix for TypeScript error - ensure we're using type-safe comparison
-        if (status === 'SUBSCRIBED') {
+        // Fix for TypeScript error - ensure we're using the correct comparison
+        // The status can be any string, so we should do a direct string comparison
+        if (status === "SUBSCRIBED") {
           setIsRealtimeConnected(true);
-        } else if (status !== 'SUBSCRIBED' && status !== 'SUBSCRIBING') {
+        } else if (status !== "SUBSCRIBED" && status !== "SUBSCRIBING") {
           setIsRealtimeConnected(false);
         }
       });
@@ -304,7 +306,10 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       audio_url: dbMessage.audio_url,
       is_media: dbMessage.is_media || false,
       media_url: dbMessage.media_url,
-      media_type: (dbMessage.media_type as 'image' | 'video' | undefined),
+      // Ensure media_type is always one of the allowed values
+      media_type: dbMessage.media_type === 'image' || dbMessage.media_type === 'video' 
+        ? dbMessage.media_type as 'image' | 'video'
+        : undefined,
       created_at: dbMessage.created_at || new Date().toISOString(),
     };
   };
@@ -432,17 +437,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       
       console.log("Mensaje enviado exitosamente:", data);
       
-      const typedMessage: MessageType = {
-        id: data.id,
-        content: data.content,
-        is_guest: data.is_guest,
-        is_audio: data.is_audio,
-        audio_url: data.audio_url,
-        is_media: data.is_media || false,
-        media_url: data.media_url,
-        media_type: data.media_type as 'image' | 'video' | undefined,
-        created_at: data.created_at || new Date().toISOString(),
-      };
+      const typedMessage = mapDatabaseMessageToTypedMessage(data);
       
       // Actualizar mensajes locales reemplazando el mensaje optimista
       setMessages(prev => prev.map(msg => 
@@ -560,18 +555,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       
       console.log("Mensaje de audio enviado exitosamente:", messageData);
       
-      // Crear una versión tipada del mensaje
-      const typedMessage: MessageType = {
-        id: messageData.id,
-        content: messageData.content,
-        is_guest: messageData.is_guest,
-        is_audio: messageData.is_audio,
-        audio_url: messageData.audio_url,
-        is_media: messageData.is_media || false,
-        media_url: messageData.media_url,
-        media_type: messageData.media_type as 'image' | 'video' | undefined,
-        created_at: messageData.created_at || new Date().toISOString(),
-      };
+      // Usar la función de mapeo para asegurar la tipificación correcta
+      const typedMessage = mapDatabaseMessageToTypedMessage(messageData);
       
       // Actualizar mensajes locales
       setMessages(prev => prev.map(msg => 
