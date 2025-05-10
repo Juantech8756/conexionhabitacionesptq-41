@@ -21,6 +21,7 @@ interface RealtimeSubscription {
 
 export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?: string) => {
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionAttempts, setConnectionAttempts] = useState(0);
   const channelsRef = useRef<RealtimeChannel[]>([]);
   const systemChannelRef = useRef<RealtimeChannel | null>(null);
   const retryTimeoutRef = useRef<number | null>(null);
@@ -90,21 +91,27 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     
     // Subscribe to system events for connection status
     systemChannel
-      .on('system', { event: 'connected' }, () => {
+      .on(REALTIME_LISTEN_TYPES.SYSTEM, { event: 'connected' }, () => {
         console.log(`System channel ${systemChannelName} connected`);
         setIsConnected(true);
+        // Reset connection attempts on successful connection
+        setConnectionAttempts(0);
       })
-      .on('system', { event: 'disconnected' }, () => {
+      .on(REALTIME_LISTEN_TYPES.SYSTEM, { event: 'disconnected' }, () => {
         console.log(`System channel ${systemChannelName} disconnected`);
         setIsConnected(false);
 
-        // Set up automatic reconnection
+        // Set up automatic reconnection with exponential backoff
         if (retryTimeoutRef.current === null) {
+          const delay = Math.min(1000 * Math.pow(1.5, connectionAttempts), 10000); // Max 10s
+          console.log(`Will attempt to reconnect in ${delay}ms (attempt ${connectionAttempts + 1})`);
+          
           retryTimeoutRef.current = window.setTimeout(() => {
             console.log('Attempting to reconnect...');
+            setConnectionAttempts(prev => prev + 1);
             reconnect();
             retryTimeoutRef.current = null;
-          }, 3000);
+          }, delay);
         }
       })
       .subscribe((status) => {
@@ -180,12 +187,15 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     }
     
     // Force effect to run again by creating a new unique channel name
-    // This will be done on next render since we are not updating any state here
+    const uniquePrefix = `realtime-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+    createSystemChannel(uniquePrefix);
+    createPostgresChannels(uniquePrefix, subscriptions);
   };
 
   // Return connection status and reconnect function
   return {
     isConnected,
+    connectionAttempts,
     reconnect
   };
 };

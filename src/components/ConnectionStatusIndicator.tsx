@@ -18,30 +18,34 @@ const ConnectionStatusIndicator = ({
   const [isReconnecting, setIsReconnecting] = useState(false);
 
   useEffect(() => {
-    // Set up listeners for real-time connection status
-    // Important: Only attaching system events to this channel, no postgres_changes
-    const channel = supabase.channel('connection-status');
+    // Set up a dedicated channel just for monitoring connection status
+    const channel = supabase.channel('system-connection-status');
 
     // Listen to connection status changes
     const subscription = channel
       .on(REALTIME_LISTEN_TYPES.SYSTEM, {
         event: 'connected'
       }, () => {
+        console.log("Realtime connection established");
         setIsConnected(true);
         setIsReconnecting(false);
       })
       .on(REALTIME_LISTEN_TYPES.SYSTEM, {
         event: 'disconnected'
       }, () => {
+        console.log("Realtime connection lost");
         setIsConnected(false);
         setIsReconnecting(false);
       })
       .on(REALTIME_LISTEN_TYPES.SYSTEM, {
         event: 'connecting'
       }, () => {
+        console.log("Realtime attempting to reconnect");
         setIsReconnecting(true);
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Connection status channel subscription status: ${status}`);
+      });
 
     return () => {
       supabase.removeChannel(channel);

@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, X } from "lucide-react";
 
@@ -20,6 +20,18 @@ const AudioRecorder = ({
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  
+  // Auto-send audio once recording is complete
+  useEffect(() => {
+    if (audioBlob) {
+      // Small timeout to ensure UI updates before sending
+      const timer = setTimeout(() => {
+        handleSendAudio();
+      }, 200);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [audioBlob]);
 
   const startRecording = async () => {
     try {
@@ -76,6 +88,7 @@ const AudioRecorder = ({
     onCancel();
   };
 
+  // Display controls when audio has been recorded
   if (audioBlob) {
     return (
       <div className="flex items-center gap-2">
