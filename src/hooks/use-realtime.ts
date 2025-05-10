@@ -42,47 +42,43 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
     const baseChannelName = channelName || 
       `realtime-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     
-    // Create a connection status channel
+    // Create dedicated connection channel with only one event type (system+connected)
     const connectionChannel = supabase.channel(`${baseChannelName}-connection`);
-    
-    // Handle the 'connected' event on its own channel
-    connectionChannel.on('system', { event: 'connected' }, () => {
-      console.log('Connection status channel: connected');
-      setIsConnected(true);
-    });
-    
-    // Subscribe to the connection channel
+    connectionChannel.on(
+      'system', 
+      { event: 'connected' }, 
+      () => {
+        console.log('Connection status channel: connected');
+        setIsConnected(true);
+      }
+    );
     connectionChannel.subscribe((status) => {
       console.log(`Connection status channel subscription status: ${status}`);
     });
-    
-    // Add to channels collection for cleanup
     channelsRef.current.push(connectionChannel);
     
-    // Create a separate disconnect channel
+    // Create dedicated disconnection channel with only one event type (system+disconnected)
     const disconnectChannel = supabase.channel(`${baseChannelName}-disconnect`);
-    
-    // Handle the 'disconnected' event on its own channel
-    disconnectChannel.on('system', { event: 'disconnected' }, () => {
-      console.log('Disconnect channel: disconnected');
-      setIsConnected(false);
-      
-      // Set up auto reconnection
-      if (retryTimeoutRef.current === null) {
-        retryTimeoutRef.current = window.setTimeout(() => {
-          console.log('Attempting to reconnect...');
-          reconnect();
-          retryTimeoutRef.current = null;
-        }, 3000);
+    disconnectChannel.on(
+      'system', 
+      { event: 'disconnected' }, 
+      () => {
+        console.log('Disconnect channel: disconnected');
+        setIsConnected(false);
+        
+        // Set up auto reconnection
+        if (retryTimeoutRef.current === null) {
+          retryTimeoutRef.current = window.setTimeout(() => {
+            console.log('Attempting to reconnect...');
+            reconnect();
+            retryTimeoutRef.current = null;
+          }, 3000);
+        }
       }
-    });
-    
-    // Subscribe to the disconnect channel
+    );
     disconnectChannel.subscribe((status) => {
       console.log(`Disconnect channel subscription status: ${status}`);
     });
-    
-    // Add to channels collection for cleanup
     channelsRef.current.push(disconnectChannel);
     
     // Create individual channels for each postgres_changes subscription
@@ -100,7 +96,7 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
       const filterConfig = filter && filterValue ? 
         { filter: `${filter}=eq.${filterValue}` } : {};
       
-      // Configure the postgres_changes event on this channel
+      // Configure ONLY postgres_changes event on this channel (not mixed with system events)
       pgChannel.on(
         'postgres_changes',
         {
