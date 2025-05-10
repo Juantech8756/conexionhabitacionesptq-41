@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Wifi, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,7 +44,7 @@ const ConnectionStatusIndicator = ({
       })
       .subscribe((status) => {
         console.log(`Connection status channel subscription status: ${status}`);
-        // Asumimos conectados cuando el estatus es SUBSCRIBED
+        // Use string comparison since status is a string value
         if (status === 'SUBSCRIBED') {
           setIsConnected(true);
           setIsReconnecting(false);

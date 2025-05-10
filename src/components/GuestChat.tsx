@@ -111,11 +111,10 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       })
       .subscribe((status) => {
         console.log(`Guest chat connection status: ${status}`);
-        // Fix for TypeScript - use the enum type from Supabase
-        if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
+        // Fix for TypeScript - use string comparisons since status is a string value
+        if (status === 'SUBSCRIBED') {
           setIsRealtimeConnected(true);
-        } else if (status !== REALTIME_SUBSCRIBE_STATES.SUBSCRIBED && 
-                   status !== REALTIME_SUBSCRIBE_STATES.SUBSCRIBING) {
+        } else if (status !== 'SUBSCRIBED' && status !== 'SUBSCRIBING') {
           setIsRealtimeConnected(false);
         }
       });

@@ -137,6 +137,7 @@ export const useRealtime = (subscriptions: RealtimeSubscription[], channelName?:
         // Update last event time on any status change
         lastEventTimeRef.current = Date.now();
         
+        // Use string comparison since status is a string value
         if (status === 'SUBSCRIBED') {
           setIsConnected(true);
         }
