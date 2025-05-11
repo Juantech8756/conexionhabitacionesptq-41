@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Hotel, ArrowLeft, Download, QrCode, ExternalLink } from "lucide-react";
+import { Hotel, ArrowLeft, Download, QrCode, ExternalLink, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
@@ -115,6 +115,12 @@ const QrCodeDisplay = () => {
     window.open(qrUrl, '_blank');
   };
 
+  // New function to simulate the guest view within Lovable
+  const simulateGuestView = () => {
+    // Navigate to the simulation page with the roomId
+    navigate(`/guest-simulation?room=${roomId}`);
+  };
+
   const getRoomTypeText = (type: string | null) => {
     if (!type) return "";
     switch (type.toLowerCase()) {
@@ -205,6 +211,15 @@ const QrCodeDisplay = () => {
               >
                 <ExternalLink className="h-4 w-4" />
                 Probar Enlace
+              </Button>
+              {/* Nuevo botón para simular la vista del cliente */}
+              <Button 
+                variant="default" 
+                onClick={simulateGuestView} 
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              >
+                <Eye className="h-4 w-4" />
+                Simular Vista
               </Button>
             </div>
           </CardFooter>
