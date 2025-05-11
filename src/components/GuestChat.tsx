@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,19 @@ interface GuestChatProps {
   onBack: () => void;
   simulationMode?: boolean; // Added this prop as optional
 }
+
+// Re-adding the MessageType definition that was accidentally removed
+type MessageType = {
+  id: string;
+  content: string;
+  is_guest: boolean;
+  is_audio: boolean;
+  audio_url?: string;
+  is_media?: boolean;
+  media_url?: string;
+  media_type?: 'image' | 'video';
+  created_at: string;
+};
 
 // Estados locales para seguimiento de mensajes
 type MessageStatus = 'sending' | 'sent' | 'error';

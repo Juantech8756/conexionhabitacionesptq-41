@@ -263,6 +263,7 @@ const GuestSimulation = () => {
                 <GuestChat
                   guestId={guestId}
                   roomNumber={roomNumber}
+                  guestName={guestName} // Added missing guestName prop
                   simulationMode={true}
                   onBack={handleBackToRegistration}
                 />
