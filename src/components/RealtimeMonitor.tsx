@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ResetIcon, AlertCircleIcon, CheckCircleIcon } from "lucide-react";
+import { RefreshCw, AlertCircleIcon, CheckCircleIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Type for realtime connection data
@@ -101,7 +101,7 @@ export const RealtimeMonitor = () => {
             onClick={fetchConnections}
             disabled={isRefreshing}
           >
-            <ResetIcon className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
         </div>
