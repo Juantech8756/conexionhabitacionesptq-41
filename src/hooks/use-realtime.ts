@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { 
   RealtimeChannel, 
@@ -23,14 +22,19 @@ interface UseRealtimeOptions {
   inactivityTimeout?: number; // Timeout in milliseconds before auto-disconnect
   reconnectAttempts?: number; // Max number of reconnection attempts
   debugMode?: boolean; // Enable detailed logging
+  deduplicationEnabled?: boolean; // New option to enable message deduplication
 }
 
 // Default options
 const DEFAULT_OPTIONS: UseRealtimeOptions = {
   inactivityTimeout: 15 * 60 * 1000, // 15 minutes
   reconnectAttempts: 5,
-  debugMode: false
+  debugMode: false,
+  deduplicationEnabled: true, // Enable deduplication by default
 };
+
+// Keep track of all active channels to prevent duplicate subscriptions
+const activeChannels: Record<string, RealtimeChannel> = {};
 
 export const useRealtime = (
   subscriptions: RealtimeSubscription[], 
@@ -45,6 +49,7 @@ export const useRealtime = (
   const inactivityTimerRef = useRef<number | null>(null);
   const [forcedReconnect, setForcedReconnect] = useState<number>(0);
   const subscribedTablesRef = useRef<Set<string>>(new Set());
+  const processedEventsRef = useRef<Set<string>>(new Set()); // For deduplication
   const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
   
   // Log helper that respects debug mode setting
@@ -86,13 +91,60 @@ export const useRealtime = (
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
       setIsConnected(false);
+      
+      // Also remove from active channels registry
+      if (channelName) {
+        delete activeChannels[channelName];
+      }
+    }
+  };
+
+  // Process subscription callback with deduplication if enabled
+  const processCallback = (subscription: RealtimeSubscription, payload: RealtimePostgresChangesPayload<any>) => {
+    // Generate a unique event ID for deduplication
+    const eventId = `${payload.schema}-${payload.table}-${payload.eventType}-${payload.new?.id || payload.old?.id || Date.now()}`;
+    
+    // Check if we've already processed this event
+    if (mergedOptions.deduplicationEnabled && processedEventsRef.current.has(eventId)) {
+      log(`Skipping duplicate event: ${eventId}`);
+      return;
+    }
+    
+    // Add to processed events (with TTL for cleanup)
+    if (mergedOptions.deduplicationEnabled) {
+      processedEventsRef.current.add(eventId);
+      
+      // Clean up event ID after 5 seconds
+      setTimeout(() => {
+        processedEventsRef.current.delete(eventId);
+      }, 5000);
+    }
+    
+    // Call the actual callback
+    try {
+      subscription.callback(payload);
+      updateActivity();
+    } catch (error) {
+      console.error(`[Realtime] Error in subscription callback:`, error);
     }
   };
 
   useEffect(() => {
+    // Generate a unique channel name if none provided
+    const uniqueName = channelName || 
+      `realtime-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+    
+    // Check if this channel already exists
+    if (channelName && activeChannels[channelName]) {
+      log(`Channel already exists, reusing: ${channelName}`);
+      channelRef.current = activeChannels[channelName];
+      setIsConnected(true);
+      return;
+    }
+    
     // Clean up previous channel if it exists
     if (channelRef.current) {
-      log(`Cleaning up previous channel`);
+      log(`Cleaning up previous channel: ${uniqueName}`);
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
       subscribedTablesRef.current.clear();
@@ -112,10 +164,6 @@ export const useRealtime = (
 
     // Skip if no subscriptions
     if (subscriptions.length === 0) return;
-
-    // Create a unique channel name with timestamp and random string
-    const uniqueName = channelName || 
-      `realtime-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
     
     log(`Creating consolidated channel: ${uniqueName}`);
     
@@ -176,7 +224,7 @@ export const useRealtime = (
       // Only add if we haven't already subscribed to this exact combination
       if (!subscribedTablesRef.current.has(subKey)) {
         log(`Adding subscription for ${table}:${event}`, 
-            filter ? `with filter ${filter}=${filterValue}` : 'without filter');
+            filter ? `with filter ${filter}=eq.${filterValue}` : 'without filter');
         
         channel.on(
           REALTIME_LISTEN_TYPES.POSTGRES_CHANGES,
@@ -186,13 +234,7 @@ export const useRealtime = (
             table: table,
             ...(filter && filterValue ? { filter: `${filter}=eq.${filterValue}` } : {})
           },
-          (payload) => {
-            // Update activity timestamp
-            updateActivity();
-            
-            log(`Received realtime event for ${table}:${event}`, payload);
-            callback(payload);
-          }
+          (payload) => processCallback(subscription, payload)
         );
         
         // Mark this subscription as added
@@ -215,6 +257,11 @@ export const useRealtime = (
     // Store the channel reference
     channelRef.current = channel;
     
+    // Register in active channels registry
+    if (channelName) {
+      activeChannels[channelName] = channel;
+    }
+    
     // Start the inactivity timer
     resetInactivityTimer();
     
@@ -236,6 +283,12 @@ export const useRealtime = (
       
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+        
+        // Also remove from active channels registry
+        if (channelName) {
+          delete activeChannels[channelName];
+        }
+        
         channelRef.current = null;
       }
       
@@ -251,7 +304,7 @@ export const useRealtime = (
       
       clearInterval(healthCheckInterval);
     };
-  }, [subscriptions, channelName, forcedReconnect, mergedOptions.reconnectAttempts, mergedOptions.inactivityTimeout, mergedOptions.debugMode]);
+  }, [subscriptions, channelName, forcedReconnect, mergedOptions.reconnectAttempts, mergedOptions.inactivityTimeout, mergedOptions.debugMode, mergedOptions.deduplicationEnabled]);
 
   // Function to manually reconnect
   const reconnect = () => {
@@ -259,6 +312,12 @@ export const useRealtime = (
     
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
+      
+      // Also remove from active channels registry
+      if (channelName) {
+        delete activeChannels[channelName];
+      }
+      
       channelRef.current = null;
     }
     

@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircleIcon, CheckCircleIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtime } from "@/hooks/use-realtime";
 
 // Type for realtime connection data
 interface RealtimeConnectionData {
@@ -20,6 +21,12 @@ export const RealtimeMonitor = () => {
   const [connections, setConnections] = useState<RealtimeConnectionData[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'reception' | 'guests'>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Use the optimized useRealtime hook for monitoring
+  const { isConnected } = useRealtime([], 'realtime-monitor', { 
+    debugMode: true, 
+    inactivityTimeout: 30 * 60 * 1000 // 30 minutes for monitor
+  });
   
   // Mock function to fetch connection data
   // In a real implementation, this would use an admin API or edge function

@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +16,7 @@ import { sendNotificationToReception, formatMessageNotification } from "@/utils/
 import NotificationPermissionRequest from "@/components/NotificationPermissionRequest";
 import AudioRecorder from "@/components/AudioRecorder";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
-import { RealtimeChannel } from "@supabase/supabase-js";
+import { useRealtime } from "@/hooks/use-realtime";
 
 interface GuestChatProps {
   guestName: string;
@@ -61,6 +60,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
   const [showNotificationsPrompt, setShowNotificationsPrompt] = useState(false);
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
   const [lastPollTime, setLastPollTime] = useState(Date.now());
+  const [processedMessageIds, setProcessedMessageIds] = useState<Set<string>>(new Set());
   
   // Obtener el roomId de la tabla de huéspedes
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -96,42 +96,49 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
     roomId: roomId || undefined
   });
 
-  // Comprobar conexión en tiempo real
-  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
-  
-  useEffect(() => {
-    // Configurar un canal para monitorear la conexión en tiempo real
-    const channel = supabase.channel('guest-connection-monitor');
-    
-    channel
-      .on('system', { event: 'connected' }, () => {
-        console.log('Guest chat realtime connected');
-        setIsRealtimeConnected(true);
-      })
-      .on('system', { event: 'disconnected' }, () => {
-        console.log('Guest chat realtime disconnected');
-        setIsRealtimeConnected(false);
-      })
-      .subscribe((status: string) => {
-        console.log(`Guest chat connection status: ${status}`);
-        // Fix for TypeScript - use string comparisons for status
-        if (status === 'SUBSCRIBED') {
-          setIsRealtimeConnected(true);
-        } else if (status !== 'SUBSCRIBED' && status !== 'SUBSCRIBING') {
-          setIsRealtimeConnected(false);
+  // Use the optimized realtime hook instead of direct channel creation
+  const { isConnected: isRealtimeConnected } = useRealtime([
+    {
+      table: 'messages',
+      event: 'INSERT',
+      filter: 'guest_id',
+      filterValue: guestId,
+      callback: (payload) => {
+        console.log('Nuevo mensaje recibido en tiempo real:', payload);
+        
+        // Only process the message if we haven't seen it before
+        const newMsg = payload.new;
+        if (newMsg && !processedMessageIds.has(newMsg.id)) {
+          const typedMessage = mapDatabaseMessageToTypedMessage(newMsg);
+          
+          // Add to processed IDs to prevent duplication
+          setProcessedMessageIds(prev => {
+            const updated = new Set(prev);
+            updated.add(typedMessage.id);
+            return updated;
+          });
+          
+          // Update messages state, ensuring we don't add duplicates
+          setMessages(prev => {
+            if (!prev.some(msg => msg.id === typedMessage.id)) {
+              return [...prev, typedMessage];
+            }
+            return prev;
+          });
+          
+          // Scroll hacia abajo para mostrar el nuevo mensaje
+          setTimeout(() => scrollToBottom(true), 100);
         }
-      });
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      }
+    }
+  ], `guest-chat-${guestId}`);
 
-  // Sistema de sondeo de respaldo para asegurar que se reciban mensajes
+  // Sistema de sondeo de respaldo con prevención de duplicados
   useEffect(() => {
     const pollInterval = setInterval(() => {
       // Sólo sondeamos si hace más de 10 segundos del último sondeo
-      if (Date.now() - lastPollTime > 10000) {
+      // Y solo si no hay conexión en tiempo real activa
+      if (Date.now() - lastPollTime > 10000 && !isRealtimeConnected) {
         pollNewMessages();
         setLastPollTime(Date.now());
       }
@@ -142,9 +149,9 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
     }, 15000); // Sondeo cada 15 segundos
     
     return () => clearInterval(pollInterval);
-  }, [lastPollTime, pendingMessages]);
+  }, [lastPollTime, pendingMessages, isRealtimeConnected]);
 
-  // Función para sondear mensajes nuevos
+  // Función para sondear mensajes nuevos con prevención de duplicados
   const pollNewMessages = async () => {
     try {
       console.log("Sondeando mensajes nuevos...");
@@ -167,14 +174,26 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
       if (data && data.length > 0) {
         console.log(`Sondeo encontró ${data.length} mensajes nuevos`);
         
-        // Transform the data using our mapping function
-        const typedMessages: MessageType[] = data.map(mapDatabaseMessageToTypedMessage);
+        // Filter out messages we've already processed
+        const newMessages = data.filter(msg => !processedMessageIds.has(msg.id));
         
-        // Actualizar mensajes locales con los nuevos mensajes
-        setMessages(prev => [...prev, ...typedMessages]);
-        
-        // Scroll hacia abajo para mostrar los nuevos mensajes
-        setTimeout(() => scrollToBottom(true), 100);
+        if (newMessages.length > 0) {
+          // Transform the data using our mapping function
+          const typedMessages: MessageType[] = newMessages.map(mapDatabaseMessageToTypedMessage);
+          
+          // Add IDs to processed set
+          const updatedProcessedIds = new Set(processedMessageIds);
+          newMessages.forEach(msg => updatedProcessedIds.add(msg.id));
+          setProcessedMessageIds(updatedProcessedIds);
+          
+          // Actualizar mensajes locales con los nuevos mensajes
+          setMessages(prev => [...prev, ...typedMessages]);
+          
+          // Scroll hacia abajo para mostrar los nuevos mensajes
+          setTimeout(() => scrollToBottom(true), 100);
+        } else {
+          console.log("Todos los mensajes ya están en el estado local");
+        }
       }
     } catch (err) {
       console.error("Error sondeando mensajes:", err);
@@ -248,45 +267,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
     return () => clearTimeout(timer);
   }, [permission, isSubscribed]);
 
-  // Configuración del canal en tiempo real para mensajes
-  useEffect(() => {
-    const messageChannel = supabase.channel(`guest-messages-${guestId}`);
-    
-    messageChannel
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `guest_id=eq.${guestId}`
-      }, (payload) => {
-        console.log('Nuevo mensaje recibido en tiempo real:', payload);
-        
-        // Sólo añadir el mensaje si no lo tenemos ya
-        const newMsg = payload.new;
-        
-        if (newMsg) {
-          const typedMessage = mapDatabaseMessageToTypedMessage(newMsg);
-          
-          setMessages(prev => {
-            if (!prev.some(msg => msg.id === typedMessage.id)) {
-              return [...prev, typedMessage];
-            }
-            return prev;
-          });
-          
-          // Scroll hacia abajo para mostrar el nuevo mensaje
-          setTimeout(() => scrollToBottom(true), 100);
-        }
-      })
-      .subscribe((status: string) => {
-        console.log(`Canal de mensajes estatus: ${status}`);
-      });
-    
-    return () => {
-      supabase.removeChannel(messageChannel);
-    };
-  }, [guestId]);
-
   // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current) {
@@ -342,6 +322,11 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
         } else {
           // Transform using our mapping function
           const typedMessages: MessageType[] = data.map(mapDatabaseMessageToTypedMessage);
+          
+          // Initialize the processed message IDs set
+          const initialProcessedIds = new Set<string>();
+          data.forEach(msg => initialProcessedIds.add(msg.id));
+          setProcessedMessageIds(initialProcessedIds);
           
           setMessages(typedMessages);
         }
