@@ -23,19 +23,8 @@ interface GuestChatProps {
   roomNumber: string;
   guestId: string;
   onBack: () => void;
+  simulationMode?: boolean; // Added this prop as optional
 }
-
-type MessageType = {
-  id: string;
-  content: string;
-  is_guest: boolean;
-  is_audio: boolean;
-  audio_url?: string;
-  is_media?: boolean;
-  media_url?: string;
-  media_type?: 'image' | 'video';
-  created_at: string;
-};
 
 // Estados locales para seguimiento de mensajes
 type MessageStatus = 'sending' | 'sent' | 'error';
@@ -49,7 +38,7 @@ type PendingMessage = {
   retryCount: number;
 };
 
-const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) => {
+const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = false }: GuestChatProps) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -780,6 +769,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           <h2 className="text-lg font-semibold">Recepción</h2>
           <p className="text-xs text-white/80">
             Cabaña {roomNumber} - {guestName}
+            {simulationMode && <span className="ml-1">(Simulación)</span>}
           </p>
         </div>
         <div className="ml-auto">
