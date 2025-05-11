@@ -43,7 +43,7 @@ const MediaUploader = ({
     } else {
       setPreviewUrl(null);
     }
-  }, [selectedFile]); // Fixed dependency array - useState to useEffect
+  }, [selectedFile]);
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
@@ -81,18 +81,6 @@ const MediaUploader = ({
       return;
     }
 
-    // Generate preview for images
-    if (fileType === 'image') {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewUrl(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      // For videos, just set a placeholder
-      setPreviewUrl('video');
-    }
-    
     // Pass the selected file to parent component
     onFileSelect(file);
   };

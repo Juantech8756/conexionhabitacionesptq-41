@@ -55,9 +55,10 @@ double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = false
 
-# Configure Storage for media files
+# Configure Storage for media files - using the bucket that already works
 [[storage.buckets]]
-name = "media_messages"
+name = "chat_media"
 public = true
 file_size_limit = "10MiB"
 allowed_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/webm"]
+
