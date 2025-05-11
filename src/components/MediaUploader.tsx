@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Paperclip, X } from "lucide-react";
@@ -27,7 +27,7 @@ const MediaUploader = ({
   const { toast } = useToast();
 
   // Update the preview when a file is selected
-  useState(() => {
+  useEffect(() => {
     if (selectedFile) {
       // Generate preview for images
       if (selectedFile.type.startsWith('image/')) {
@@ -43,7 +43,7 @@ const MediaUploader = ({
     } else {
       setPreviewUrl(null);
     }
-  });
+  }, [selectedFile]); // Fixed dependency array - useState to useEffect
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {

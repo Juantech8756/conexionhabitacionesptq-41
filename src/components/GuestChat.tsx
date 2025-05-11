@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -201,7 +202,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       } else if (messageToRetry.type === 'audio' && messageToRetry.audioBlob) {
         await uploadAudio(messageToRetry.localId, messageToRetry.audioBlob);
       } else if (messageToRetry.type === 'media' && messageToRetry.mediaFile) {
-        // Implementar manejo de reintento para medios
+        await uploadMedia(messageToRetry.localId, messageToRetry.mediaFile);
       }
     } catch (err) {
       console.error(`Error reintentando mensaje ${messageToRetry.localId}:`, err);
@@ -275,7 +276,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           setTimeout(() => scrollToBottom(true), 100);
         }
       })
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         console.log(`Canal de mensajes estatus: ${status}`);
       });
     
@@ -358,10 +359,24 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     fetchMessages();
   }, [guestId, guestName, toast]);
   
+  // Handle file selection for media upload
+  const handleFileSelect = (file: File | null) => {
+    console.log("Archivo seleccionado:", file);
+    setSelectedFile(file);
+  };
+  
   // Enviar mensaje de texto
   const sendMessage = async () => {
-    if (message.trim() === "") return;
+    // Verificamos si hay un mensaje de texto o un archivo para enviar
+    if (message.trim() === "" && !selectedFile) return;
     
+    // Si hay un archivo seleccionado, lo enviamos
+    if (selectedFile) {
+      await handleSendMedia();
+      return;
+    }
+    
+    // Si llegamos aquí, solo hay mensaje de texto
     const messageText = message.trim();
     const localId = `local-${Date.now()}`;
     setMessage("");
@@ -410,6 +425,144 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         description: "No se pudo enviar el mensaje. Se reintentará automáticamente.",
         variant: "destructive"
       });
+    }
+  };
+  
+  // Handle media sending
+  const handleSendMedia = async () => {
+    if (!selectedFile || !guestId) return;
+    
+    const localId = `local-media-${Date.now()}`;
+    const mediaType = selectedFile.type.startsWith('image/') ? 'image' : 'video';
+    const fileDescription = mediaType === 'image' ? 'Imagen' : 'Video';
+    
+    // Agregar mensaje optimista a la UI
+    const optimisticMessage: MessageType = {
+      id: localId,
+      content: `${fileDescription} enviado`,
+      is_guest: true,
+      is_audio: false,
+      is_media: true,
+      media_type: mediaType,
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
+    
+    // Agregar a pendientes
+    setPendingMessages(prev => [
+      ...prev, 
+      {
+        localId,
+        type: 'media',
+        content: `${fileDescription} enviado`,
+        mediaFile: selectedFile,
+        status: 'sending',
+        retryCount: 0
+      }
+    ]);
+    
+    // Scroll hacia abajo
+    setTimeout(() => scrollToBottom(true), 100);
+    
+    try {
+      await uploadMedia(localId, selectedFile);
+      // Limpiar archivo seleccionado después de enviar
+      setSelectedFile(null);
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      
+      // Marcar como error para reintentar
+      setPendingMessages(prev => prev.map(msg => 
+        msg.localId === localId 
+          ? { ...msg, status: 'error' }
+          : msg
+      ));
+      
+      toast({
+        title: "Error",
+        description: `No se pudo enviar el ${fileDescription.toLowerCase()}. Se reintentará automáticamente.`,
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Función para subir multimedia al servidor
+  const uploadMedia = async (localId: string, file: File) => {
+    if (!guestId) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Determinar el tipo de archivo
+      const mediaType = file.type.startsWith('image/') ? 'image' : 'video';
+      const bucketName = 'media_messages';
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `${mediaType}_${Date.now()}_guest.${fileExtension}`;
+      
+      // Subir a Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase
+        .storage
+        .from(bucketName)
+        .upload(fileName, file);
+        
+      if (uploadError) throw uploadError;
+
+      // Obtener URL pública
+      const { data: publicUrlData } = supabase
+        .storage
+        .from(bucketName)
+        .getPublicUrl(fileName);
+
+      const fileDescription = mediaType === 'image' ? 'Imagen enviada' : 'Video enviado';
+        
+      // Agregar mensaje con multimedia
+      const newMediaMessage = {
+        guest_id: guestId,
+        content: fileDescription,
+        is_guest: true,
+        is_audio: false,
+        is_media: true,
+        media_url: publicUrlData.publicUrl,
+        media_type: mediaType
+      };
+      
+      const { data: messageData, error: messageError } = await supabase
+        .from('messages')
+        .insert([newMediaMessage])
+        .select()
+        .single();
+        
+      if (messageError) throw messageError;
+      
+      console.log("Mensaje multimedia enviado exitosamente:", messageData);
+      
+      // Usar la función de mapeo para asegurar la tipificación correcta
+      const typedMessage = mapDatabaseMessageToTypedMessage(messageData);
+      
+      // Actualizar mensajes locales
+      setMessages(prev => prev.map(msg => 
+        msg.id === localId ? typedMessage : msg
+      ));
+      
+      // Remover de pendientes
+      setPendingMessages(prev => prev.filter(msg => msg.localId !== localId));
+      
+      // Enviar notificación a recepción
+      await sendNotificationToReception(formatMessageNotification(
+        true,
+        fileDescription,
+        guestName,
+        roomNumber,
+        guestId
+      ));
+      
+      return messageData;
+    } catch (err) {
+      console.error("Error en uploadMedia:", err);
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -738,10 +891,19 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             disabled={isLoading}
           />
           
+          {/* Media Uploader Component */}
+          <MediaUploader
+            guestId={guestId}
+            onUploadComplete={() => {}}
+            disabled={isLoading}
+            onFileSelect={handleFileSelect}
+            selectedFile={selectedFile}
+          />
+          
           <Button
-            disabled={message.trim() === "" || isLoading}
+            disabled={(message.trim() === "" && !selectedFile) || isLoading}
             onClick={sendMessage}
-            className="bg-hotel-600 hover:bg-hotel-700"
+            className={`${(message.trim() !== "" || selectedFile) ? "bg-hotel-600 hover:bg-hotel-700" : "bg-gray-300"}`}
           >
             <Send className="h-4 w-4" />
           </Button>
