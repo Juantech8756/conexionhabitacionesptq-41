@@ -69,12 +69,12 @@ const MediaUploader = ({
       return;
     }
 
-    // Check file size (10MB limit)
-    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    // Check file size (30MB limit) - INCREASED FROM 10MB to 30MB
+    const MAX_SIZE = 30 * 1024 * 1024; // 30MB
     if (file.size > MAX_SIZE) {
       showGlobalAlert({
         title: "Archivo demasiado grande",
-        description: "El tamaño máximo permitido es 10MB.",
+        description: "El tamaño máximo permitido es 30MB.",
         variant: "destructive",
         duration: 4000
       });

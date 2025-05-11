@@ -495,7 +495,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     try {
       // Determinar el tipo de archivo
       const mediaType = file.type.startsWith('image/') ? 'image' : 'video';
-      // CAMBIO AQUÍ: Usar el bucket chat_media en lugar de media_messages
+      // Usar el bucket chat_media en lugar de media_messages
       const bucketName = 'chat_media';
       const fileExtension = file.name.split('.').pop();
       const fileName = `${mediaType}_${Date.now()}_guest.${fileExtension}`;
