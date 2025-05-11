@@ -1,273 +1,164 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { Hotel, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { motion } from "framer-motion";
+
+import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { motion } from 'framer-motion';
+import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { checkExistingRegistration } from "@/utils/registration";
-import { useLocation } from "react-router-dom";
+} from '@/components/ui/select';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { getMaxGuestsForRoomType } from '@/utils/roomValidation';
 
-interface GuestRegistrationFormProps {
-  onRegister: (guestName: string, roomNumber: string, guestId: string, roomId: string) => void;
-  preselectedRoomId?: string;
-  showSuccessToast?: boolean;
+// Form schema for validation
+const formSchema = z.object({
+  name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
+  roomId: z.string({ required_error: 'Por favor seleccione una cabaña' }),
+  guestCount: z.number().int().min(1, { message: 'Debe haber al menos 1 huésped' })
+    // Max guests validation will be added dynamically
+});
+
+// Form input types
+interface FormInputs {
+  name: string;
+  roomId: string;
+  guestCount: number;
 }
 
-type Room = {
+// Component props
+interface GuestRegistrationFormProps {
+  onSuccess: (name: string, roomNumber: string, id: string, roomId: string) => void;
+  preselectedRoomId?: string;
+}
+
+export type Room = {
   id: string;
   room_number: string;
-  status: string;
-  floor: string | null;
-  type: string | null;
+  status?: string;
+  type?: string | null;
 };
 
-const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast = false }: GuestRegistrationFormProps) => {
-  const [guestName, setGuestName] = useState("");
-  const [selectedRoomId, setSelectedRoomId] = useState("");
-  const [guestCount, setGuestCount] = useState("1");
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingRooms, setIsLoadingRooms] = useState(true);
+const GuestRegistrationForm = ({ onSuccess, preselectedRoomId }: GuestRegistrationFormProps) => {
   const { toast } = useToast();
-  const isMobile = useIsMobile();
-  const [preselectedRoom, setPreselectedRoom] = useState<Room | null>(null);
-  const location = useLocation();
-  const [initialCheckDone, setInitialCheckDone] = useState(false);
-  const [isCheckingExistingGuests, setIsCheckingExistingGuests] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [maxGuests, setMaxGuests] = useState(4); // Default max guests
+  const [open, setOpen] = useState(false);
+
+  // Initialize the form with react-hook-form
+  const form = useForm<FormInputs>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      guestCount: 1,
+      roomId: preselectedRoomId || ''
+    },
+  });
   
-  // Load visitor's name from localStorage if it exists
+  // Watch for room ID changes to update max guests
+  const watchRoomId = form.watch("roomId");
+  
+  // Update max guests when room selection changes
   useEffect(() => {
-    const savedName = localStorage.getItem("guestName");
-    if (savedName) {
-      console.log("Loaded saved guest name:", savedName);
-      setGuestName(savedName);
+    if (watchRoomId) {
+      const selected = rooms.find(room => room.id === watchRoomId);
+      setSelectedRoom(selected || null);
+      
+      if (selected?.type) {
+        const newMaxGuests = getMaxGuestsForRoomType(selected.type);
+        setMaxGuests(newMaxGuests);
+        
+        // Validate current guest count against new max
+        const currentGuestCount = form.getValues("guestCount");
+        if (currentGuestCount > newMaxGuests) {
+          form.setValue("guestCount", newMaxGuests);
+        }
+      }
     }
-  }, []);
+  }, [watchRoomId, rooms, form]);
 
-  // First check: Is there already a guest for this room?
-  useEffect(() => {
-    const checkExistingGuests = async () => {
-      const queryParams = new URLSearchParams(location.search);
-      const roomParam = queryParams.get('room');
-      const roomIdToCheck = roomParam || preselectedRoomId;
-      
-      if (roomIdToCheck) {
-        setIsCheckingExistingGuests(true);
-        console.log("Checking if room already has guests:", roomIdToCheck);
-        
-        try {
-          // Direct check for existing guest for this room
-          const { data: existingGuest, error } = await supabase
-            .from('guests')
-            .select('id, name, room_number, guest_count, room_id')
-            .eq('room_id', roomIdToCheck)
-            .maybeSingle();
-            
-          if (error) {
-            console.error("Error checking for existing guests:", error);
-          }
-          
-          if (existingGuest) {
-            console.log("Room already has a guest registered. Redirecting to chat:", existingGuest);
-            // Save to localStorage
-            localStorage.setItem('guest_id', existingGuest.id);
-            localStorage.setItem('guestName', existingGuest.name);
-            localStorage.setItem('roomNumber', existingGuest.room_number);
-            localStorage.setItem('roomId', roomIdToCheck);
-            
-            // Redirect to chat by calling onRegister
-            onRegister(
-              existingGuest.name,
-              existingGuest.room_number,
-              existingGuest.id,
-              roomIdToCheck
-            );
-            return;
-          }
-        } catch (error) {
-          console.error("Error in existing guests check:", error);
-        } finally {
-          setIsCheckingExistingGuests(false);
-          setInitialCheckDone(true);
-        }
-      } else {
-        setInitialCheckDone(true);
-      }
-    };
-    
-    checkExistingGuests();
-  }, [location.search, preselectedRoomId, onRegister]);
-
-  // Check for existing registration once on component mount
-  useEffect(() => {
-    const handleExistingRegistration = async () => {
-      if (!initialCheckDone) return; // Skip if we haven't done the initial check
-      
-      console.log("GuestRegistrationForm: Checking for existing registration");
-      
-      // Check if we're coming from a QR code scan
-      const queryParams = new URLSearchParams(location.search);
-      const roomParam = queryParams.get('room');
-      
-      // If we have a roomId from the QR or preselected, verify if we're already registered for that room
-      const roomIdToCheck = roomParam || preselectedRoomId;
-      
-      if (roomIdToCheck) {
-        console.log("QR code or preselected room ID detected:", roomIdToCheck);
-        
-        // First, check if ANY guest is registered for this room in the database
-        const { data: roomGuest, error: roomGuestError } = await supabase
-          .from('guests')
-          .select('id, name, room_number, guest_count, room_id')
-          .eq('room_id', roomIdToCheck)
-          .maybeSingle();
-          
-        if (!roomGuestError && roomGuest) {
-          console.log("Found existing registration for this room ID. Continuing with that guest session:", roomGuest);
-          
-          // Update localStorage with this guest's info
-          localStorage.setItem('guest_id', roomGuest.id);
-          localStorage.setItem('guestName', roomGuest.name);
-          localStorage.setItem('roomNumber', roomGuest.room_number);
-          localStorage.setItem('roomId', roomIdToCheck);
-          
-          // Continue session with this guest
-          onRegister(
-            roomGuest.name, 
-            roomGuest.room_number, 
-            roomGuest.id, 
-            roomIdToCheck
-          );
-          return;
-        }
-        
-        // If no guest found for this room, check if we have a guest ID in localStorage
-        const existingGuest = await checkExistingRegistration(false, roomIdToCheck);
-        
-        if (existingGuest) {
-          console.log("User is already registered for this room. Continuing session.");
-          // If we're already registered for this room, continue the session
-          onRegister(
-            existingGuest.name, 
-            existingGuest.room_number, 
-            existingGuest.id, 
-            existingGuest.room_id || roomIdToCheck
-          );
-        }
-      } else {
-        // If no room ID in URL, perform standard check
-        console.log("No room ID in URL. Performing standard registration check.");
-        const existingGuest = await checkExistingRegistration();
-        
-        if (existingGuest) {
-          // If there's an existing registration without specific QR code, use it
-          console.log("Found existing general registration. Continuing session.");
-          onRegister(
-            existingGuest.name, 
-            existingGuest.room_number, 
-            existingGuest.id, 
-            existingGuest.room_id || ''
-          );
-        }
-      }
-    };
-    
-    handleExistingRegistration();
-  }, [initialCheckDone, location.search, onRegister, preselectedRoomId]);
-
-  // Fetch available rooms
+  // Fetch available rooms from Supabase
   useEffect(() => {
     const fetchRooms = async () => {
-      if (!initialCheckDone) return; // Only load rooms after checking the session
-      
-      console.log("Fetching available rooms and room details");
-      setIsLoadingRooms(true);
-      
       try {
-        // Check if we're coming from a QR code scan
-        const queryParams = new URLSearchParams(location.search);
-        const roomParam = queryParams.get('room');
-        
-        // If we have a room parameter or preselectedRoomId, prioritize it
-        const roomIdToSelect = roomParam || preselectedRoomId;
-        
-        // Fetch available rooms
-        const { data: availableRooms, error } = await supabase
+        const { data, error } = await supabase
           .from('rooms')
-          .select('*')
-          .eq('status', 'available')
-          .order('room_number', { ascending: true });
+          .select('id, room_number, status, type')
+          .order('room_number');
 
-        if (error) {
-          console.error("Error fetching available rooms:", error);
-          throw error;
-        }
+        if (error) throw error;
+
+        // Set all rooms for reference
+        setRooms(data || []);
         
-        setRooms(availableRooms || []);
-        console.log(`Fetched ${availableRooms?.length || 0} available rooms`);
+        // Filter to only available rooms, unless we have a preselected room
+        const available = preselectedRoomId 
+          ? data || []
+          : (data || []).filter(room => room.status === 'available');
+          
+        setAvailableRooms(available);
 
-        // If we have a roomIdToSelect, fetch its details even if not available
-        if (roomIdToSelect) {
-          console.log("Fetching details for the preselected room:", roomIdToSelect);
-          const { data: roomData, error: roomError } = await supabase
-            .from('rooms')
-            .select('*')
-            .eq('id', roomIdToSelect)
-            .single();
-
-          if (roomError) {
-            console.error("Error fetching preselected room:", roomError);
-          } else if (roomData) {
-            console.log("Found preselected room:", roomData);
-            setSelectedRoomId(roomData.id);
-            setPreselectedRoom(roomData);
+        // If we have a preselected room ID, set it
+        if (preselectedRoomId) {
+          const preselected = data?.find(room => room.id === preselectedRoomId);
+          if (preselected) {
+            // Set the form values and selected room
+            form.setValue('roomId', preselectedRoomId);
+            setSelectedRoom(preselected);
+            
+            // Set max guests based on room type
+            const newMaxGuests = getMaxGuestsForRoomType(preselected.type);
+            setMaxGuests(newMaxGuests);
           }
         }
       } catch (error) {
-        console.error("Error in room fetching process:", error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar las cabañas",
-          variant: "destructive",
-          duration: 3000,
-        });
-      } finally {
-        setIsLoadingRooms(false);
+        console.error('Error fetching rooms:', error);
       }
     };
 
     fetchRooms();
-  }, [toast, preselectedRoomId, location.search, initialCheckDone]);
+  }, [preselectedRoomId, form]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!guestName.trim()) {
+  // Handle form submission
+  const onSubmit = async (values: FormInputs) => {
+    if (!values.roomId) {
       toast({
-        title: "Nombre requerido",
-        description: "Por favor ingrese su nombre",
-        variant: "destructive",
-        duration: 3000,
-      });
-      return;
-    }
-    
-    if (!selectedRoomId && !preselectedRoom) {
-      toast({
-        title: "Cabaña requerida",
-        description: "Por favor seleccione su cabaña",
-        variant: "destructive",
-        duration: 3000,
+        title: 'Error',
+        description: 'Por favor seleccione una cabaña',
+        variant: 'destructive',
       });
       return;
     }
@@ -275,283 +166,197 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
     setIsLoading(true);
     
     try {
-      // Find room number from selected room id
-      const selectedRoom = preselectedRoom || rooms.find(room => room.id === selectedRoomId);
+      // Get the room number for the selected room
+      const selectedRoom = rooms.find((room) => room.id === values.roomId);
+      
       if (!selectedRoom) {
-        console.error("Room not found:", { selectedRoomId, preselectedRoom });
-        throw new Error("Cabaña no encontrada");
-      }
-      
-      const finalRoomId = selectedRoom.id;
-      console.log("Registering guest for room:", { 
-        roomId: finalRoomId, 
-        roomNumber: selectedRoom.room_number,
-        guestName,
-        guestCount
-      });
-
-      // Make one final check before registration to ensure room isn't occupied by someone else
-      const { data: checkRoomOccupancy, error: checkError } = await supabase
-        .from('guests')
-        .select('id, name')
-        .eq('room_id', finalRoomId)
-        .maybeSingle();
-        
-      if (checkError) {
-        console.error("Error checking room occupancy:", checkError);
-      }
-      
-      // If someone else registered while we were on the form
-      if (checkRoomOccupancy) {
-        console.log("Room was occupied by someone else while on the form:", checkRoomOccupancy);
-        
-        // Update localStorage with existing guest info
-        localStorage.setItem('guest_id', checkRoomOccupancy.id);
-        localStorage.setItem('guestName', checkRoomOccupancy.name);
-        localStorage.setItem('roomNumber', selectedRoom.room_number);
-        localStorage.setItem('roomId', finalRoomId);
-        
         toast({
-          title: "Cabaña ya ocupada",
-          description: "Esta cabaña ha sido registrada por otro huésped. Continuando con ese registro.",
-          duration: 4000,
+          title: 'Error',
+          description: 'La cabaña seleccionada no existe',
+          variant: 'destructive',
         });
-        
-        // Continue with existing registration
-        onRegister(checkRoomOccupancy.name, selectedRoom.room_number, checkRoomOccupancy.id, finalRoomId);
+        setIsLoading(false);
         return;
       }
+      
+      // Register the guest in the database
+      const { data: guest, error: insertError } = await supabase
+        .from('guests')
+        .insert({
+          name: values.name,
+          room_number: selectedRoom.room_number,
+          room_id: values.roomId,
+          guest_count: values.guestCount
+        })
+        .select('id')
+        .single();
 
-      // Always update the room to occupied status
+      if (insertError) {
+        throw insertError;
+      }
+
+      // Update the room status to occupied
       const { error: updateError } = await supabase
         .from('rooms')
         .update({ status: 'occupied' })
-        .eq('id', finalRoomId);
-        
+        .eq('id', values.roomId);
+
       if (updateError) {
-        console.error("Error updating room status:", updateError);
         throw updateError;
       }
 
-      // Insert guest into Supabase with guest count
-      const { data: guest, error } = await supabase
-        .from('guests')
-        .insert([
-          { 
-            name: guestName, 
-            room_number: selectedRoom.room_number, 
-            room_id: finalRoomId,
-            guest_count: parseInt(guestCount)
-          }
-        ])
-        .select('id')
-        .single();
+      // Call the onSuccess callback
+      onSuccess(values.name, selectedRoom.room_number, guest.id, values.roomId);
       
-      if (error) {
-        console.error("Error creating guest record:", error);
-        throw error;
-      }
-      
-      if (!guest || !guest.id) {
-        console.error("No guest ID returned after insert");
-        throw new Error("Error al crear registro de invitado");
-      }
-      
-      console.log("Guest registered successfully with ID:", guest.id);
-      
-      // Only show toast if explicitly requested (to avoid duplicates)
-      if (showSuccessToast) {
-        toast({
-          title: "¡Registro exitoso!",
-          description: "Ahora puede comunicarse con recepción",
-          duration: 3000,
-        });
-      }
-      
-      // Store guest info in localStorage for persistence
-      localStorage.setItem('guest_id', guest.id);
-      localStorage.setItem('guestName', guestName);
-      localStorage.setItem('roomNumber', selectedRoom.room_number);
-      localStorage.setItem('roomId', finalRoomId);
-      
-      // Clear any previous error toasts
-      onRegister(guestName, selectedRoom.room_number, guest.id, finalRoomId);
-    } catch (error) {
-      console.error("Error in guest registration process:", error);
       toast({
-        title: "Error de registro",
-        description: "No se pudo completar el registro. Por favor intente nuevamente.",
-        variant: "destructive",
-        duration: 4000,
+        title: 'Registro exitoso',
+        description: `Bienvenido ${values.name} a la cabaña ${selectedRoom.room_number}`,
+      });
+    } catch (error) {
+      console.error('Error registering guest:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo completar el registro. Por favor, inténtalo de nuevo.',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Get room type display name
-  const getRoomTypeText = (type: string | null) => {
-    if (!type) return "";
-    switch (type.toLowerCase()) {
-      case "family":
-        return "Familiar";
-      case "couple":
-        return "Pareja";
-      default:
-        return type;
-    }
-  };
-
-  // Add a check for both states to show loading
-  if (isCheckingExistingGuests || !initialCheckDone) {
-    // Show loading indicator while checking session
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-        <div className="flex flex-col items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-          <p className="text-gray-600">Verificando si ya has registrado tu cabaña...</p>
-        </div>
-      </div>
-    );
-  }
+  // Generate guest count options based on room type
+  const guestCountOptions = Array.from({ length: maxGuests }, (_, i) => i + 1);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className={`w-full ${isMobile ? "max-w-[95%]" : "max-w-md"} bg-white rounded-xl shadow-lg p-6 space-y-4`}
-      >
-        <div className="flex flex-col items-center justify-center mb-4">
-          <motion.div 
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5, type: "spring" }}
-            className="bg-blue-50 p-3 rounded-full mb-4"
-          >
-            <Hotel className="h-10 w-10 text-blue-600" />
-          </motion.div>
-          <h1 className="text-2xl font-bold text-center text-gray-800">
-            Bienvenido al Parque Temático Quimbaya
-          </h1>
-          
-          {preselectedRoom && (
-            <motion.div 
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="mt-5 p-4 bg-blue-50 border border-blue-100 rounded-lg w-full text-center"
-            >
-              <h2 className="text-xl font-bold text-blue-600">Cabaña {preselectedRoom.room_number}</h2>
-              {preselectedRoom.type && (
-                <p className="text-lg text-blue-700">{getRoomTypeText(preselectedRoom.type)}</p>
-              )}
-            </motion.div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Su nombre</FormLabel>
+              <FormControl>
+                <Input placeholder="Nombre completo" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-          
-          <p className="text-gray-600 text-center mt-4">
-            Para comunicarse con recepción, por favor ingrese sus datos
-          </p>
-          <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
-            <p>Si necesita cualquier servicio para su cabaña, tiene alguna consulta o requiere asistencia, 
-            puede escribirnos directamente usando nuestro sistema de chat.</p>
-          </div>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="guestName" className="text-gray-700">Nombre completo</Label>
-            <Input
-              id="guestName"
-              placeholder="Ingrese su nombre completo"
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              className="w-full h-12 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-              disabled={isLoading}
-            />
-          </div>
-          
-          {/* Solo mostrar la selección de cabaña si no hay una preseleccionada */}
-          {!preselectedRoom && (
-            <div className="space-y-2">
-              <Label htmlFor="roomNumber" className="text-gray-700">Seleccione su cabaña</Label>
-              {isLoadingRooms ? (
-                <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg">
-                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-blue-600" />
-                  <span className="text-sm text-gray-600">Cargando cabañas...</span>
-                </div>
-              ) : rooms.length === 0 ? (
-                <div className="text-center p-4 text-sm text-red-500 bg-red-50 rounded-lg">
-                  No hay cabañas disponibles
-                </div>
-              ) : (
-                <Select 
-                  value={selectedRoomId} 
-                  onValueChange={setSelectedRoomId}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger className="w-full h-12 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
-                    <SelectValue placeholder="Seleccione su cabaña" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[50vh]">
-                    {rooms.map((room) => (
-                      <SelectItem key={room.id} value={room.id}>
-                        {room.room_number} 
-                        {room.type && ` - ${getRoomTypeText(room.type)}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        />
+
+        <FormField
+          control={form.control}
+          name="roomId"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Cabaña</FormLabel>
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "w-full justify-between",
+                        !field.value && "text-muted-foreground"
+                      )}
+                      disabled={!!preselectedRoomId}
+                    >
+                      {field.value
+                        ? rooms.find((room) => room.id === field.value)?.room_number || "Seleccione una cabaña"
+                        : "Seleccione una cabaña"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Buscar cabaña..." />
+                    <CommandEmpty>No se encontraron cabañas</CommandEmpty>
+                    <CommandGroup>
+                      {availableRooms.map((room) => (
+                        <CommandItem
+                          key={room.id}
+                          value={room.room_number}
+                          onSelect={() => {
+                            form.setValue("roomId", room.id);
+                            setOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              field.value === room.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          Cabaña {room.room_number} 
+                          {room.type && <span className="ml-2 text-xs opacity-70">
+                            ({room.type === 'family' ? 'Familiar' : room.type === 'couple' ? 'Pareja' : room.type})
+                          </span>}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {preselectedRoomId && selectedRoom && (
+                <FormDescription>
+                  Cabaña preseleccionada: {selectedRoom.room_number} 
+                  {selectedRoom.type && <span className="ml-1">
+                    ({selectedRoom.type === 'family' ? 'Familiar' : selectedRoom.type === 'couple' ? 'Pareja' : selectedRoom.type})
+                  </span>}
+                </FormDescription>
               )}
-            </div>
+              <FormMessage />
+            </FormItem>
           )}
-          
-          {(selectedRoomId || preselectedRoom) && (
-            <div className="space-y-2">
-              <Label htmlFor="guestCount" className="text-gray-700">¿Cuántos hospedados hay en la cabaña?</Label>
-              <Select 
-                value={guestCount} 
-                onValueChange={setGuestCount}
-                disabled={isLoading}
+        />
+
+        <FormField
+          control={form.control}
+          name="guestCount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Número de huéspedes</FormLabel>
+              <Select
+                value={field.value.toString()}
+                onValueChange={(value) => field.onChange(parseInt(value))}
               >
-                <SelectTrigger className="w-full h-12 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
-                  <SelectValue placeholder="Seleccione cantidad de hospedados" />
-                </SelectTrigger>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione el número de huéspedes" />
+                  </SelectTrigger>
+                </FormControl>
                 <SelectContent>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      {num} {num === 1 ? 'Persona' : 'Personas'}
+                  {guestCountOptions.map((count) => (
+                    <SelectItem key={count} value={count.toString()}>
+                      {count} {count === 1 ? 'persona' : 'personas'}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+              <FormDescription>
+                {selectedRoom?.type && `Máximo ${maxGuests} personas para cabaña tipo ${
+                  selectedRoom.type === 'family' ? 'Familiar' : 'Pareja'
+                }`}
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
           )}
-          
-          <motion.div
-            className="mt-4"
-            whileHover={{ scale: isLoading ? 1 : 1.02 }}
-            whileTap={{ scale: isLoading ? 1 : 0.98 }}
-          >
-            <Button 
-              type="submit" 
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium shadow-md"
-              disabled={isLoading || isLoadingRooms || (!selectedRoomId && !preselectedRoom)}
-            >
-              {isLoading ? (
-                <span className="flex items-center">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Procesando...
-                </span>
-              ) : (
-                "Continuar"
-              )}
-            </Button>
-          </motion.div>
-        </form>
-      </motion.div>
-    </div>
+        />
+
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Registrando...
+            </>
+          ) : (
+            'Registrar'
+          )}
+        </Button>
+      </form>
+    </Form>
   );
 };
 

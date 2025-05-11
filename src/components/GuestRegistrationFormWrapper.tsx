@@ -1,97 +1,72 @@
 
-import { useState } from "react";
-import GuestRegistrationForm from "./GuestRegistrationForm";
-import NotificationPermissionRequest from "./NotificationPermissionRequest";
-import { AnimatePresence, motion } from "framer-motion";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Hotel, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useIsMobile } from '@/hooks/use-mobile';
+import GuestRegistrationForm from './GuestRegistrationForm';
 
 interface GuestRegistrationFormWrapperProps {
   onRegister: (name: string, room: string, id: string, roomId: string) => void;
   preselectedRoomId?: string;
   showSuccessToast?: boolean;
+  isSimulation?: boolean;
 }
 
-const GuestRegistrationFormWrapper = ({ 
+const GuestRegistrationFormWrapper = ({
   onRegister,
   preselectedRoomId,
-  showSuccessToast = true
+  showSuccessToast = true,
+  isSimulation = false
 }: GuestRegistrationFormWrapperProps) => {
-  const [registrationData, setRegistrationData] = useState<{
-    name: string;
-    roomNumber: string;
-    id: string;
-    roomId: string;
-  } | null>(null);
-  
-  const [notificationsDismissed, setNotificationsDismissed] = useState(false);
-  
-  const handleRegistration = (name: string, roomNumber: string, id: string, roomId: string) => {
-    // Capture the registration data
-    setRegistrationData({
-      name,
-      roomNumber,
-      id,
-      roomId
-    });
-  };
-  
-  const handleNotificationPermissionChange = (granted: boolean) => {
-    // Whether granted or not, proceed with registration
-    setNotificationsDismissed(true);
-    
-    if (registrationData) {
-      onRegister(
-        registrationData.name,
-        registrationData.roomNumber,
-        registrationData.id,
-        registrationData.roomId
-      );
-    }
-  };
-  
-  // If there's no registration data yet, show the form
-  if (!registrationData) {
-    return (
-      <GuestRegistrationForm 
-        onRegister={handleRegistration}
-        preselectedRoomId={preselectedRoomId}
-        showSuccessToast={showSuccessToast}
-      />
-    );
-  }
-  
-  // If notifications have been handled, nothing to show here
-  if (notificationsDismissed) {
-    return null;
-  }
-  
-  // Show notification permission request
+  const isMobile = useIsMobile();
+
   return (
-    <AnimatePresence>
+    <div className={`min-h-screen flex items-center justify-center ${isSimulation ? 'pt-12' : ''} bg-gray-50 p-4`}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-6 flex flex-col items-center justify-center"
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
       >
-        <div className="w-full max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
-          <h2 className="text-xl font-semibold text-center mb-4">
-            ¡Registro exitoso!
-          </h2>
-          
-          <p className="text-gray-600 text-center mb-6">
-            Para mejorar tu experiencia, te recomendamos activar las notificaciones.
-          </p>
-          
-          <NotificationPermissionRequest
-            type="guest"
-            guestId={registrationData.id}
-            roomId={registrationData.roomId}
-            roomNumber={registrationData.roomNumber}
-            onPermissionChange={handleNotificationPermissionChange}
-            className="mb-0"
-          />
-        </div>
+        <Card className="shadow-lg overflow-hidden">
+          <CardHeader className="text-center bg-gradient-to-r from-hotel-700 to-hotel-600 text-white">
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 500, damping: 20 }}
+              className="mx-auto rounded-full bg-white p-3 w-16 h-16 flex items-center justify-center shadow-lg mb-2"
+            >
+              <Hotel className="h-10 w-10 text-hotel-600" />
+            </motion.div>
+            <CardTitle className="text-2xl font-bold">
+              {isSimulation ? 'Simulación - ' : ''}
+              Bienvenido a Quimbayas
+            </CardTitle>
+            <CardDescription className="text-white/90 text-base">
+              Por favor, complete su registro para comunicarse con recepción
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <GuestRegistrationForm 
+              onSuccess={onRegister} 
+              preselectedRoomId={preselectedRoomId} 
+            />
+          </CardContent>
+          <CardFooter className="bg-gray-50 border-t p-4 flex justify-center flex-col items-center text-center">
+            <p className="text-xs text-gray-500 mb-2">
+              Al registrarse, podrá comunicarse directamente con la recepción.
+            </p>
+            {isSimulation && (
+              <p className="text-xs text-blue-600 font-medium">
+                Modo de simulación - Los datos registrados son reales
+              </p>
+            )}
+          </CardFooter>
+        </Card>
       </motion.div>
-    </AnimatePresence>
+    </div>
   );
 };
 
