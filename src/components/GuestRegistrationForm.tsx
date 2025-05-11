@@ -98,12 +98,14 @@ const GuestRegistrationForm = ({ onSuccess, preselectedRoomId }: GuestRegistrati
       setSelectedRoom(selected || null);
       
       if (selected?.type) {
+        console.log(`Room type selected: ${selected.type}, applying guest limits`);
         const newMaxGuests = getMaxGuestsForRoomType(selected.type);
         setMaxGuests(newMaxGuests);
         
         // Validate current guest count against new max
         const currentGuestCount = form.getValues("guestCount");
         if (currentGuestCount > newMaxGuests) {
+          console.log(`Adjusting guest count from ${currentGuestCount} to ${newMaxGuests} based on room type`);
           form.setValue("guestCount", newMaxGuests);
         }
       }
@@ -114,6 +116,7 @@ const GuestRegistrationForm = ({ onSuccess, preselectedRoomId }: GuestRegistrati
   useEffect(() => {
     const fetchRooms = async () => {
       try {
+        console.log("Fetching rooms data...");
         const { data, error } = await supabase
           .from('rooms')
           .select('id, room_number, status, type')
@@ -133,15 +136,24 @@ const GuestRegistrationForm = ({ onSuccess, preselectedRoomId }: GuestRegistrati
 
         // If we have a preselected room ID, set it
         if (preselectedRoomId) {
+          console.log(`QR scan: Preselected room ID: ${preselectedRoomId}`);
           const preselected = data?.find(room => room.id === preselectedRoomId);
+          
           if (preselected) {
+            console.log(`Found preselected room: ${preselected.room_number}, type: ${preselected.type}`);
             // Set the form values and selected room
             form.setValue('roomId', preselectedRoomId);
             setSelectedRoom(preselected);
             
             // Set max guests based on room type
-            const newMaxGuests = getMaxGuestsForRoomType(preselected.type);
-            setMaxGuests(newMaxGuests);
+            if (preselected.type) {
+              const newMaxGuests = getMaxGuestsForRoomType(preselected.type);
+              console.log(`Setting max guests to ${newMaxGuests} for room type ${preselected.type}`);
+              setMaxGuests(newMaxGuests);
+              
+              // Ensure guest count is within the new limit
+              form.setValue("guestCount", Math.min(form.getValues("guestCount"), newMaxGuests));
+            }
           }
         }
       } catch (error) {
@@ -337,7 +349,7 @@ const GuestRegistrationForm = ({ onSuccess, preselectedRoomId }: GuestRegistrati
               </Select>
               <FormDescription>
                 {selectedRoom?.type && `Máximo ${maxGuests} personas para cabaña tipo ${
-                  selectedRoom.type === 'family' ? 'Familiar' : 'Pareja'
+                  selectedRoom.type === 'family' ? 'Familiar' : selectedRoom.type === 'couple' ? 'Pareja' : selectedRoom.type
                 }`}
               </FormDescription>
               <FormMessage />
