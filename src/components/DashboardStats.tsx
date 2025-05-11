@@ -10,6 +10,7 @@ import { useRealtime } from "@/hooks/use-realtime";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
+
 type ResponseStat = {
   guest_id: string;
   guest_name: string;
@@ -20,28 +21,28 @@ type ResponseStat = {
   pending_messages: number | null;
   wait_time_minutes: number | null;
 };
+
 const DashboardStats = () => {
   const [stats, setStats] = useState<ResponseStat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [summary, setSummary] = useState({
     totalGuests: 0,
     totalMessages: 0,
     pendingMessages: 0,
     avgResponseTime: 0
   });
+
   const fetchStats = async () => {
     setIsRefreshing(true);
     try {
       // Get statistics from view
-      const {
-        data: responseStats,
-        error: responseError
-      } = await supabase.from("response_statistics").select("*");
+      const { data: responseStats, error: responseError } = await supabase
+        .from("response_statistics")
+        .select("*");
+        
       if (responseError) throw responseError;
       setStats(responseStats || []);
 
@@ -52,8 +53,14 @@ const DashboardStats = () => {
         const pendingMessages = responseStats.reduce((sum, stat) => sum + (stat.pending_messages || 0), 0);
 
         // Calculate average response time from non-null values
-        const validResponseTimes = responseStats.filter(stat => stat.avg_response_time !== null).map(stat => stat.avg_response_time || 0);
-        const avgResponseTime = validResponseTimes.length > 0 ? validResponseTimes.reduce((sum, time) => sum + time, 0) / validResponseTimes.length : 0;
+        const validResponseTimes = responseStats
+          .filter(stat => stat.avg_response_time !== null)
+          .map(stat => stat.avg_response_time || 0);
+          
+        const avgResponseTime = validResponseTimes.length > 0 
+          ? validResponseTimes.reduce((sum, time) => sum + time, 0) / validResponseTimes.length 
+          : 0;
+          
         setSummary({
           totalGuests,
           totalMessages,
@@ -61,6 +68,7 @@ const DashboardStats = () => {
           avgResponseTime
         });
       }
+      
       setLastUpdated(new Date());
     } catch (error) {
       console.error("Error fetching statistics:", error);
@@ -75,27 +83,44 @@ const DashboardStats = () => {
     }
   };
 
-  // Initial fetch and setup real-time subscriptions
+  // Initial fetch
   useEffect(() => {
     fetchStats();
   }, [toast]);
 
-  // Set up real-time subscriptions with our custom hook
-  const {
-    isConnected
-  } = useRealtime([{
-    table: "messages",
-    event: "*",
-    callback: () => fetchStats()
-  }, {
-    table: "guests",
-    event: "*",
-    callback: () => fetchStats()
-  }], "dashboard-stats-realtime");
+  // Set up real-time subscriptions with our optimized hook
+  const { isConnected, updateActivity } = useRealtime(
+    [
+      {
+        table: "messages",
+        event: "*",
+        callback: () => {
+          // Schedule a refresh with a slight delay to allow any database triggers to complete
+          setTimeout(() => fetchStats(), 500);
+          updateActivity();
+        }
+      },
+      {
+        table: "guests",
+        event: "*",
+        callback: () => {
+          setTimeout(() => fetchStats(), 500);
+          updateActivity();
+        }
+      }
+    ], 
+    "dashboard-stats-realtime",
+    {
+      // Longer inactivity timeout for dashboard to keep stats current
+      inactivityTimeout: 60 * 60 * 1000, // 1 hour
+      debugMode: false
+    }
+  );
 
   // Handle manual refresh
   const handleRefresh = () => {
     fetchStats();
+    updateActivity(); // Record manual refresh as activity
   };
 
   // Prepare data for chart
