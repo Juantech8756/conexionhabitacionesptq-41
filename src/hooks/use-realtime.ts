@@ -102,7 +102,12 @@ export const useRealtime = (
   // Process subscription callback with deduplication if enabled
   const processCallback = (subscription: RealtimeSubscription, payload: RealtimePostgresChangesPayload<any>) => {
     // Generate a unique event ID for deduplication
-    const eventId = `${payload.schema}-${payload.table}-${payload.eventType}-${payload.new?.id || payload.old?.id || Date.now()}`;
+    // Fix TypeScript error by safely accessing id property with optional chaining and type checking
+    const recordId = (payload.new && 'id' in payload.new ? payload.new.id : 
+                      payload.old && 'id' in payload.old ? payload.old.id : 
+                      null) || Date.now().toString();
+                      
+    const eventId = `${payload.schema}-${payload.table}-${payload.eventType}-${recordId}`;
     
     // Check if we've already processed this event
     if (mergedOptions.deduplicationEnabled && processedEventsRef.current.has(eventId)) {
