@@ -53,7 +53,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   // Mobile header
   if (isMobile) {
     return (
-      <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-3 text-white shadow-sm">
+      <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-3 text-white shadow-sm fixed top-0 left-0 right-0 z-10">
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
@@ -101,7 +101,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   // Desktop header
   return (
-    <header className="p-4 bg-white border-b shadow-sm">
+    <header className="p-4 bg-white border-b shadow-sm fixed top-0 left-0 right-0 z-10">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">{selectedGuest.name}</h2>

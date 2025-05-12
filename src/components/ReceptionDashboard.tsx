@@ -175,22 +175,24 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
               transition={{ duration: 0.2 }} 
               className="w-full h-full bg-white"
             >
-              <div className="p-4 gradient-header flex items-center">
+              <div className="p-4 gradient-header flex items-center fixed top-0 left-0 right-0 z-10">
                 <h2 className="text-lg font-semibold flex items-center text-white">
                   <User className="mr-2 h-5 w-5" />
                   Huéspedes
                 </h2>
               </div>
               
-              <GuestList 
-                guests={guests}
-                rooms={rooms}
-                selectedGuest={selectedGuest}
-                isMobile={true}
-                recentlyUpdatedGuests={recentlyUpdatedGuests}
-                onSelectGuest={selectGuest}
-                onDeleteGuest={handleDeleteGuestClick}
-              />
+              <div className="pt-14">
+                <GuestList 
+                  guests={guests}
+                  rooms={rooms}
+                  selectedGuest={selectedGuest}
+                  isMobile={true}
+                  recentlyUpdatedGuests={recentlyUpdatedGuests}
+                  onSelectGuest={selectGuest}
+                  onDeleteGuest={handleDeleteGuestClick}
+                />
+              </div>
             </motion.div>
           ) : (
             <motion.div 
@@ -210,7 +212,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                 rooms={rooms}
               />
 
-              <div className="flex-grow overflow-auto pb-16">
+              <div className="flex-grow overflow-auto pb-16 pt-16">
                 <MessageList 
                   messages={messages[selectedGuest.id] || []} 
                   isMobile={true}
@@ -253,7 +255,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
   return (
     <div className="flex h-full">
       <div className="w-1/3 border-r bg-white shadow-sm">
-        <div className="p-4 bg-gradient-to-r from-hotel-600 to-hotel-500 text-white flex justify-between items-center">
+        <div className="p-4 bg-gradient-to-r from-hotel-600 to-hotel-500 text-white flex justify-between items-center fixed top-0 left-0 z-10 w-1/3">
           <h2 className="text-xl font-semibold flex items-center">
             <User className="mr-2 h-5 w-5" />
             Huéspedes
@@ -261,15 +263,17 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
           <ConnectionStatusIndicator className="bg-white/10 text-white" />
         </div>
         
-        <GuestList 
-          guests={guests}
-          rooms={rooms}
-          selectedGuest={selectedGuest}
-          isMobile={false}
-          recentlyUpdatedGuests={recentlyUpdatedGuests}
-          onSelectGuest={selectGuest}
-          onDeleteGuest={handleDeleteGuestClick}
-        />
+        <div className="pt-16">
+          <GuestList 
+            guests={guests}
+            rooms={rooms}
+            selectedGuest={selectedGuest}
+            isMobile={false}
+            recentlyUpdatedGuests={recentlyUpdatedGuests}
+            onSelectGuest={selectGuest}
+            onDeleteGuest={handleDeleteGuestClick}
+          />
+        </div>
       </div>
       
       <div className="flex-1 flex flex-col relative">
@@ -284,7 +288,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
               rooms={rooms}
             />
             
-            <div className="flex-grow overflow-auto pb-16">
+            <div className="flex-grow overflow-auto pb-16 pt-20">
               <MessageList 
                 messages={messages[selectedGuest.id] || []} 
                 isMobile={false}
