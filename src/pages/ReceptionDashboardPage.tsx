@@ -157,7 +157,7 @@ const ReceptionDashboardPage = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen reception-dashboard">
       <ReceptionHeader 
         user={user}
         handleLogout={handleLogout}
@@ -168,7 +168,7 @@ const ReceptionDashboardPage = () => {
         setActiveTab={setActiveTab}
       />
       
-      <div className="flex-grow overflow-auto pt-14">
+      <div className="flex-grow overflow-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           {!isMobile && <ReceptionDesktopTabs activeTab={activeTab} />}
           

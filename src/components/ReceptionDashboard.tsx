@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User } from "lucide-react";
@@ -175,7 +174,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
   // Mobile layout with sliding panels
   if (isMobile) {
     return (
-      <div className="flex h-full bg-gray-100 relative pt-14">
+      <div className="flex h-full bg-gray-100 relative">
         <AnimatePresence initial={false}>
           {!selectedGuest ? (
             <motion.div 
@@ -193,7 +192,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                 </h2>
               </div>
               
-              <div className="pt-14">
+              <div className="pt-16">
                 <GuestList 
                   guests={guests}
                   rooms={rooms}
@@ -264,7 +263,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
 
   // Desktop layout with side-by-side panels
   return (
-    <div className="flex h-full pt-14">
+    <div className="flex h-full">
       <div className="w-1/3 border-r bg-white shadow-sm">
         <div className="p-4 bg-gradient-to-r from-hotel-600 to-hotel-500 text-white flex justify-between items-center fixed top-14 left-0 z-10 w-1/3">
           <h2 className="text-xl font-semibold flex items-center">

@@ -101,7 +101,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   // Desktop header
   return (
-    <header className="p-4 bg-white border-b shadow-sm fixed top-14 left-1/3 right-0 z-20">
+    <header className="p-4 bg-white border-b shadow-sm fixed top-14 left-1/3 right-0 z-10">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">{selectedGuest.name}</h2>
