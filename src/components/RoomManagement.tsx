@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -537,12 +536,22 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[50px]">
-                  <Checkbox
-                    checked={selectAllChecked}
-                    onCheckedChange={toggleSelectAll}
-                    aria-label="Seleccionar todas las cabañas"
-                  />
+                <TableHead className="w-[40px]">
+                  <div className="flex items-center justify-center">
+                    <Button 
+                      variant="checkbox" 
+                      size="checkbox" 
+                      className={`rounded transition-colors ${
+                        selectAllChecked 
+                          ? "bg-hotel-600 text-white border-hotel-600" 
+                          : "bg-transparent border border-gray-300 hover:border-hotel-400"
+                      }`}
+                      onClick={toggleSelectAll}
+                      aria-label="Seleccionar todas las cabañas"
+                    >
+                      {selectAllChecked && <CheckSquare className="h-3 w-3 text-white" />}
+                    </Button>
+                  </div>
                 </TableHead>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Tipo</TableHead>
@@ -568,11 +577,21 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                 filteredRooms.map((room) => (
                   <TableRow key={room.id} className={selectedRooms.includes(room.id) ? "bg-blue-50" : ""}>
                     <TableCell>
-                      <Checkbox
-                        checked={selectedRooms.includes(room.id)}
-                        onCheckedChange={() => toggleRoomSelection(room.id)}
-                        aria-label={`Seleccionar cabaña ${room.room_number}`}
-                      />
+                      <div className="flex items-center justify-center">
+                        <Button 
+                          variant="checkbox" 
+                          size="checkbox" 
+                          className={`rounded transition-colors ${
+                            selectedRooms.includes(room.id) 
+                              ? "bg-hotel-600 text-white border-hotel-600" 
+                              : "bg-transparent border border-gray-300 hover:border-hotel-400"
+                          }`}
+                          onClick={() => toggleRoomSelection(room.id)}
+                          aria-label={`Seleccionar cabaña ${room.room_number}`}
+                        >
+                          {selectedRooms.includes(room.id) && <CheckSquare className="h-3 w-3 text-white" />}
+                        </Button>
+                      </div>
                     </TableCell>
                     <TableCell className="font-medium">{room.room_number}</TableCell>
                     <TableCell>{getTypeLabel(room.type)}</TableCell>
