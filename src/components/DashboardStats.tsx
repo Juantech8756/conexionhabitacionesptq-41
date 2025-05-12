@@ -346,7 +346,6 @@ const DashboardStats = () => {
     if (minutes === null || minutes === 0) return 0;
     return Math.round(minutes);
   };
-
   return <div className="container mx-auto p-2 sm:p-4 h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-2">
         <h2 className="text-xl sm:text-2xl font-bold">Estadísticas del Sistema</h2>
@@ -797,9 +796,7 @@ const DashboardStats = () => {
                               {stat.room_number}
                             </TableCell>
                             <TableCell className="text-right text-xs py-2">
-                              <span className={`inline-flex items-center justify-center 
-                                ${(stat.wait_time_minutes || 0) > 30 ? 'bg-red-100 text-red-800' : (stat.wait_time_minutes || 0) > 15 ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'} 
-                                rounded-full px-2 py-0.5`}>
+                              <span className="">
                                 {formatWaitTime(stat.wait_time_minutes)} min
                               </span>
                             </TableCell>
