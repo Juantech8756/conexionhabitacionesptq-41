@@ -44,7 +44,7 @@ const MessageInputPanel: React.FC<MessageInputPanelProps> = ({
         
         <MediaUploader
           guestId={selectedGuest?.id || ""}
-          onUploadComplete={() => {}} // This is handled by the parent component
+          onUploadComplete={() => {}} // Passing empty function to prevent duplicate handling
           disabled={isLoading}
           onFileSelect={onFileSelect}
           selectedFile={selectedFile}

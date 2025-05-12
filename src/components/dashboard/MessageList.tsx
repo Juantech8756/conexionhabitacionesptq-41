@@ -15,6 +15,7 @@ interface MessageListProps {
 const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefreshRequest }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const processedMessageIds = useRef(new Set<string>());
   
   // Format time for messages
   const formatTime = (dateString: string) => {
@@ -37,11 +38,27 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefresh
     return () => clearInterval(refreshInterval);
   }, [onRefreshRequest]);
 
+  // Deduplicate messages to prevent rendering duplicates
+  const deduplicatedMessages = React.useMemo(() => {
+    const uniqueMessages: Message[] = [];
+    const seenIds = new Set<string>();
+    
+    messages.forEach(message => {
+      // Only add the message if we haven't seen its ID before
+      if (!seenIds.has(message.id)) {
+        uniqueMessages.push(message);
+        seenIds.add(message.id);
+      }
+    });
+    
+    return uniqueMessages;
+  }, [messages]);
+
   return (
     <ScrollArea className={`${isMobile ? "overflow-auto p-2" : "p-4"} flex-grow pb-16`} ref={scrollContainerRef}>
       <div className={isMobile ? "space-y-3" : "space-y-4 max-w-3xl mx-auto"}>
         <AnimatePresence initial={false}>
-          {messages.map(msg => (
+          {deduplicatedMessages.map(msg => (
             <motion.div 
               key={msg.id}
               initial={{ opacity: 0, y: 10 }}

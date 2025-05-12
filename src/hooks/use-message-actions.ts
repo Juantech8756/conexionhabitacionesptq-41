@@ -171,37 +171,13 @@ export const useMessageActions = (
     }
   };
   
+  // Fix: Remove this function as it's causing duplicate media messages
+  // The handleFileUpload already handles this functionality
   const handleMediaUploadComplete = async (mediaUrl: string, mediaType: 'image' | 'video') => {
-    if (!selectedGuest) return false;
-    
-    try {
-      // Create a new media message
-      const newMessage = {
-        guest_id: selectedGuest.id,
-        content: mediaType === 'image' ? "Imagen compartida" : "Video compartido",
-        is_guest: false,
-        is_audio: false,
-        is_media: true,
-        media_url: mediaUrl,
-        media_type: mediaType
-      };
-      
-      const { error } = await supabase.from('messages').insert([newMessage]);
-      if (error) throw error;
-
-      // Mark all pending messages as responded
-      await updateResponseStatus(selectedGuest.id);
-      
-      return true;
-    } catch (error) {
-      console.error("Error sending media message:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar el mensaje multimedia",
-        variant: "destructive"
-      });
-      return false;
-    }
+    // This function is now intentionally empty to prevent duplicate uploads
+    // We'll keep it to maintain API compatibility but it won't do anything
+    console.log("handleMediaUploadComplete called but ignored to prevent duplicates");
+    return true; // Return true to indicate success without doing anything
   };
   
   const handleSendMessage = async () => {
