@@ -114,12 +114,12 @@ body, html {
 /* Content padding fix for headers */
 .guest-list-content,
 .chat-content {
-  padding-top: 70px !important; /* 56px header + spacing */
+  padding-top: 56px !important; /* Header height */
 }
 
 /* Proper content spacing under fixed headers */
 .pt-header-spacing {
-  padding-top: 28px;
+  padding-top: 14px;
 }
 
 /* Alert animation */
@@ -151,4 +151,18 @@ body, html {
 
 .alert-exit {
   animation: alert-slide-out 0.3s ease-out forwards;
+}
+
+/* Tab content layout fixes */
+.tab-content-container {
+  height: calc(100vh - 126px); /* 56px header + 70px tabs */
+  overflow-y: auto;
+}
+
+/* Fixed positioning for chat headers */
+.chat-header-fixed {
+  position: sticky;
+  top: 70px;
+  z-index: 10;
+  background-color: #fff;
 }

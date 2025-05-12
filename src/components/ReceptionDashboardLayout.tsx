@@ -23,7 +23,7 @@ const ReceptionDashboardLayout = ({
 }: ReceptionDashboardLayoutProps) => {
   return (
     <>
-      <div className="flex-grow overflow-auto relative pt-0">
+      <div className="flex-grow overflow-auto relative">
         {children}
       </div>
 

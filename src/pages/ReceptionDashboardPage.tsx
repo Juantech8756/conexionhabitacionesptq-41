@@ -173,7 +173,7 @@ const ReceptionDashboardPage = () => {
           {!isMobile && <ReceptionDesktopTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
           
           <div className="flex-grow overflow-auto">
-            <TabsContent value="messages" className="h-full m-0 p-0 data-[state=active]:fade-in">
+            <TabsContent value="messages" className="h-full m-0 border-none data-[state=active]:fade-in">
               <ReceptionDashboardLayout
                 activeTab={activeTab}
                 isCallActive={isCallActive}
@@ -184,14 +184,14 @@ const ReceptionDashboardPage = () => {
               </ReceptionDashboardLayout>
             </TabsContent>
             
-            <TabsContent value="stats" className="h-full m-0 p-0 data-[state=active]:fade-in">
-              <div className="container mx-auto px-4 py-4">
+            <TabsContent value="stats" className="h-full m-0 border-none data-[state=active]:fade-in">
+              <div className="container mx-auto py-4 px-4">
                 <DashboardStats />
               </div>
             </TabsContent>
             
-            <TabsContent value="rooms" className="h-full m-0 p-0 data-[state=active]:fade-in">
-              <div className="container mx-auto px-4 py-4">
+            <TabsContent value="rooms" className="h-full m-0 border-none data-[state=active]:fade-in">
+              <div className="container mx-auto py-4 px-4">
                 <RoomManagement showGuestCount={true} />
               </div>
             </TabsContent>

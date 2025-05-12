@@ -10,12 +10,12 @@ interface ReceptionDesktopTabsProps {
 
 const ReceptionDesktopTabs = ({ activeTab, setActiveTab }: ReceptionDesktopTabsProps) => {
   return (
-    <div className="bg-white border-b border-gray-200 shadow-sm sticky top-14 z-30 w-full">
-      <div className="max-w-screen-2xl mx-auto px-4">
-        <TabsList className="h-14 w-full justify-start bg-transparent p-0 gap-8">
+    <div className="bg-white border-b border-gray-200 shadow-sm sticky top-14 z-30">
+      <div className="max-w-screen-2xl mx-auto">
+        <TabsList className="h-14 w-full justify-start bg-transparent p-0 gap-6">
           <TabsTrigger 
             value="messages" 
-            className="flex items-center gap-2 relative transition-all duration-300 h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            className="flex items-center gap-2 relative transition-all duration-300 h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4"
             onClick={() => setActiveTab("messages")}
           >
             <MessageSquare className="h-5 w-5" />
@@ -32,7 +32,7 @@ const ReceptionDesktopTabs = ({ activeTab, setActiveTab }: ReceptionDesktopTabsP
           </TabsTrigger>
           <TabsTrigger 
             value="stats" 
-            className="flex items-center gap-2 relative transition-all duration-300 h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            className="flex items-center gap-2 relative transition-all duration-300 h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4"
             onClick={() => setActiveTab("stats")}
           >
             <BarChart className="h-5 w-5" />
@@ -49,7 +49,7 @@ const ReceptionDesktopTabs = ({ activeTab, setActiveTab }: ReceptionDesktopTabsP
           </TabsTrigger>
           <TabsTrigger 
             value="rooms" 
-            className="flex items-center gap-2 relative transition-all duration-300 h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            className="flex items-center gap-2 relative transition-all duration-300 h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4"
             onClick={() => setActiveTab("rooms")}
           >
             <Bed className="h-5 w-5" />
