@@ -894,13 +894,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         />
       )}
 
-      {/* Connection status indicator - minimal version */}
-      <div className="absolute top-14 right-2 z-10 flex items-center">
-        <div className={`h-2 w-2 rounded-full ${
-          isRealtimeConnected ? 'bg-green-500' : 'bg-amber-500'
-        }`} title={isRealtimeConnected ? "Conectado en tiempo real" : "Usando respaldo"} />
-      </div>
-
       {/* Chat content - modified to add padding at top and bottom */}
       <div
         className="flex-grow overflow-y-auto p-4 bg-gray-50 pb-20 pt-16"
