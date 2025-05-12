@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Edit, Trash, Search, CircleCheck, CircleX, QrCode } from "lucide-react";
+import { Plus, Edit, Trash, Search, CircleCheck, CircleX, QrCode, CheckSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -42,6 +43,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "react-router-dom";
 import { RoomManagementProps } from "@/components/RoomManagementProps";
 import { clearRoomRegistration } from "@/utils/registration";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Define the schema for form validation
 const roomFormSchema = z.object({
@@ -50,7 +52,14 @@ const roomFormSchema = z.object({
   type: z.string().min(1, { message: "El tipo de cabaña es obligatorio" }),
 });
 
+// Define the schema for bulk edit form validation
+const bulkEditFormSchema = z.object({
+  status: z.string().optional(),
+  type: z.string().optional(),
+});
+
 type RoomFormValues = z.infer<typeof roomFormSchema>;
+type BulkEditFormValues = z.infer<typeof bulkEditFormSchema>;
 
 type Room = {
   id: string;
@@ -65,8 +74,11 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isBulkEditDialogOpen, setIsBulkEditDialogOpen] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
+  const [selectAllChecked, setSelectAllChecked] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<RoomFormValues>({
@@ -75,6 +87,14 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
       room_number: "",
       status: "available",
       type: "family",
+    },
+  });
+
+  const bulkEditForm = useForm<BulkEditFormValues>({
+    resolver: zodResolver(bulkEditFormSchema),
+    defaultValues: {
+      status: undefined,
+      type: undefined,
     },
   });
 
@@ -127,6 +147,8 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
             setRooms((currentRooms) =>
               currentRooms.filter((room) => room.id !== payload.old.id)
             );
+            // Clear selection if deleted room was selected
+            setSelectedRooms(prev => prev.filter(id => id !== payload.old.id));
           }
         }
       )
@@ -160,7 +182,25 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
     setIsDialogOpen(true);
   };
 
-  // Handle form submission
+  // Open dialog for bulk edit
+  const openBulkEditDialog = () => {
+    if (selectedRooms.length === 0) {
+      toast({
+        title: "Selección vacía",
+        description: "Por favor, seleccione al menos una cabaña para editar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    bulkEditForm.reset({
+      status: undefined,
+      type: undefined,
+    });
+    setIsBulkEditDialogOpen(true);
+  };
+
+  // Handle form submission for individual room
   const onSubmit = async (values: RoomFormValues) => {
     try {
       if (currentRoom) {
@@ -234,6 +274,71 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
     }
   };
 
+  // Handle bulk edit form submission
+  const onSubmitBulkEdit = async (values: BulkEditFormValues) => {
+    const hasChanges = Object.values(values).some(value => value !== undefined);
+    
+    if (!hasChanges) {
+      toast({
+        title: "Sin cambios",
+        description: "No se han especificado cambios para aplicar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Prepare update object with only defined values
+      const updateData: { [key: string]: any } = {};
+      if (values.status) updateData.status = values.status;
+      if (values.type) updateData.type = values.type;
+      updateData.updated_at = new Date().toISOString();
+
+      // Update all selected rooms
+      const { error } = await supabase
+        .from("rooms")
+        .update(updateData)
+        .in("id", selectedRooms);
+
+      if (error) throw error;
+
+      // Check if rooms are being set to available and need to clear registrations
+      if (values.status === 'available') {
+        // Get current status of selected rooms
+        const { data: selectedRoomsData } = await supabase
+          .from("rooms")
+          .select("id, status")
+          .in("id", selectedRooms);
+
+        // Clear guest registrations for rooms that were not previously available
+        if (selectedRoomsData) {
+          for (const room of selectedRoomsData) {
+            if (room.status !== 'available') {
+              await clearRoomRegistration(room.id);
+            }
+          }
+        }
+      }
+
+      toast({
+        title: "Cabañas actualizadas",
+        description: `Se han actualizado ${selectedRooms.length} cabañas correctamente.`,
+      });
+
+      // Reset selections after successful update
+      setSelectedRooms([]);
+      setSelectAllChecked(false);
+      setIsBulkEditDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error updating rooms:", error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudieron actualizar las cabañas",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Delete room
   const deleteRoom = async (room: Room) => {
     if (!confirm(`¿Está seguro que desea eliminar la cabaña ${room.room_number}?`)) return;
@@ -250,11 +355,78 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
         title: "Cabaña eliminada",
         description: `La cabaña ${room.room_number} ha sido eliminada correctamente.`,
       });
+
+      // Remove from selection if it was selected
+      if (selectedRooms.includes(room.id)) {
+        setSelectedRooms(prev => prev.filter(id => id !== room.id));
+      }
     } catch (error: any) {
       console.error("Error deleting room:", error);
       toast({
         title: "Error",
         description: error.message || "No se pudo eliminar la cabaña",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Toggle selection of a room
+  const toggleRoomSelection = (roomId: string) => {
+    setSelectedRooms(prev => {
+      if (prev.includes(roomId)) {
+        // Unselect
+        const newSelection = prev.filter(id => id !== roomId);
+        if (selectAllChecked && newSelection.length < filteredRooms.length) {
+          setSelectAllChecked(false);
+        }
+        return newSelection;
+      } else {
+        // Select
+        const newSelection = [...prev, roomId];
+        if (newSelection.length === filteredRooms.length) {
+          setSelectAllChecked(true);
+        }
+        return newSelection;
+      }
+    });
+  };
+
+  // Toggle selection of all rooms
+  const toggleSelectAll = () => {
+    if (selectAllChecked) {
+      setSelectedRooms([]);
+    } else {
+      setSelectedRooms(filteredRooms.map(room => room.id));
+    }
+    setSelectAllChecked(!selectAllChecked);
+  };
+
+  // Delete selected rooms
+  const deleteSelectedRooms = async () => {
+    if (selectedRooms.length === 0) return;
+
+    if (!confirm(`¿Está seguro que desea eliminar ${selectedRooms.length} cabañas seleccionadas?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from("rooms")
+        .delete()
+        .in("id", selectedRooms);
+
+      if (error) throw error;
+
+      toast({
+        title: "Cabañas eliminadas",
+        description: `Se han eliminado ${selectedRooms.length} cabañas correctamente.`,
+      });
+
+      setSelectedRooms([]);
+      setSelectAllChecked(false);
+    } catch (error: any) {
+      console.error("Error deleting rooms:", error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudieron eliminar las cabañas",
         variant: "destructive",
       });
     }
@@ -328,10 +500,24 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
     <div className="container mx-auto p-4 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Gestión de Cabañas</h2>
-        <Button onClick={openNewRoomDialog}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Cabaña
-        </Button>
+        <div className="flex gap-2">
+          {selectedRooms.length > 0 && (
+            <>
+              <Button onClick={openBulkEditDialog} variant="outline">
+                <Edit className="h-4 w-4 mr-2" />
+                Editar ({selectedRooms.length})
+              </Button>
+              <Button onClick={deleteSelectedRooms} variant="destructive">
+                <Trash className="h-4 w-4 mr-2" />
+                Eliminar ({selectedRooms.length})
+              </Button>
+            </>
+          )}
+          <Button onClick={openNewRoomDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Cabaña
+          </Button>
+        </div>
       </div>
 
       <div className="flex mb-4">
@@ -351,6 +537,13 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={selectAllChecked}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Seleccionar todas las cabañas"
+                  />
+                </TableHead>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Estado</TableHead>
@@ -361,19 +554,26 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={showGuestCount ? 5 : 4} className="text-center py-4">
+                  <TableCell colSpan={showGuestCount ? 6 : 5} className="text-center py-4">
                     Cargando...
                   </TableCell>
                 </TableRow>
               ) : filteredRooms.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={showGuestCount ? 5 : 4} className="text-center py-4">
+                  <TableCell colSpan={showGuestCount ? 6 : 5} className="text-center py-4">
                     No hay cabañas disponibles
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredRooms.map((room) => (
-                  <TableRow key={room.id}>
+                  <TableRow key={room.id} className={selectedRooms.includes(room.id) ? "bg-blue-50" : ""}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedRooms.includes(room.id)}
+                        onCheckedChange={() => toggleRoomSelection(room.id)}
+                        aria-label={`Seleccionar cabaña ${room.room_number}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{room.room_number}</TableCell>
                     <TableCell>{getTypeLabel(room.type)}</TableCell>
                     <TableCell>{getStatusBadge(room.status)}</TableCell>
@@ -419,6 +619,7 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
         </ScrollArea>
       </div>
 
+      {/* Individual room edit dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -502,6 +703,81 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                   Cancelar
                 </Button>
                 <Button type="submit">Guardar</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk edit dialog */}
+      <Dialog open={isBulkEditDialogOpen} onOpenChange={setIsBulkEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar {selectedRooms.length} cabañas</DialogTitle>
+            <DialogDescription>
+              Seleccione los campos que desea modificar en todas las cabañas seleccionadas.
+              Los campos vacíos no se modificarán.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...bulkEditForm}>
+            <form onSubmit={bulkEditForm.handleSubmit(onSubmitBulkEdit)} className="space-y-4">
+              <FormField
+                control={bulkEditForm.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="No cambiar" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="family">Familiar</SelectItem>
+                        <SelectItem value="couple">Pareja</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={bulkEditForm.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="No cambiar" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="available">Disponible</SelectItem>
+                        <SelectItem value="occupied">Ocupada</SelectItem>
+                        <SelectItem value="maintenance">Mantenimiento</SelectItem>
+                        <SelectItem value="cleaning">Limpieza</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setIsBulkEditDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">Aplicar cambios</Button>
               </DialogFooter>
             </form>
           </Form>
