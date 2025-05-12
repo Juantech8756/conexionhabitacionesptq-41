@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -27,6 +28,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
   const isMobile = useIsMobile();
   const [showGuestList, setShowGuestList] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
   
   // Use custom hooks
   const {
@@ -73,6 +75,14 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
     }
     return newMessages;
   });
+
+  // Function to refresh messages for the current guest
+  const refreshCurrentGuestMessages = useCallback(() => {
+    if (selectedGuest) {
+      loadGuestMessages(selectedGuest.id);
+      setLastRefreshTime(Date.now());
+    }
+  }, [selectedGuest, loadGuestMessages]);
 
   // Scroll to bottom when messages change
   const scrollToBottom = (smooth = true) => {
@@ -204,6 +214,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                 <MessageList 
                   messages={messages[selectedGuest.id] || []} 
                   isMobile={true}
+                  onRefreshRequest={refreshCurrentGuestMessages}
                 />
               </div>
 
@@ -277,6 +288,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
               <MessageList 
                 messages={messages[selectedGuest.id] || []} 
                 isMobile={false}
+                onRefreshRequest={refreshCurrentGuestMessages}
               />
             </div>
             

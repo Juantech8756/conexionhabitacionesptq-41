@@ -1,5 +1,5 @@
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
@@ -9,12 +9,13 @@ import { Message } from "@/types/dashboard";
 interface MessageListProps {
   messages: Message[];
   isMobile: boolean;
+  onRefreshRequest?: () => void;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isMobile }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefreshRequest }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  
   // Format time for messages
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -23,6 +24,18 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile }) => {
       minute: '2-digit'
     }).format(date);
   };
+
+  // Set up automatic refresh interval
+  useEffect(() => {
+    if (!onRefreshRequest) return;
+    
+    // Set up a silent refresh every 2 seconds
+    const refreshInterval = setInterval(() => {
+      onRefreshRequest();
+    }, 2000);
+    
+    return () => clearInterval(refreshInterval);
+  }, [onRefreshRequest]);
 
   return (
     <ScrollArea className={`${isMobile ? "overflow-auto p-2" : "p-4"} flex-grow pb-16`} ref={scrollContainerRef}>
