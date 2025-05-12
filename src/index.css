@@ -601,38 +601,38 @@ button, a, .interactive {
 }
 
 /* Enhanced cabin selection buttons */
-.cabin-select-button {
+.select-button {
   @apply relative overflow-hidden;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              box-shadow 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              background-color 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              background-color 0.3s ease;
 }
 
-.cabin-select-button::before {
+.select-button::before {
   content: '';
   @apply absolute inset-0 bg-hotel-500 opacity-0 rounded-md;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.3s ease;
 }
 
-.cabin-select-button:hover::before {
+.select-button:hover::before {
   @apply opacity-10;
 }
 
-.cabin-select-button:active {
-  transform: scale(0.95);
+.select-button:active {
+  transform: scale(0.9);
 }
 
-.cabin-select-button[data-state="checked"] {
+.select-button[data-state="checked"] {
   @apply bg-hotel-600 text-white;
 }
 
-.cabin-select-button[data-state="checked"]::after {
+.select-button[data-state="checked"]::after {
   content: '';
   @apply absolute h-full w-full top-0 left-0 bg-white opacity-20;
-  animation: cabin-button-selected 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: button-selected 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-@keyframes cabin-button-selected {
+@keyframes button-selected {
   0% {
     opacity: 0.2;
     transform: scale(0);
@@ -642,7 +642,7 @@ button, a, .interactive {
   }
   100% {
     opacity: 0;
-    transform: scale(2);
+    transform: scale(2.5);
   }
 }
 
@@ -653,7 +653,7 @@ button, a, .interactive {
     opacity: 0.5;
   }
   50% {
-    transform: scale(1.1);
+    transform: scale(1.2);
   }
   100% {
     transform: scale(1);
@@ -662,5 +662,11 @@ button, a, .interactive {
 }
 
 .checkbox-modern[data-state="checked"] {
-  animation: checkbox-pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: checkbox-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Add extra visible focus state for accessibility */
+.select-button:focus-visible {
+  @apply ring-2 ring-hotel-500 ring-offset-2;
+  outline: none;
 }
