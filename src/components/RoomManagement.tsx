@@ -541,17 +541,17 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                 <TableHead className={isMobile ? "w-[30px] px-1" : "w-[40px]"}>
                   <div className="flex items-center justify-center">
                     <Button 
-                      variant="checkbox" 
-                      size={isMobile ? "checkboxXs" : "checkbox"}
-                      className={`rounded transition-colors ${
+                      variant="checkboxModern" 
+                      size={isMobile ? "checkboxTiny" : "checkbox"}
+                      className={`transition-all duration-200 ${
                         selectAllChecked 
                           ? "bg-hotel-600 text-white border-hotel-600" 
-                          : "bg-transparent border border-gray-300 hover:border-hotel-400"
+                          : "bg-white border-gray-200 hover:border-hotel-400"
                       }`}
                       onClick={toggleSelectAll}
                       aria-label="Seleccionar todas las cabañas"
                     >
-                      {selectAllChecked && <CheckSquare className={`text-white ${isMobile ? "h-2 w-2" : "h-3 w-3"}`} />}
+                      {selectAllChecked && <CheckSquare className={`text-white ${isMobile ? "h-1.5 w-1.5" : "h-2.5 w-2.5"}`} />}
                     </Button>
                   </div>
                 </TableHead>
@@ -581,17 +581,17 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                     <TableCell className={isMobile ? "px-1" : ""}>
                       <div className="flex items-center justify-center">
                         <Button 
-                          variant="checkbox" 
-                          size={isMobile ? "checkboxXs" : "checkbox"} 
-                          className={`rounded transition-colors ${
+                          variant="checkboxModern" 
+                          size={isMobile ? "checkboxTiny" : "checkbox"} 
+                          className={`transition-all duration-200 ${
                             selectedRooms.includes(room.id) 
                               ? "bg-hotel-600 text-white border-hotel-600" 
-                              : "bg-transparent border border-gray-300 hover:border-hotel-400"
+                              : "bg-white border-gray-200 hover:border-hotel-400"
                           }`}
                           onClick={() => toggleRoomSelection(room.id)}
                           aria-label={`Seleccionar cabaña ${room.room_number}`}
                         >
-                          {selectedRooms.includes(room.id) && <CheckSquare className={`text-white ${isMobile ? "h-2 w-2" : "h-3 w-3"}`} />}
+                          {selectedRooms.includes(room.id) && <CheckSquare className={`text-white ${isMobile ? "h-1.5 w-1.5" : "h-2.5 w-2.5"}`} />}
                         </Button>
                       </div>
                     </TableCell>

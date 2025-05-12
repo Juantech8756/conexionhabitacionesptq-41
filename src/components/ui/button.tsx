@@ -20,6 +20,7 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         checkbox: "rounded border border-gray-300 text-hotel-600 focus:ring-hotel-500 transition-colors data-[state=checked]:bg-hotel-600 data-[state=checked]:border-hotel-600 hover:border-hotel-500",
+        checkboxModern: "rounded-md border border-gray-200 bg-white shadow-sm text-hotel-600 focus:ring-hotel-400 transition-all hover:shadow-md data-[state=checked]:bg-hotel-600 data-[state=checked]:border-hotel-600 data-[state=checked]:shadow-inner hover:border-hotel-400",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -28,6 +29,7 @@ const buttonVariants = cva(
         icon: "h-10 w-10",
         checkbox: "h-4 w-4 min-h-4 min-w-4 p-0",
         checkboxXs: "h-3 w-3 min-h-3 min-w-3 p-0", // Extra small checkbox for mobile
+        checkboxTiny: "h-2.5 w-2.5 min-h-2.5 min-w-2.5 p-0", // Even smaller checkbox for mobile
       },
     },
     defaultVariants: {
