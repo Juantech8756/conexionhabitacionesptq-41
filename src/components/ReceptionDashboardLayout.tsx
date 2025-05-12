@@ -23,7 +23,7 @@ const ReceptionDashboardLayout = ({
 }: ReceptionDashboardLayoutProps) => {
   return (
     <>
-      <div className="flex-grow overflow-auto relative">
+      <div className="flex-grow overflow-auto relative pt-0">
         {children}
       </div>
 
@@ -35,7 +35,7 @@ const ReceptionDashboardLayout = ({
             animate={{ opacity: 1, y: 0 }} 
             exit={{ opacity: 0, y: 50 }} 
             transition={{ type: "spring", damping: 25, stiffness: 500 }}
-            className="z-50"
+            className="z-50 fixed bottom-0 left-0 right-0 flex justify-center"
           >
             <CallInterface
               isGuest={false}

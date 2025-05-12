@@ -10,16 +10,16 @@ interface ReceptionDesktopTabsProps {
 
 const ReceptionDesktopTabs = ({ activeTab, setActiveTab }: ReceptionDesktopTabsProps) => {
   return (
-    <div className="bg-white border-b shadow-sm sticky top-14 z-30">
-      <div className="container mx-auto">
-        <TabsList className="h-14">
+    <div className="bg-white border-b border-gray-200 shadow-sm sticky top-14 z-30 w-full">
+      <div className="max-w-screen-2xl mx-auto px-4">
+        <TabsList className="h-14 w-full justify-start bg-transparent p-0 gap-8">
           <TabsTrigger 
             value="messages" 
-            className="flex items-center gap-2 relative transition-all duration-300"
+            className="flex items-center gap-2 relative transition-all duration-300 h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             onClick={() => setActiveTab("messages")}
           >
-            <MessageSquare className="h-4 w-4" />
-            <span>Mensajes</span>
+            <MessageSquare className="h-5 w-5" />
+            <span className="text-base font-medium">Mensajes</span>
             {activeTab === "messages" && (
               <motion.div 
                 layoutId="active-tab-indicator" 
@@ -32,11 +32,11 @@ const ReceptionDesktopTabs = ({ activeTab, setActiveTab }: ReceptionDesktopTabsP
           </TabsTrigger>
           <TabsTrigger 
             value="stats" 
-            className="flex items-center gap-2 relative transition-all duration-300"
+            className="flex items-center gap-2 relative transition-all duration-300 h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             onClick={() => setActiveTab("stats")}
           >
-            <BarChart className="h-4 w-4" />
-            <span>Estadísticas</span>
+            <BarChart className="h-5 w-5" />
+            <span className="text-base font-medium">Estadísticas</span>
             {activeTab === "stats" && (
               <motion.div 
                 layoutId="active-tab-indicator" 
@@ -49,11 +49,11 @@ const ReceptionDesktopTabs = ({ activeTab, setActiveTab }: ReceptionDesktopTabsP
           </TabsTrigger>
           <TabsTrigger 
             value="rooms" 
-            className="flex items-center gap-2 relative transition-all duration-300"
+            className="flex items-center gap-2 relative transition-all duration-300 h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             onClick={() => setActiveTab("rooms")}
           >
-            <Bed className="h-4 w-4" />
-            <span>Cabañas</span>
+            <Bed className="h-5 w-5" />
+            <span className="text-base font-medium">Cabañas</span>
             {activeTab === "rooms" && (
               <motion.div 
                 layoutId="active-tab-indicator" 

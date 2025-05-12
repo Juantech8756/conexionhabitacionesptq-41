@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -167,7 +168,7 @@ const ReceptionDashboardPage = () => {
         setActiveTab={setActiveTab}
       />
       
-      <div className="flex-grow overflow-auto">
+      <div className="flex-grow overflow-hidden flex flex-col">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           {!isMobile && <ReceptionDesktopTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
           
@@ -183,12 +184,16 @@ const ReceptionDashboardPage = () => {
               </ReceptionDashboardLayout>
             </TabsContent>
             
-            <TabsContent value="stats" className="h-full m-0 p-0 data-[state=active]:fade-in pt-4">
-              <DashboardStats />
+            <TabsContent value="stats" className="h-full m-0 p-0 data-[state=active]:fade-in">
+              <div className="container mx-auto px-4 py-4">
+                <DashboardStats />
+              </div>
             </TabsContent>
             
-            <TabsContent value="rooms" className="h-full m-0 p-0 data-[state=active]:fade-in pt-4">
-              <RoomManagement showGuestCount={true} />
+            <TabsContent value="rooms" className="h-full m-0 p-0 data-[state=active]:fade-in">
+              <div className="container mx-auto px-4 py-4">
+                <RoomManagement showGuestCount={true} />
+              </div>
             </TabsContent>
           </div>
         </Tabs>
