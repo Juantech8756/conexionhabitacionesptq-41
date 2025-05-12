@@ -192,7 +192,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                 </h2>
               </div>
               
-              <div className="pt-16">
+              <div className="pt-28">
                 <GuestList 
                   guests={guests}
                   rooms={rooms}
@@ -222,7 +222,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                 rooms={rooms}
               />
 
-              <div className="flex-grow overflow-auto pb-16 pt-16">
+              <div className="flex-grow overflow-auto pb-16 pt-28">
                 <MessageList 
                   messages={messages[selectedGuest.id] || []} 
                   isMobile={true}
@@ -273,7 +273,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
           <ConnectionStatusIndicator className="bg-white/10 text-white" />
         </div>
         
-        <div className="pt-16">
+        <div className="pt-28">
           <GuestList 
             guests={guests}
             rooms={rooms}
@@ -298,7 +298,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
               rooms={rooms}
             />
             
-            <div className="flex-grow overflow-auto pb-16 pt-20">
+            <div className="flex-grow overflow-auto pb-16 pt-28">
               <MessageList 
                 messages={messages[selectedGuest.id] || []} 
                 isMobile={false}

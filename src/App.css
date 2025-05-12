@@ -99,6 +99,29 @@ body, html {
   padding-top: 56px; /* Height of the header */
 }
 
+/* Additional header spacing fix */
+.dashboard-header-container {
+  height: 56px;
+}
+
+/* Header positioning fixes */
+.guest-list-header, 
+.chat-header {
+  top: 56px !important;
+  z-index: 20 !important;
+}
+
+/* Content padding fix for headers */
+.guest-list-content,
+.chat-content {
+  padding-top: 70px !important; /* 56px header + spacing */
+}
+
+/* Proper content spacing under fixed headers */
+.pt-header-spacing {
+  padding-top: 28px;
+}
+
 /* Alert animation */
 @keyframes alert-slide-in {
   0% {
