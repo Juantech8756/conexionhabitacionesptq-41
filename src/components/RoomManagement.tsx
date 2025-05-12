@@ -42,6 +42,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "react-router-dom";
 import { RoomManagementProps } from "@/components/RoomManagementProps";
 import { clearRoomRegistration } from "@/utils/registration";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Define the schema for form validation
@@ -79,6 +80,7 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [selectAllChecked, setSelectAllChecked] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const form = useForm<RoomFormValues>({
     resolver: zodResolver(roomFormSchema),
@@ -536,7 +538,7 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]">
+                <TableHead className={isMobile ? "w-[30px] px-1" : "w-[40px]"}>
                   <div className="flex items-center justify-center">
                     <Button 
                       variant="checkbox" 
@@ -545,11 +547,11 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                         selectAllChecked 
                           ? "bg-hotel-600 text-white border-hotel-600" 
                           : "bg-transparent border border-gray-300 hover:border-hotel-400"
-                      }`}
+                      } ${isMobile ? "h-3.5 w-3.5 min-h-3.5 min-w-3.5" : ""}`}
                       onClick={toggleSelectAll}
                       aria-label="Seleccionar todas las cabañas"
                     >
-                      {selectAllChecked && <CheckSquare className="h-3 w-3 text-white" />}
+                      {selectAllChecked && <CheckSquare className={`text-white ${isMobile ? "h-2.5 w-2.5" : "h-3 w-3"}`} />}
                     </Button>
                   </div>
                 </TableHead>
@@ -576,7 +578,7 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
               ) : (
                 filteredRooms.map((room) => (
                   <TableRow key={room.id} className={selectedRooms.includes(room.id) ? "bg-blue-50" : ""}>
-                    <TableCell>
+                    <TableCell className={isMobile ? "px-1" : ""}>
                       <div className="flex items-center justify-center">
                         <Button 
                           variant="checkbox" 
@@ -585,11 +587,11 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                             selectedRooms.includes(room.id) 
                               ? "bg-hotel-600 text-white border-hotel-600" 
                               : "bg-transparent border border-gray-300 hover:border-hotel-400"
-                          }`}
+                          } ${isMobile ? "h-3.5 w-3.5 min-h-3.5 min-w-3.5" : ""}`}
                           onClick={() => toggleRoomSelection(room.id)}
                           aria-label={`Seleccionar cabaña ${room.room_number}`}
                         >
-                          {selectedRooms.includes(room.id) && <CheckSquare className="h-3 w-3 text-white" />}
+                          {selectedRooms.includes(room.id) && <CheckSquare className={`text-white ${isMobile ? "h-2.5 w-2.5" : "h-3 w-3"}`} />}
                         </Button>
                       </div>
                     </TableCell>
@@ -607,25 +609,28 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                       <div className="flex justify-end items-center space-x-1">
                         <Button
                           variant="ghost"
-                          size="icon"
+                          size={isMobile ? "sm" : "icon"}
                           onClick={() => openEditRoomDialog(room)}
+                          className={isMobile ? "h-8 w-8 p-1" : ""}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className={isMobile ? "h-3.5 w-3.5" : "h-4 w-4"} />
                         </Button>
                         <Button
                           variant="ghost"
-                          size="icon"
+                          size={isMobile ? "sm" : "icon"}
                           onClick={() => deleteRoom(room)}
+                          className={isMobile ? "h-8 w-8 p-1" : ""}
                         >
-                          <Trash className="h-4 w-4" />
+                          <Trash className={isMobile ? "h-3.5 w-3.5" : "h-4 w-4"} />
                         </Button>
                         <Link to={`/qr-code/${room.id}`}>
                           <Button
                             variant="ghost"
-                            size="icon"
+                            size={isMobile ? "sm" : "icon"}
                             title="Ver código QR"
+                            className={isMobile ? "h-8 w-8 p-1" : ""}
                           >
-                            <QrCode className="h-4 w-4" />
+                            <QrCode className={isMobile ? "h-3.5 w-3.5" : "h-4 w-4"} />
                           </Button>
                         </Link>
                       </div>

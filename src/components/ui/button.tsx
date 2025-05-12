@@ -19,7 +19,7 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        checkbox: "h-4 w-4 rounded border border-gray-300 text-hotel-600 focus:ring-hotel-500 transition-colors data-[state=checked]:bg-hotel-600 data-[state=checked]:border-hotel-600 hover:border-hotel-500",
+        checkbox: "rounded border border-gray-300 text-hotel-600 focus:ring-hotel-500 transition-colors data-[state=checked]:bg-hotel-600 data-[state=checked]:border-hotel-600 hover:border-hotel-500",
       },
       size: {
         default: "h-10 px-4 py-2",
