@@ -16,7 +16,6 @@ import CallInterface from "@/components/CallInterface";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 import type { RoomManagementProps } from "@/components/RoomManagementProps";
 import { sendNotificationToGuest, formatMessageNotification } from "@/utils/notification";
-import { useRealtime } from "@/hooks/use-realtime";
 
 const ReceptionDashboardPage = () => {
   const navigate = useNavigate();
@@ -76,72 +75,62 @@ const ReceptionDashboardPage = () => {
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
-  // Use the optimized realtime hook for notifications with better message deduplication
-  const { isConnected, updateActivity } = useRealtime(
-    [
-      {
-        table: "messages",
-        event: "INSERT",
-        filter: "is_guest",
-        filterValue: true,
-        callback: (payload) => {
-          // Show notification for new guest message
-          toast({
-            title: "Nuevo mensaje",
-            description: "Has recibido un nuevo mensaje de un huésped.",
-            variant: "default"
-          });
-          
-          // Record activity whenever we receive a message
-          updateActivity();
-          
-          // Get guest information to send notification
-          const getMessage = async () => {
-            try {
-              // Get guest information by guest_id
-              const { data: guest } = await supabase
-                .from('guests')
-                .select('name, room_number')
-                .eq('id', payload.new.guest_id)
-                .single();
-                
-              if (guest) {
-                // Send notification via edge function
-                sendNotificationToGuest(
-                  payload.new.guest_id,
-                  formatMessageNotification(
-                    false, // isGuest
-                    payload.new.content,
-                    guest.name,
-                    guest.room_number,
-                    payload.new.guest_id
-                  )
-                );
-              }
-            } catch (error) {
-              console.error("Error fetching guest data for notification:", error);
-            }
-          };
-          
-          getMessage();
-
-          // If not on messages tab, add a visual indication
-          if (activeTab !== "messages") {
-            // Add visual indication here if needed
+  // Set up real-time subscription for notifications
+  useEffect(() => {
+    // Create a subscription for new messages to show notifications
+    const messagesChannel = supabase.channel("new-message-notifications").on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "messages",
+      filter: "is_guest=eq.true"
+    }, payload => {
+      // Show notification for new guest message
+      toast({
+        title: "Nuevo mensaje",
+        description: "Has recibido un nuevo mensaje de un huésped.",
+        variant: "default"
+      });
+      
+      // Get guest information to send notification
+      const getMessage = async () => {
+        try {
+          // Get guest information by guest_id
+          const { data: guest } = await supabase
+            .from('guests')
+            .select('name, room_number')
+            .eq('id', payload.new.guest_id)
+            .single();
+            
+          if (guest) {
+            // Send notification via edge function
+            sendNotificationToGuest(
+              payload.new.guest_id,
+              formatMessageNotification(
+                false, // isGuest
+                payload.new.content,
+                guest.name,
+                guest.room_number,
+                payload.new.guest_id
+              )
+            );
           }
+        } catch (error) {
+          console.error("Error fetching guest data for notification:", error);
         }
-      }
-    ],
-    "reception-dashboard-notifications",
-    {
-      inactivityTimeout: 30 * 60 * 1000, // 30 minutes for reception staff
-      debugMode: true,                    // Enable debug mode for reception staff to help troubleshoot
-      deduplicationEnabled: true,         // Enable deduplication
-      deduplicationTTL: 30000,            // 30 seconds TTL for deduplication
-      aggressiveReconnect: isMobile,      // More aggressive reconnection on mobile
-    }
-  );
+      };
+      
+      getMessage();
 
+      // If not on messages tab, add a visual indication
+      if (activeTab !== "messages") {
+        // Add visual indication here if needed
+      }
+    }).subscribe();
+    
+    return () => {
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [toast, activeTab]);
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -307,7 +296,7 @@ const ReceptionDashboardPage = () => {
                     </div>
                     
                     <div className="border-t mt-4 pt-2 px-4">
-                      <ConnectionStatusIndicator className="mb-4 mt-2" isConnected={isConnected} />
+                      <ConnectionStatusIndicator className="mb-4 mt-2" />
                       
                       <Button variant="outline" className="w-full justify-start" onClick={() => {
                     setSidebarOpen(false);
@@ -338,7 +327,7 @@ const ReceptionDashboardPage = () => {
           </motion.div>
           
           <div className="flex items-center space-x-2">
-            {!isMobile && <ConnectionStatusIndicator className="bg-white/10 text-white" isConnected={isConnected} />}
+            {!isMobile && <ConnectionStatusIndicator className="bg-white/10 text-white" />}
             
             {user && !isMobile && <motion.span initial={{
             opacity: 0,

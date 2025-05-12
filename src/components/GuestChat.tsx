@@ -17,7 +17,7 @@ import { sendNotificationToReception, formatMessageNotification } from "@/utils/
 import NotificationPermissionRequest from "@/components/NotificationPermissionRequest";
 import AudioRecorder from "@/components/AudioRecorder";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
-import { useRealtime } from "@/hooks/use-realtime";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 interface GuestChatProps {
   guestName: string;
@@ -61,8 +61,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
   const [showNotificationsPrompt, setShowNotificationsPrompt] = useState(false);
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
   const [lastPollTime, setLastPollTime] = useState(Date.now());
-  const [processedMessageIds, setProcessedMessageIds] = useState<Set<string>>(new Set());
-  const [lastSyncTimestamp, setLastSyncTimestamp] = useState<string>(new Date().toISOString());
   
   // Obtener el roomId de la tabla de huéspedes
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -98,65 +96,42 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
     roomId: roomId || undefined
   });
 
-  // Use the optimized realtime hook for mobile devices with aggressive reconnect
-  const { isConnected: isRealtimeConnected, reconnect: reconnectRealtime } = useRealtime([
-    {
-      table: 'messages',
-      event: 'INSERT',
-      filter: 'guest_id',
-      filterValue: guestId,
-      callback: (payload) => {
-        console.log('Nuevo mensaje recibido en tiempo real:', payload);
-        
-        // Only process the message if we haven't seen it before
-        const newMsg = payload.new;
-        if (newMsg && !processedMessageIds.has(newMsg.id)) {
-          const typedMessage = mapDatabaseMessageToTypedMessage(newMsg);
-          
-          // Add to processed IDs to prevent duplication
-          setProcessedMessageIds(prev => {
-            const updated = new Set(prev);
-            updated.add(typedMessage.id);
-            return updated;
-          });
-          
-          // Update messages state, ensuring we don't add duplicates
-          setMessages(prev => {
-            if (!prev.some(msg => msg.id === typedMessage.id)) {
-              return [...prev, typedMessage];
-            }
-            return prev;
-          });
-          
-          // Actualizar la marca de tiempo del último mensaje
-          if (new Date(typedMessage.created_at) > new Date(lastSyncTimestamp)) {
-            setLastSyncTimestamp(typedMessage.created_at);
-          }
-          
-          // Scroll hacia abajo para mostrar el nuevo mensaje
-          setTimeout(() => scrollToBottom(true), 100);
+  // Comprobar conexión en tiempo real
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  
+  useEffect(() => {
+    // Configurar un canal para monitorear la conexión en tiempo real
+    const channel = supabase.channel('guest-connection-monitor');
+    
+    channel
+      .on('system', { event: 'connected' }, () => {
+        console.log('Guest chat realtime connected');
+        setIsRealtimeConnected(true);
+      })
+      .on('system', { event: 'disconnected' }, () => {
+        console.log('Guest chat realtime disconnected');
+        setIsRealtimeConnected(false);
+      })
+      .subscribe((status: string) => {
+        console.log(`Guest chat connection status: ${status}`);
+        // Fix for TypeScript - use string comparisons for status
+        if (status === 'SUBSCRIBED') {
+          setIsRealtimeConnected(true);
+        } else if (status !== 'SUBSCRIBED' && status !== 'SUBSCRIBING') {
+          setIsRealtimeConnected(false);
         }
-      }
-    }
-  ], `guest-chat-${guestId}`, {
-    // Mobile-optimized options
-    aggressiveReconnect: isMobile,
-    deduplicationTTL: 30000, // 30 seconds TTL for deduplication
-    debugMode: true,         // Enable debug mode for guest chat to better understand issues
-  });
+      });
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
-  // Sistema de sondeo de respaldo mejorado
+  // Sistema de sondeo de respaldo para asegurar que se reciban mensajes
   useEffect(() => {
     const pollInterval = setInterval(() => {
-      // Sondear en cualquiera de estos casos:
-      // 1. Si han pasado más de 15 segundos del último sondeo
-      // 2. Si no hay conexión en tiempo real activa
-      // 3. O si hay conexión pero han pasado más de 30 segundos sin actualizaciones
-      const shouldPoll = 
-        Date.now() - lastPollTime > 15000 || 
-        !isRealtimeConnected;
-      
-      if (shouldPoll) {
+      // Sólo sondeamos si hace más de 10 segundos del último sondeo
+      if (Date.now() - lastPollTime > 10000) {
         pollNewMessages();
         setLastPollTime(Date.now());
       }
@@ -164,30 +139,27 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
       // También reintentamos enviar mensajes pendientes
       retryPendingMessages();
       
-    }, 10000); // Sondeo cada 10 segundos
+    }, 15000); // Sondeo cada 15 segundos
     
     return () => clearInterval(pollInterval);
-  }, [lastPollTime, pendingMessages, isRealtimeConnected, lastSyncTimestamp]);
+  }, [lastPollTime, pendingMessages]);
 
-  // When connection status changes, trigger a poll to sync missing messages
-  useEffect(() => {
-    if (isRealtimeConnected) {
-      // When connection is established, synchronize with any messages we might have missed
-      pollNewMessages();
-    }
-  }, [isRealtimeConnected]);
-
-  // Función para sondear mensajes nuevos con prevención de duplicados
+  // Función para sondear mensajes nuevos
   const pollNewMessages = async () => {
     try {
-      console.log("Sondeando mensajes nuevos desde:", lastSyncTimestamp);
+      console.log("Sondeando mensajes nuevos...");
+      
+      if (!messages.length) return;
+      
+      // Obtenemos la fecha del último mensaje
+      const latestMessageDate = new Date(messages[messages.length - 1]?.created_at || 0);
       
       // Buscar mensajes más recientes que el último que tenemos
       const { data, error } = await supabase
         .from('messages')
         .select('*')
         .eq('guest_id', guestId)
-        .gt('created_at', lastSyncTimestamp)
+        .gt('created_at', latestMessageDate.toISOString())
         .order('created_at', { ascending: true });
         
       if (error) throw error;
@@ -195,50 +167,14 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
       if (data && data.length > 0) {
         console.log(`Sondeo encontró ${data.length} mensajes nuevos`);
         
-        // Filter out messages we've already processed
-        const newMessages = data.filter(msg => !processedMessageIds.has(msg.id));
+        // Transform the data using our mapping function
+        const typedMessages: MessageType[] = data.map(mapDatabaseMessageToTypedMessage);
         
-        if (newMessages.length > 0) {
-          console.log(`Procesando ${newMessages.length} mensajes nuevos después de filtrado`);
-          
-          // Transform the data using our mapping function
-          const typedMessages: MessageType[] = newMessages.map(mapDatabaseMessageToTypedMessage);
-          
-          // Actualizar la marca de tiempo del último mensaje para futuros sondeos
-          if (typedMessages.length > 0) {
-            const lastMessageDate = typedMessages[typedMessages.length - 1].created_at;
-            if (new Date(lastMessageDate) > new Date(lastSyncTimestamp)) {
-              setLastSyncTimestamp(lastMessageDate);
-            }
-          }
-          
-          // Add IDs to processed set
-          const updatedProcessedIds = new Set(processedMessageIds);
-          newMessages.forEach(msg => updatedProcessedIds.add(msg.id));
-          setProcessedMessageIds(updatedProcessedIds);
-          
-          // Actualizar mensajes locales con los nuevos mensajes
-          setMessages(prev => {
-            const updated = [...prev];
-            
-            // Add messages if they don't exist already
-            typedMessages.forEach(newMsg => {
-              if (!updated.some(msg => msg.id === newMsg.id)) {
-                updated.push(newMsg);
-              }
-            });
-            
-            // Sort by creation date
-            return updated.sort((a, b) => 
-              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-            );
-          });
-          
-          // Scroll hacia abajo para mostrar los nuevos mensajes
-          setTimeout(() => scrollToBottom(true), 100);
-        } else {
-          console.log("Todos los mensajes ya están en el estado local");
-        }
+        // Actualizar mensajes locales con los nuevos mensajes
+        setMessages(prev => [...prev, ...typedMessages]);
+        
+        // Scroll hacia abajo para mostrar los nuevos mensajes
+        setTimeout(() => scrollToBottom(true), 100);
       }
     } catch (err) {
       console.error("Error sondeando mensajes:", err);
@@ -312,6 +248,45 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
     return () => clearTimeout(timer);
   }, [permission, isSubscribed]);
 
+  // Configuración del canal en tiempo real para mensajes
+  useEffect(() => {
+    const messageChannel = supabase.channel(`guest-messages-${guestId}`);
+    
+    messageChannel
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `guest_id=eq.${guestId}`
+      }, (payload) => {
+        console.log('Nuevo mensaje recibido en tiempo real:', payload);
+        
+        // Sólo añadir el mensaje si no lo tenemos ya
+        const newMsg = payload.new;
+        
+        if (newMsg) {
+          const typedMessage = mapDatabaseMessageToTypedMessage(newMsg);
+          
+          setMessages(prev => {
+            if (!prev.some(msg => msg.id === typedMessage.id)) {
+              return [...prev, typedMessage];
+            }
+            return prev;
+          });
+          
+          // Scroll hacia abajo para mostrar el nuevo mensaje
+          setTimeout(() => scrollToBottom(true), 100);
+        }
+      })
+      .subscribe((status: string) => {
+        console.log(`Canal de mensajes estatus: ${status}`);
+      });
+    
+    return () => {
+      supabase.removeChannel(messageChannel);
+    };
+  }, [guestId]);
+
   // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current) {
@@ -367,19 +342,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
         } else {
           // Transform using our mapping function
           const typedMessages: MessageType[] = data.map(mapDatabaseMessageToTypedMessage);
-          
-          // Initialize the processed message IDs set
-          const initialProcessedIds = new Set<string>();
-          data.forEach(msg => initialProcessedIds.add(msg.id));
-          setProcessedMessageIds(initialProcessedIds);
-          
-          // Set the last sync timestamp to the most recent message
-          if (data.length > 0) {
-            const sortedData = [...data].sort((a, b) => 
-              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            );
-            setLastSyncTimestamp(sortedData[0].created_at);
-          }
           
           setMessages(typedMessages);
         }
@@ -586,18 +548,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
         msg.id === localId ? typedMessage : msg
       ));
       
-      // Add to processed IDs set to prevent duplication
-      setProcessedMessageIds(prev => {
-        const updated = new Set(prev);
-        updated.add(typedMessage.id);
-        return updated;
-      });
-      
-      // Update sync timestamp if this is newer
-      if (new Date(typedMessage.created_at) > new Date(lastSyncTimestamp)) {
-        setLastSyncTimestamp(typedMessage.created_at);
-      }
-      
       // Remover de pendientes
       setPendingMessages(prev => prev.filter(msg => msg.localId !== localId));
       
@@ -647,18 +597,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
       setMessages(prev => prev.map(msg => 
         msg.id === localId ? typedMessage : msg
       ));
-      
-      // Add to processed IDs set to prevent duplication
-      setProcessedMessageIds(prev => {
-        const updated = new Set(prev);
-        updated.add(typedMessage.id);
-        return updated;
-      });
-      
-      // Update sync timestamp if this is newer
-      if (new Date(typedMessage.created_at) > new Date(lastSyncTimestamp)) {
-        setLastSyncTimestamp(typedMessage.created_at);
-      }
       
       // Remover de pendientes
       setPendingMessages(prev => prev.filter(msg => msg.localId !== localId));
@@ -779,18 +717,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
         msg.id === localId ? typedMessage : msg
       ));
       
-      // Add to processed IDs set to prevent duplication
-      setProcessedMessageIds(prev => {
-        const updated = new Set(prev);
-        updated.add(typedMessage.id);
-        return updated;
-      });
-      
-      // Update sync timestamp if this is newer
-      if (new Date(typedMessage.created_at) > new Date(lastSyncTimestamp)) {
-        setLastSyncTimestamp(typedMessage.created_at);
-      }
-      
       // Remover de pendientes
       setPendingMessages(prev => prev.filter(msg => msg.localId !== localId));
       
@@ -811,14 +737,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
       setIsLoading(false);
     }
   };
-
-  // When connection is lost and regained, force a message sync
-  useEffect(() => {
-    if (isRealtimeConnected) {
-      console.log("Conexión realtime restablecida, sincronizando mensajes...");
-      pollNewMessages();
-    }
-  }, [isRealtimeConnected]);
 
   const handleCancelAudio = () => {
     // Simplemente resetear cualquier estado de audio
@@ -848,20 +766,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
     <div className="flex flex-col h-full relative">
       {/* Estado de conexión */}
       <div className={`absolute top-0 right-0 z-50 p-1 m-1 bg-white/80 rounded-full shadow-sm ${isRealtimeConnected ? 'bg-opacity-70' : 'bg-opacity-100'}`}>
-        <ConnectionStatusIndicator 
-          variant="minimal" 
-          className="h-5 w-5" 
-          isConnected={isRealtimeConnected}
-          onClick={() => {
-            // Force a reconnect if clicked
-            reconnectRealtime();
-            toast({
-              title: "Reconectando...",
-              description: "Intentando reconectar al servidor",
-              duration: 3000
-            });
-          }}
-        />
+        <ConnectionStatusIndicator variant="minimal" className="h-5 w-5" />
       </div>
       
       {/* Header */}
