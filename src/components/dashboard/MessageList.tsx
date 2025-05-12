@@ -29,10 +29,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefresh
   useEffect(() => {
     if (!onRefreshRequest) return;
     
-    // Set up a silent refresh every 2 seconds
+    // Set up a silent refresh every 500ms (half a second) for more immediate updates
     const refreshInterval = setInterval(() => {
       onRefreshRequest();
-    }, 2000);
+    }, 500);
     
     return () => clearInterval(refreshInterval);
   }, [onRefreshRequest]);
