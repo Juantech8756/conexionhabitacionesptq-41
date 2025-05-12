@@ -9,7 +9,7 @@ interface ReceptionDesktopTabsProps {
 
 const ReceptionDesktopTabs = ({ activeTab }: ReceptionDesktopTabsProps) => {
   return (
-    <div className="bg-white border-b shadow-sm sticky top-0 z-10">
+    <div className="bg-white border-b shadow-sm sticky top-14 z-10">
       <div className="container mx-auto">
         <TabsList className="h-14">
           <TabsTrigger 
