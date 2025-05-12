@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Edit, Trash, Search, CircleCheck, CircleX, QrCode, CheckSquare } from "lucide-react";
+import { Plus, Edit, Trash, Search, CircleCheck, CircleX, QrCode, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -543,7 +543,7 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                     <Button 
                       variant="checkboxModern" 
                       size={isMobile ? "checkboxTiny" : "checkbox"}
-                      className={`transition-all duration-200 ${
+                      className={`select-button transition-all duration-300 ${
                         selectAllChecked 
                           ? "bg-hotel-600 text-white border-hotel-600" 
                           : "bg-white border-gray-200 hover:border-hotel-400"
@@ -551,7 +551,7 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                       onClick={toggleSelectAll}
                       aria-label="Seleccionar todas las cabañas"
                     >
-                      {selectAllChecked && <CheckSquare className={`text-white ${isMobile ? "h-1.5 w-1.5" : "h-2.5 w-2.5"}`} />}
+                      {selectAllChecked && <Check className={`text-white ${isMobile ? "h-2 w-2" : "h-3 w-3"}`} />}
                     </Button>
                   </div>
                 </TableHead>
@@ -583,15 +583,16 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                         <Button 
                           variant="checkboxModern" 
                           size={isMobile ? "checkboxTiny" : "checkbox"} 
-                          className={`transition-all duration-200 ${
+                          className={`select-button transition-all duration-300 ${
                             selectedRooms.includes(room.id) 
                               ? "bg-hotel-600 text-white border-hotel-600" 
                               : "bg-white border-gray-200 hover:border-hotel-400"
                           }`}
                           onClick={() => toggleRoomSelection(room.id)}
                           aria-label={`Seleccionar cabaña ${room.room_number}`}
+                          data-state={selectedRooms.includes(room.id) ? "checked" : "unchecked"}
                         >
-                          {selectedRooms.includes(room.id) && <CheckSquare className={`text-white ${isMobile ? "h-1.5 w-1.5" : "h-2.5 w-2.5"}`} />}
+                          {selectedRooms.includes(room.id) && <Check className={`text-white ${isMobile ? "h-2 w-2" : "h-3 w-3"}`} />}
                         </Button>
                       </div>
                     </TableCell>
