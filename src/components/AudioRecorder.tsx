@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Mic, MicOff, X } from "lucide-react";
 
 interface AudioRecorderProps {
-  onAudioRecorded: (audioBlob: Blob) => Promise<void>;
+  onAudioRecorded: (audioBlob: Blob) => void;
   onCancel: () => void;
   disabled?: boolean;
   title?: string;
@@ -78,9 +78,9 @@ const AudioRecorder = ({
     }
   };
 
-  const handleSendAudio = async () => {
+  const handleSendAudio = () => {
     if (audioBlob) {
-      await onAudioRecorded(audioBlob);
+      onAudioRecorded(audioBlob);
       setAudioBlob(null);
     }
   };

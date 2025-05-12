@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { MessageCircle, Mic, MicOff, Send, Phone, Bell } from "lucide-react";
+import { MessageCircle, Mic, MicOff, Send, ArrowLeft, Phone, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -62,9 +62,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [messageIdSet, setMessageIdSet] = useState<Set<string>>(new Set());
   const [shouldPoll, setShouldPoll] = useState(true);
   const [pollingEnabled, setPollingEnabled] = useState(true);
-  
-  // New state to track if refresh is needed
-  const [needsRefresh, setNeedsRefresh] = useState(false);
   
   // Obtener el roomId de la tabla de huéspedes
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -157,26 +154,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     const ids = new Set(messages.map(msg => msg.id));
     setMessageIdSet(ids);
   }, []);
-
-  // Nueva actualización: Refresco automático cada 0.5 segundos
-  useEffect(() => {
-    const refreshInterval = setInterval(() => {
-      // Trigger refresh if needed - this will run every 500ms
-      if (shouldPoll) {
-        setNeedsRefresh(true);
-      }
-    }, 500); // Refresh every 500ms for more immediate updates
-    
-    return () => clearInterval(refreshInterval);
-  }, [shouldPoll]);
-
-  // Effect to handle the refresh when needed
-  useEffect(() => {
-    if (needsRefresh) {
-      pollNewMessages();
-      setNeedsRefresh(false);
-    }
-  }, [needsRefresh]);
 
   // Sistema de sondeo de respaldo para asegurar que se reciban mensajes
   useEffect(() => {
@@ -862,8 +839,16 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   return (
     <div className="flex flex-col h-full relative">
-      {/* Header - removed back button */}
-      <header className="bg-gradient-to-r from-hotel-700 to-hotel-500 p-3 text-white shadow-sm flex items-center fixed top-0 left-0 right-0 z-10">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-hotel-700 to-hotel-500 p-3 text-white shadow-sm flex items-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
+          className="mr-2 text-white hover:bg-white/20"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
         <div>
           <h2 className="text-lg font-semibold">Recepción</h2>
           <p className="text-xs text-white/80">
@@ -894,9 +879,16 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         />
       )}
 
-      {/* Chat content - modified to add padding at top and bottom */}
+      {/* Connection status indicator - minimal version */}
+      <div className="absolute top-14 right-2 z-10 flex items-center">
+        <div className={`h-2 w-2 rounded-full ${
+          isRealtimeConnected ? 'bg-green-500' : 'bg-amber-500'
+        }`} title={isRealtimeConnected ? "Conectado en tiempo real" : "Usando respaldo"} />
+      </div>
+
+      {/* Chat content */}
       <div
-        className="flex-grow overflow-y-auto p-4 bg-gray-50 pb-20 pt-16"
+        className="flex-grow overflow-y-auto p-4 bg-gray-50"
         ref={scrollContainerRef}
       >
         <div className="space-y-3 max-w-3xl mx-auto">
@@ -959,8 +951,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      {/* Input area - fixed to bottom */}
-      <div className="p-3 bg-white border-t shadow-inner fixed bottom-0 left-0 right-0 z-10">
+      {/* Input area */}
+      <div className="p-3 bg-white border-t shadow-inner">
         <div className="flex items-center space-x-2">
           <AudioRecorder 
             onAudioRecorded={handleAudioRecorded}
