@@ -24,6 +24,19 @@ interface GuestChatProps {
   onBack: () => void;
 }
 
+// Define the MessageType type that was accidentally removed
+type MessageType = {
+  id: string;
+  content: string;
+  is_guest: boolean;
+  is_audio: boolean;
+  audio_url?: string;
+  is_media?: boolean;
+  media_url?: string;
+  media_type?: 'image' | 'video';
+  created_at: string;
+};
+
 // Estados locales para seguimiento de mensajes
 type MessageStatus = 'sending' | 'sent' | 'error';
 type PendingMessage = {
@@ -748,11 +761,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   return (
     <div className="flex flex-col h-full relative">
-      {/* Estado de conexión */}
-      <div className={`absolute top-0 right-0 z-50 p-1 m-1 bg-white/80 rounded-full shadow-sm ${isRealtimeConnected ? 'bg-opacity-70' : 'bg-opacity-100'}`}>
-        <ConnectionStatusIndicator variant="minimal" className="h-5 w-5" />
-      </div>
-      
       {/* Header */}
       <header className="bg-gradient-to-r from-hotel-700 to-hotel-500 p-3 text-white shadow-sm flex items-center">
         <Button
