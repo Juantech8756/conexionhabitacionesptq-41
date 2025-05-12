@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User } from "lucide-react";
@@ -7,6 +6,7 @@ import DeleteChatDialog from "@/components/DeleteChatDialog";
 import { useGuestData } from "@/hooks/use-guest-data";
 import { useMessageActions } from "@/hooks/use-message-actions";
 import { useChatDeletion } from "@/hooks/use-chat-deletion";
+import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 
 // Imported components
 import GuestList from "@/components/dashboard/GuestList";
@@ -48,9 +48,15 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
     selectedFile,
     handleFileSelect,
     handleSendMessage,
-    handleAudioRecorded,
+    handleAudioRecorded: originalHandleAudioRecorded,
     handleMediaUploadComplete
   } = useMessageActions(selectedGuest, updateResponseStatus);
+
+  // Wrapper function to convert Promise<boolean> to Promise<void>
+  const handleAudioRecorded = async (audioBlob: Blob): Promise<void> => {
+    await originalHandleAudioRecorded(audioBlob);
+    // No return value needed as we're returning void
+  };
 
   const {
     isDeleteDialogOpen,
