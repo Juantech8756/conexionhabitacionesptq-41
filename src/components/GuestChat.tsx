@@ -15,7 +15,6 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { sendNotificationToReception, formatMessageNotification } from "@/utils/notification";
 import NotificationPermissionRequest from "@/components/NotificationPermissionRequest";
 import AudioRecorder from "@/components/AudioRecorder";
-import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
 interface GuestChatProps {
@@ -24,18 +23,6 @@ interface GuestChatProps {
   guestId: string;
   onBack: () => void;
 }
-
-type MessageType = {
-  id: string;
-  content: string;
-  is_guest: boolean;
-  is_audio: boolean;
-  audio_url?: string;
-  is_media?: boolean;
-  media_url?: string;
-  media_type?: 'image' | 'video';
-  created_at: string;
-};
 
 // Estados locales para seguimiento de mensajes
 type MessageStatus = 'sending' | 'sent' | 'error';
