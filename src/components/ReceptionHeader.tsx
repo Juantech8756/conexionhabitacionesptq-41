@@ -26,7 +26,7 @@ const ReceptionHeader = ({
   setActiveTab
 }: ReceptionHeaderProps) => {
   return (
-    <header className="bg-gradient-to-r from-hotel-700 to-hotel-500 shadow-lg fixed top-0 left-0 right-0 z-20">
+    <header className="bg-gradient-to-r from-hotel-700 to-hotel-500 shadow-lg fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto py-3 px-4 flex justify-between items-center">
         <motion.div 
           className="flex items-center" 
