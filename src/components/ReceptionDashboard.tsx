@@ -257,5 +257,4 @@ const ReceptionDashboard = ({
     }} isDeleting={isDeleting} />
     </div>;
 };
-
 export default ReceptionDashboard;

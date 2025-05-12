@@ -81,7 +81,7 @@ const GuestList: React.FC<GuestListProps> = ({
   }
 
   return (
-    <ScrollArea className={isMobile ? "h-[calc(100%-64px)]" : "h-[calc(100vh-126px)]"}>
+    <ScrollArea className={isMobile ? "h-[calc(100%-64px)]" : "h-[calc(100%-65px)]"}>
       <AnimatePresence>
         {guests.map((guest) => (
           <motion.div 
@@ -96,7 +96,7 @@ const GuestList: React.FC<GuestListProps> = ({
               duration: 0.2,
               backgroundColor: { duration: 1 }
             }}
-            className={`p-2 border-b hover:bg-gray-50 transition-colors duration-200 ${
+            className={`p-4 border-b hover:bg-gray-50 transition-colors duration-200 ${
               selectedGuest?.id === guest.id && !isMobile
                 ? "bg-blue-50 border-l-4 border-l-hotel-600" 
                 : ""
@@ -107,9 +107,9 @@ const GuestList: React.FC<GuestListProps> = ({
                 className="cursor-pointer flex-grow" 
                 onClick={() => onSelectGuest(guest)}
               >
-                <p className="font-medium flex items-center flex-wrap text-xs">
+                <p className="font-medium flex items-center flex-wrap">
                   {guest.name} 
-                  <span className="ml-2 text-xs text-gray-500">
+                  <span className="ml-2 text-sm text-gray-500">
                     Cabaña {guest.room_number}
                   </span>
                 </p>
@@ -125,11 +125,11 @@ const GuestList: React.FC<GuestListProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 text-red-600 hover:text-red-800 hover:bg-red-100"
+                  className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-100"
                   onClick={(e) => onDeleteGuest(e, guest)}
                   title="Eliminar conversación"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-4 w-4" />
                   <span className="sr-only">Eliminar</span>
                 </Button>
                 

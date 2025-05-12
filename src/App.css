@@ -102,7 +102,6 @@ body, html {
 /* Additional header spacing fix */
 .dashboard-header-container {
   height: 56px;
-  z-index: 50;
 }
 
 /* Header positioning fixes */
@@ -115,12 +114,12 @@ body, html {
 /* Content padding fix for headers */
 .guest-list-content,
 .chat-content {
-  padding-top: 56px !important; /* Header height */
+  padding-top: 70px !important; /* 56px header + spacing */
 }
 
 /* Proper content spacing under fixed headers */
 .pt-header-spacing {
-  padding-top: 14px;
+  padding-top: 28px;
 }
 
 /* Alert animation */
@@ -152,41 +151,4 @@ body, html {
 
 .alert-exit {
   animation: alert-slide-out 0.3s ease-out forwards;
-}
-
-/* Tab content layout fixes */
-.tab-content-container {
-  height: calc(100vh - 126px); /* 56px header + 70px tabs */
-  overflow-y: auto;
-}
-
-/* Fixed positioning for chat headers */
-.chat-header-fixed {
-  position: sticky;
-  top: 70px;
-  z-index: 10;
-  background-color: #fff;
-}
-
-/* Desktop layout fixes */
-@media (min-width: 768px) {
-  .reception-dashboard {
-    height: 100vh;
-    overflow: hidden;
-  }
-  
-  .desktop-content-wrapper {
-    height: calc(100vh - 110px); /* Adjust for header + tabs */
-    overflow: hidden;
-  }
-  
-  .desktop-sidebar {
-    height: 100%;
-    overflow-y: auto;
-  }
-  
-  .desktop-main-content {
-    height: 100%;
-    overflow-y: auto;
-  }
 }

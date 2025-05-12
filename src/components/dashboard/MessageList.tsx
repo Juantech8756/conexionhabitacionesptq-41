@@ -54,16 +54,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefresh
     return uniqueMessages;
   }, [messages]);
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [deduplicatedMessages.length]);
-
   return (
-    <ScrollArea className={`${isMobile ? "overflow-auto p-2" : "p-3"} flex-grow pb-16`} ref={scrollContainerRef}>
-      <div className={isMobile ? "space-y-3" : "space-y-3 mx-auto"} style={{ maxWidth: isMobile ? "100%" : "90%" }}>
+    <ScrollArea className={`${isMobile ? "overflow-auto p-2" : "p-4"} flex-grow pb-16`} ref={scrollContainerRef}>
+      <div className={isMobile ? "space-y-3" : "space-y-4 max-w-3xl mx-auto"}>
         <AnimatePresence initial={false}>
           {deduplicatedMessages.map(msg => (
             <motion.div 
@@ -75,7 +68,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefresh
             >
               <div className={`${isMobile 
                 ? `rounded-lg ${msg.is_guest ? 'chat-bubble-guest' : 'chat-bubble-staff'} mx-2 my-1 px-3 py-2` 
-                : `max-w-[80%] p-3 rounded-lg ${
+                : `max-w-[85%] p-3 rounded-lg ${
                     msg.is_guest 
                       ? 'bg-white border border-gray-200 text-gray-800' 
                       : 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white'
