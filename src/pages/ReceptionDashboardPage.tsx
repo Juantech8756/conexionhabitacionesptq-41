@@ -169,7 +169,7 @@ const ReceptionDashboardPage = () => {
       
       <div className="flex-grow overflow-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          {!isMobile && <ReceptionDesktopTabs activeTab={activeTab} />}
+          {!isMobile && <ReceptionDesktopTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
           
           <div className="flex-grow overflow-auto">
             <TabsContent value="messages" className="h-full m-0 p-0 data-[state=active]:fade-in">

@@ -5,16 +5,18 @@ import { MessageSquare, BarChart, Bed } from "lucide-react";
 
 interface ReceptionDesktopTabsProps {
   activeTab: string;
+  setActiveTab: (value: string) => void;
 }
 
-const ReceptionDesktopTabs = ({ activeTab }: ReceptionDesktopTabsProps) => {
+const ReceptionDesktopTabs = ({ activeTab, setActiveTab }: ReceptionDesktopTabsProps) => {
   return (
-    <div className="bg-white border-b shadow-sm sticky top-14 z-10">
+    <div className="bg-white border-b shadow-sm sticky top-14 z-30">
       <div className="container mx-auto">
         <TabsList className="h-14">
           <TabsTrigger 
             value="messages" 
             className="flex items-center gap-2 relative transition-all duration-300"
+            onClick={() => setActiveTab("messages")}
           >
             <MessageSquare className="h-4 w-4" />
             <span>Mensajes</span>
@@ -31,6 +33,7 @@ const ReceptionDesktopTabs = ({ activeTab }: ReceptionDesktopTabsProps) => {
           <TabsTrigger 
             value="stats" 
             className="flex items-center gap-2 relative transition-all duration-300"
+            onClick={() => setActiveTab("stats")}
           >
             <BarChart className="h-4 w-4" />
             <span>Estadísticas</span>
@@ -47,6 +50,7 @@ const ReceptionDesktopTabs = ({ activeTab }: ReceptionDesktopTabsProps) => {
           <TabsTrigger 
             value="rooms" 
             className="flex items-center gap-2 relative transition-all duration-300"
+            onClick={() => setActiveTab("rooms")}
           >
             <Bed className="h-4 w-4" />
             <span>Cabañas</span>
