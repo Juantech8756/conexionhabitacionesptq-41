@@ -4,21 +4,18 @@ import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Hotel, ArrowLeft, Download, QrCode, ExternalLink, Users } from "lucide-react";
+import { Hotel, ArrowLeft, Download, QrCode, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
-import { getRoomTypeText, getMaxGuestsForRoomType } from "@/utils/roomValidation";
-import { useNavigate as useNav } from "react-router-dom";
 
 // Define the base domain to use for QR codes
 const BASE_DOMAIN = "https://quimbayasconect.parquetematicoquimbayas.com";
 
 const QrCodeDisplay = () => {
-  const [roomData, setRoomData] = useState<{id: string; room_number: string; type: string | null; status: string | null} | null>(null);
+  const [roomData, setRoomData] = useState<{id: string; room_number: string; type: string | null} | null>(null);
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const nav = useNav();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
@@ -35,7 +32,7 @@ const QrCodeDisplay = () => {
       try {
         const { data, error } = await supabase
           .from('rooms')
-          .select('id, room_number, type, status')
+          .select('id, room_number, type')
           .eq('id', roomId)
           .single();
         
@@ -117,17 +114,18 @@ const QrCodeDisplay = () => {
     console.log("Opening URL:", qrUrl);
     window.open(qrUrl, '_blank');
   };
-  
-  // Navigate to guest simulation route
-  const handleSimulateView = () => {
-    console.log("Navigating to guest simulation with roomId:", roomId);
-    if (roomId) {
-      nav(`/guest-simulation?room=${roomId}`);
+
+  const getRoomTypeText = (type: string | null) => {
+    if (!type) return "";
+    switch (type.toLowerCase()) {
+      case "family":
+        return "Familiar";
+      case "couple":
+        return "Pareja";
+      default:
+        return type;
     }
   };
-
-  // Get max guests for room type
-  const maxGuests = roomData?.type ? getMaxGuestsForRoomType(roomData.type) : 0;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 overflow-y-auto">
@@ -151,19 +149,11 @@ const QrCodeDisplay = () => {
                   <span className="font-bold text-2xl block mt-2 mb-1">
                     Cabaña {roomData.room_number}
                   </span>
-                  <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-                    {roomData.type && (
-                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm flex items-center">
-                        {getRoomTypeText(roomData.type)}
-                      </span>
-                    )}
-                    {maxGuests > 0 && (
-                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm flex items-center">
-                        <Users className="h-3 w-3 mr-1" />
-                        Máx. {maxGuests} personas
-                      </span>
-                    )}
-                  </div>
+                  {roomData.type && (
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                      {getRoomTypeText(roomData.type)}
+                    </span>
+                  )}
                 </>
               ) : (
                 "Escanee este código QR para comunicarse con recepción"
@@ -215,14 +205,6 @@ const QrCodeDisplay = () => {
               >
                 <ExternalLink className="h-4 w-4" />
                 Probar Enlace
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleSimulateView}
-                className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
-              >
-                <QrCode className="h-4 w-4" />
-                Simular Vista
               </Button>
             </div>
           </CardFooter>

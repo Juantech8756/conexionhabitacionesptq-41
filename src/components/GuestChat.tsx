@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,10 +23,8 @@ interface GuestChatProps {
   roomNumber: string;
   guestId: string;
   onBack: () => void;
-  simulationMode?: boolean; // Added this prop as optional
 }
 
-// Re-adding the MessageType definition that was accidentally removed
 type MessageType = {
   id: string;
   content: string;
@@ -52,7 +49,7 @@ type PendingMessage = {
   retryCount: number;
 };
 
-const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = false }: GuestChatProps) => {
+const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -783,7 +780,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack, simulationMode = fa
           <h2 className="text-lg font-semibold">Recepción</h2>
           <p className="text-xs text-white/80">
             Cabaña {roomNumber} - {guestName}
-            {simulationMode && <span className="ml-1">(Simulación)</span>}
           </p>
         </div>
         <div className="ml-auto">
