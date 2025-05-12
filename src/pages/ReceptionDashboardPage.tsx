@@ -76,7 +76,7 @@ const ReceptionDashboardPage = () => {
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
-  // Use the optimized realtime hook for notifications
+  // Use the optimized realtime hook for notifications with better message deduplication
   const { isConnected, updateActivity } = useRealtime(
     [
       {
@@ -135,7 +135,10 @@ const ReceptionDashboardPage = () => {
     "reception-dashboard-notifications",
     {
       inactivityTimeout: 30 * 60 * 1000, // 30 minutes for reception staff
-      debugMode: true, // Enable debug mode for reception staff to help troubleshoot
+      debugMode: true,                    // Enable debug mode for reception staff to help troubleshoot
+      deduplicationEnabled: true,         // Enable deduplication
+      deduplicationTTL: 30000,            // 30 seconds TTL for deduplication
+      aggressiveReconnect: isMobile,      // More aggressive reconnection on mobile
     }
   );
 
@@ -304,7 +307,7 @@ const ReceptionDashboardPage = () => {
                     </div>
                     
                     <div className="border-t mt-4 pt-2 px-4">
-                      <ConnectionStatusIndicator className="mb-4 mt-2" />
+                      <ConnectionStatusIndicator className="mb-4 mt-2" isConnected={isConnected} />
                       
                       <Button variant="outline" className="w-full justify-start" onClick={() => {
                     setSidebarOpen(false);
@@ -335,7 +338,7 @@ const ReceptionDashboardPage = () => {
           </motion.div>
           
           <div className="flex items-center space-x-2">
-            {!isMobile && <ConnectionStatusIndicator className="bg-white/10 text-white" />}
+            {!isMobile && <ConnectionStatusIndicator className="bg-white/10 text-white" isConnected={isConnected} />}
             
             {user && !isMobile && <motion.span initial={{
             opacity: 0,

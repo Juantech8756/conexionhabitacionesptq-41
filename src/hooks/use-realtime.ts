@@ -22,7 +22,9 @@ interface UseRealtimeOptions {
   inactivityTimeout?: number; // Timeout in milliseconds before auto-disconnect
   reconnectAttempts?: number; // Max number of reconnection attempts
   debugMode?: boolean; // Enable detailed logging
-  deduplicationEnabled?: boolean; // New option to enable message deduplication
+  deduplicationEnabled?: boolean; // Enable message deduplication
+  deduplicationTTL?: number; // Time in ms to keep processed event IDs (default 30s)
+  aggressiveReconnect?: boolean; // More aggressive reconnection strategy for mobile
 }
 
 // Default options
@@ -30,7 +32,9 @@ const DEFAULT_OPTIONS: UseRealtimeOptions = {
   inactivityTimeout: 15 * 60 * 1000, // 15 minutes
   reconnectAttempts: 5,
   debugMode: false,
-  deduplicationEnabled: true, // Enable deduplication by default
+  deduplicationEnabled: true,
+  deduplicationTTL: 30000, // 30 seconds by default for better deduplication
+  aggressiveReconnect: false, // Disabled by default
 };
 
 // Keep track of all active channels to prevent duplicate subscriptions
@@ -50,6 +54,7 @@ export const useRealtime = (
   const [forcedReconnect, setForcedReconnect] = useState<number>(0);
   const subscribedTablesRef = useRef<Set<string>>(new Set());
   const processedEventsRef = useRef<Set<string>>(new Set()); // For deduplication
+  const lastProcessedTimeRef = useRef<Record<string, number>>({});
   const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
   
   // Log helper that respects debug mode setting
@@ -99,6 +104,19 @@ export const useRealtime = (
     }
   };
 
+  // Clean up processed events older than TTL
+  const cleanupProcessedEvents = () => {
+    const now = Date.now();
+    const ttl = mergedOptions.deduplicationTTL || 30000; // 30 seconds default
+
+    for (const [eventId, timestamp] of Object.entries(lastProcessedTimeRef.current)) {
+      if (now - timestamp > ttl) {
+        processedEventsRef.current.delete(eventId);
+        delete lastProcessedTimeRef.current[eventId];
+      }
+    }
+  };
+
   // Process subscription callback with deduplication if enabled
   const processCallback = (subscription: RealtimeSubscription, payload: RealtimePostgresChangesPayload<any>) => {
     // Generate a unique event ID for deduplication
@@ -115,14 +133,13 @@ export const useRealtime = (
       return;
     }
     
-    // Add to processed events (with TTL for cleanup)
+    // Add to processed events with TTL tracking
     if (mergedOptions.deduplicationEnabled) {
       processedEventsRef.current.add(eventId);
+      lastProcessedTimeRef.current[eventId] = Date.now();
       
-      // Clean up event ID after 5 seconds
-      setTimeout(() => {
-        processedEventsRef.current.delete(eventId);
-      }, 5000);
+      // Periodically clean up old events
+      cleanupProcessedEvents();
     }
     
     // Call the actual callback
@@ -187,10 +204,18 @@ export const useRealtime = (
         log(`Channel disconnected: ${uniqueName}`);
         setIsConnected(false);
 
-        // Set up automatic reconnection with exponential backoff
+        // Set up automatic reconnection with adaptive backoff
         if (retryTimeoutRef.current === null && 
             connectionAttempts < (mergedOptions.reconnectAttempts || 5)) {
-          const delay = Math.min(1000 * Math.pow(1.5, connectionAttempts), 10000); // Max 10s
+          
+          // Use more aggressive reconnect strategy if enabled (good for mobile)
+          let delay;
+          if (mergedOptions.aggressiveReconnect) {
+            delay = Math.min(800 * Math.pow(1.2, connectionAttempts), 5000); // Max 5s, faster ramp
+          } else {
+            delay = Math.min(1000 * Math.pow(1.5, connectionAttempts), 10000); // Max 10s, standard
+          }
+          
           log(`Will attempt to reconnect in ${delay}ms (attempt ${connectionAttempts + 1})`);
           
           retryTimeoutRef.current = window.setTimeout(() => {
@@ -256,6 +281,10 @@ export const useRealtime = (
       
       if (status === 'SUBSCRIBED') {
         setIsConnected(true);
+      } else if (status === 'TIMED_OUT') {
+        // If subscription times out, try to reconnect
+        log('Subscription timed out, forcing reconnect');
+        setForcedReconnect(prev => prev + 1);
       }
     });
     
@@ -274,13 +303,20 @@ export const useRealtime = (
     const healthCheckInterval = setInterval(() => {
       const timeSinceLastEvent = Date.now() - lastEventTimeRef.current;
       
-      // If it's been more than 2 minutes since any event, force a reconnect
-      if (timeSinceLastEvent > 120000 && isConnected) {
-        log("No events received for 2+ minutes, forcing reconnect");
-        setForcedReconnect(prev => prev + 1); // This will trigger a useEffect
-        lastEventTimeRef.current = Date.now(); // Reset timer
+      // Check for stale connection - force reconnect if connected but no events
+      if (isConnected) {
+        // If aggressive reconnect, check after 60s, otherwise after 120s
+        const thresholdTime = mergedOptions.aggressiveReconnect ? 60000 : 120000;
+        if (timeSinceLastEvent > thresholdTime) {
+          log(`No events received for ${thresholdTime/1000}s, forcing reconnect`);
+          setForcedReconnect(prev => prev + 1); // This will trigger useEffect
+          lastEventTimeRef.current = Date.now(); // Reset timer
+        }
       }
-    }, 60000); // Check every minute
+      
+      // Clean up old processed events
+      cleanupProcessedEvents();
+    }, 30000); // Check every 30s
 
     // Cleanup function
     return () => {
@@ -309,7 +345,9 @@ export const useRealtime = (
       
       clearInterval(healthCheckInterval);
     };
-  }, [subscriptions, channelName, forcedReconnect, mergedOptions.reconnectAttempts, mergedOptions.inactivityTimeout, mergedOptions.debugMode, mergedOptions.deduplicationEnabled]);
+  }, [subscriptions, channelName, forcedReconnect, mergedOptions.reconnectAttempts, 
+      mergedOptions.inactivityTimeout, mergedOptions.debugMode, mergedOptions.deduplicationEnabled,
+      mergedOptions.aggressiveReconnect, isConnected]);
 
   // Function to manually reconnect
   const reconnect = () => {
@@ -327,6 +365,8 @@ export const useRealtime = (
     }
     
     subscribedTablesRef.current.clear();
+    processedEventsRef.current.clear();
+    lastProcessedTimeRef.current = {};
     setForcedReconnect(prev => prev + 1); // This will trigger the useEffect to create a new channel
   };
 
@@ -336,6 +376,7 @@ export const useRealtime = (
     connectionAttempts,
     reconnect,
     disconnect,
-    updateActivity
+    updateActivity,
+    processedEventsCount: processedEventsRef.current.size
   };
 };

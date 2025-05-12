@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import ReceptionDashboard from "@/components/ReceptionDashboard";
 import { useNotifications } from "@/hooks/use-notifications";
 import NotificationPermissionRequest from "@/components/NotificationPermissionRequest";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useToast } from "@/hooks/use-toast";
 
 interface ReceptionDashboardWrapperProps {
   onCallGuest: (guest: {id: string; name: string; roomNumber: string}) => void;
@@ -13,6 +15,8 @@ const ReceptionDashboardWrapper = ({ onCallGuest }: ReceptionDashboardWrapperPro
   const { permission, isSubscribed } = useNotifications({
     type: 'reception'
   });
+  const isMobile = useIsMobile();
+  const { toast } = useToast();
   
   useEffect(() => {
     // Check if we should show notifications prompt
@@ -29,6 +33,7 @@ const ReceptionDashboardWrapper = ({ onCallGuest }: ReceptionDashboardWrapperPro
           <NotificationPermissionRequest 
             type="reception"
             onPermissionChange={() => setShowNotificationsPrompt(false)}
+            onDismiss={() => setShowNotificationsPrompt(false)}
           />
         </div>
       )}
