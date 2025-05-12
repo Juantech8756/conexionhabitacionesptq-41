@@ -1,6 +1,6 @@
 
 // Service Worker for Room Connect Hub application
-const CACHE_NAME = 'room-connect-hub-v1';
+const CACHE_NAME = 'room-connect-hub-v2'; // Incrementing version from v1 to v2
 
 // Files to cache
 const FILES_TO_CACHE = [
@@ -14,20 +14,22 @@ const FILES_TO_CACHE = [
 self.addEventListener('install', (event) => {
   console.log('[ServiceWorker] Install');
   
+  // Force the waiting service worker to become the active service worker
+  self.skipWaiting();
+  
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[ServiceWorker] Pre-caching offline page');
       return cache.addAll(FILES_TO_CACHE);
     })
   );
-  
-  self.skipWaiting();
 });
 
 // Activate the service worker
 self.addEventListener('activate', (event) => {
   console.log('[ServiceWorker] Activate');
   
+  // Clear previous caches
   event.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
@@ -36,10 +38,11 @@ self.addEventListener('activate', (event) => {
           return caches.delete(key);
         }
       }));
+    }).then(() => {
+      console.log('[ServiceWorker] Claiming clients');
+      return self.clients.claim();
     })
   );
-  
-  self.clients.claim();
 });
 
 // Fetch event - used for offline support

@@ -13,8 +13,15 @@ import ReceptionDashboardPage from "./pages/ReceptionDashboardPage";
 import QrCodeDisplay from "./components/QrCodeDisplay";
 import QrCodeAdminPage from "./pages/QrCodeAdminPage";
 
-// Create a new QueryClient instance
-const queryClient = new QueryClient();
+// Create a new QueryClient instance with updated configuration
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30000,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
