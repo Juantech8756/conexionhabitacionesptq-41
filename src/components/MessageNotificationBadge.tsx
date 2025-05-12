@@ -33,7 +33,6 @@ const MessageNotificationBadge = ({
 
   // Show wait time badge only if we're not hiding it and it exists
   if (waitTime && waitTime > 0 && !hideWaitTime) {
-    // Round to the nearest whole number
     const formattedTime = Math.round(waitTime);
     return (
       <motion.div
