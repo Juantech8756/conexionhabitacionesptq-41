@@ -14,7 +14,7 @@ const toggleVariants = cva(
         outline:
           "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         modern: 
-          "border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-hotel-400 hover:scale-105 transition-all data-[state=on]:shadow-inner data-[state=on]:border-hotel-500",
+          "border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-hotel-400 hover:scale-[1.02] transition-all data-[state=on]:shadow-inner data-[state=on]:border-hotel-500",
       },
       size: {
         default: "h-10 px-3",
