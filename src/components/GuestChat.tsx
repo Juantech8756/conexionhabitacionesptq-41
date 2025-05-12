@@ -63,6 +63,9 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [shouldPoll, setShouldPoll] = useState(true);
   const [pollingEnabled, setPollingEnabled] = useState(true);
   
+  // New state to track if refresh is needed
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+  
   // Obtener el roomId de la tabla de huéspedes
   const [roomId, setRoomId] = useState<string | null>(null);
   
@@ -154,6 +157,26 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     const ids = new Set(messages.map(msg => msg.id));
     setMessageIdSet(ids);
   }, []);
+
+  // Nueva actualización: Refresco automático cada 0.5 segundos
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      // Trigger refresh if needed - this will run every 500ms
+      if (shouldPoll) {
+        setNeedsRefresh(true);
+      }
+    }, 500); // Refresh every 500ms for more immediate updates
+    
+    return () => clearInterval(refreshInterval);
+  }, [shouldPoll]);
+
+  // Effect to handle the refresh when needed
+  useEffect(() => {
+    if (needsRefresh) {
+      pollNewMessages();
+      setNeedsRefresh(false);
+    }
+  }, [needsRefresh]);
 
   // Sistema de sondeo de respaldo para asegurar que se reciban mensajes
   useEffect(() => {
@@ -839,8 +862,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   return (
     <div className="flex flex-col h-full relative">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-hotel-700 to-hotel-500 p-3 text-white shadow-sm flex items-center">
+      {/* Header - updated to have fixed positioning */}
+      <header className="bg-gradient-to-r from-hotel-700 to-hotel-500 p-3 text-white shadow-sm flex items-center fixed top-0 left-0 right-0 z-10">
         <Button
           variant="ghost"
           size="icon"
@@ -886,9 +909,9 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         }`} title={isRealtimeConnected ? "Conectado en tiempo real" : "Usando respaldo"} />
       </div>
 
-      {/* Chat content - modified to add padding at bottom */}
+      {/* Chat content - modified to add padding at top and bottom */}
       <div
-        className="flex-grow overflow-y-auto p-4 bg-gray-50 pb-20"
+        className="flex-grow overflow-y-auto p-4 bg-gray-50 pb-20 pt-16"
         ref={scrollContainerRef}
       >
         <div className="space-y-3 max-w-3xl mx-auto">
