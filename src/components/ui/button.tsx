@@ -27,6 +27,7 @@ const buttonVariants = cva(
         lg: "h-11 rounded-md px-8",
         icon: "h-10 w-10",
         checkbox: "h-4 w-4 min-h-4 min-w-4 p-0",
+        checkboxXs: "h-3 w-3 min-h-3 min-w-3 p-0", // Extra small checkbox for mobile
       },
     },
     defaultVariants: {

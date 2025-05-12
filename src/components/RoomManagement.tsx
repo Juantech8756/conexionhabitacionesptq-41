@@ -282,7 +282,7 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
     if (!hasChanges) {
       toast({
         title: "Sin cambios",
-        description: "No se han especificado cambios para aplicar",
+        description: "No se han especificados cambios para aplicar",
         variant: "destructive",
       });
       return;
@@ -542,16 +542,16 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                   <div className="flex items-center justify-center">
                     <Button 
                       variant="checkbox" 
-                      size="checkbox" 
+                      size={isMobile ? "checkboxXs" : "checkbox"}
                       className={`rounded transition-colors ${
                         selectAllChecked 
                           ? "bg-hotel-600 text-white border-hotel-600" 
                           : "bg-transparent border border-gray-300 hover:border-hotel-400"
-                      } ${isMobile ? "h-3.5 w-3.5 min-h-3.5 min-w-3.5" : ""}`}
+                      }`}
                       onClick={toggleSelectAll}
                       aria-label="Seleccionar todas las cabañas"
                     >
-                      {selectAllChecked && <CheckSquare className={`text-white ${isMobile ? "h-2.5 w-2.5" : "h-3 w-3"}`} />}
+                      {selectAllChecked && <CheckSquare className={`text-white ${isMobile ? "h-2 w-2" : "h-3 w-3"}`} />}
                     </Button>
                   </div>
                 </TableHead>
@@ -582,16 +582,16 @@ const RoomManagement = ({ showGuestCount, children }: RoomManagementProps) => {
                       <div className="flex items-center justify-center">
                         <Button 
                           variant="checkbox" 
-                          size="checkbox" 
+                          size={isMobile ? "checkboxXs" : "checkbox"} 
                           className={`rounded transition-colors ${
                             selectedRooms.includes(room.id) 
                               ? "bg-hotel-600 text-white border-hotel-600" 
                               : "bg-transparent border border-gray-300 hover:border-hotel-400"
-                          } ${isMobile ? "h-3.5 w-3.5 min-h-3.5 min-w-3.5" : ""}`}
+                          }`}
                           onClick={() => toggleRoomSelection(room.id)}
                           aria-label={`Seleccionar cabaña ${room.room_number}`}
                         >
-                          {selectedRooms.includes(room.id) && <CheckSquare className={`text-white ${isMobile ? "h-2.5 w-2.5" : "h-3 w-3"}`} />}
+                          {selectedRooms.includes(room.id) && <CheckSquare className={`text-white ${isMobile ? "h-2 w-2" : "h-3 w-3"}`} />}
                         </Button>
                       </div>
                     </TableCell>
