@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { MessageCircle, Mic, MicOff, Send, ArrowLeft, Phone, Bell } from "lucide-react";
+import { MessageCircle, Mic, MicOff, Send, Phone, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -862,16 +862,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
 
   return (
     <div className="flex flex-col h-full relative">
-      {/* Header - updated to have fixed positioning */}
+      {/* Header - removed back button */}
       <header className="bg-gradient-to-r from-hotel-700 to-hotel-500 p-3 text-white shadow-sm flex items-center fixed top-0 left-0 right-0 z-10">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onBack}
-          className="mr-2 text-white hover:bg-white/20"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
         <div>
           <h2 className="text-lg font-semibold">Recepción</h2>
           <p className="text-xs text-white/80">
