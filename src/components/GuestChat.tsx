@@ -886,9 +886,9 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         }`} title={isRealtimeConnected ? "Conectado en tiempo real" : "Usando respaldo"} />
       </div>
 
-      {/* Chat content */}
+      {/* Chat content - modified to add padding at bottom */}
       <div
-        className="flex-grow overflow-y-auto p-4 bg-gray-50"
+        className="flex-grow overflow-y-auto p-4 bg-gray-50 pb-20"
         ref={scrollContainerRef}
       >
         <div className="space-y-3 max-w-3xl mx-auto">
@@ -951,8 +951,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      {/* Input area */}
-      <div className="p-3 bg-white border-t shadow-inner">
+      {/* Input area - fixed to bottom */}
+      <div className="p-3 bg-white border-t shadow-inner fixed bottom-0 left-0 right-0 z-10">
         <div className="flex items-center space-x-2">
           <AudioRecorder 
             onAudioRecorded={handleAudioRecorded}

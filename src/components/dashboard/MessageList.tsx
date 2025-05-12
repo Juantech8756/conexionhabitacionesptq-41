@@ -25,7 +25,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile }) => {
   };
 
   return (
-    <ScrollArea className={isMobile ? "flex-grow overflow-auto p-2" : "flex-grow p-4"} ref={scrollContainerRef}>
+    <ScrollArea className={`${isMobile ? "overflow-auto p-2" : "p-4"} flex-grow pb-16`} ref={scrollContainerRef}>
       <div className={isMobile ? "space-y-3" : "space-y-4 max-w-3xl mx-auto"}>
         <AnimatePresence initial={false}>
           {messages.map(msg => (
@@ -70,7 +70,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile }) => {
           ))}
         </AnimatePresence>
         
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="h-16" />
       </div>
     </ScrollArea>
   );

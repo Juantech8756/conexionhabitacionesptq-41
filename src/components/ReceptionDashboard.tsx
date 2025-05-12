@@ -200,10 +200,12 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                 rooms={rooms}
               />
 
-              <MessageList 
-                messages={messages[selectedGuest.id] || []} 
-                isMobile={true}
-              />
+              <div className="flex-grow overflow-auto pb-16">
+                <MessageList 
+                  messages={messages[selectedGuest.id] || []} 
+                  isMobile={true}
+                />
+              </div>
 
               <MessageInputPanel 
                 selectedGuest={selectedGuest}
@@ -259,7 +261,7 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
         />
       </div>
       
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col relative">
         {selectedGuest ? (
           <>
             <ChatHeader 
@@ -271,10 +273,12 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
               rooms={rooms}
             />
             
-            <MessageList 
-              messages={messages[selectedGuest.id] || []} 
-              isMobile={false}
-            />
+            <div className="flex-grow overflow-auto pb-16">
+              <MessageList 
+                messages={messages[selectedGuest.id] || []} 
+                isMobile={false}
+              />
+            </div>
             
             <MessageInputPanel 
               selectedGuest={selectedGuest}

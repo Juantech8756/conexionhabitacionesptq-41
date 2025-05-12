@@ -33,7 +33,7 @@ const MessageInputPanel: React.FC<MessageInputPanelProps> = ({
   isMobile,
 }) => {
   return (
-    <div className={isMobile ? "p-3 border-t bg-white shadow-inner" : "p-4 border-t bg-white"}>
+    <div className={`${isMobile ? "p-3" : "p-4"} border-t bg-white shadow-inner fixed bottom-0 left-0 right-0 z-10`}>
       <div className={`flex items-center space-x-2 ${!isMobile && "max-w-3xl mx-auto"}`}>
         <AudioRecorder
           onAudioRecorded={onAudioRecorded}
