@@ -10,19 +10,31 @@ interface ConnectionStatusIndicatorProps {
   className?: string;
   variant?: "default" | "minimal" | "detailed";
   showUsage?: boolean;
+  isConnected?: boolean; // Added this prop to support external connection state
+  onClick?: () => void; // Added onClick handler to support reconnection actions
 }
 
 const ConnectionStatusIndicator = ({
   className,
   variant = "default",
-  showUsage = false
+  showUsage = false,
+  isConnected: externalIsConnected, // Renamed to avoid conflict with internal state
+  onClick
 }: ConnectionStatusIndicatorProps) => {
-  const [isConnected, setIsConnected] = useState(true);
+  const [internalIsConnected, setInternalIsConnected] = useState(true);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
   const [pingLatency, setPingLatency] = useState<number | null>(null);
   
+  // Use external connection state if provided, otherwise use internal state
+  const isConnected = externalIsConnected !== undefined ? externalIsConnected : internalIsConnected;
+  
   useEffect(() => {
+    // Only set up monitoring if external connection state is not provided
+    if (externalIsConnected !== undefined) {
+      return; // Skip internal monitoring if external state is provided
+    }
+    
     // Set up a dedicated channel just for monitoring connection status
     const channel = supabase.channel('system-connection-status');
 
@@ -30,13 +42,13 @@ const ConnectionStatusIndicator = ({
     const subscription = channel
       .on(REALTIME_LISTEN_TYPES.SYSTEM, { event: 'connected' }, () => {
         console.log("Realtime connection established");
-        setIsConnected(true);
+        setInternalIsConnected(true);
         setIsReconnecting(false);
         setLastActivity(new Date());
       })
       .on(REALTIME_LISTEN_TYPES.SYSTEM, { event: 'disconnected' }, () => {
         console.log("Realtime connection lost");
-        setIsConnected(false);
+        setInternalIsConnected(false);
         setIsReconnecting(false);
       })
       .on(REALTIME_LISTEN_TYPES.SYSTEM, { event: 'connecting' }, () => {
@@ -47,7 +59,7 @@ const ConnectionStatusIndicator = ({
         console.log(`Connection status channel subscription status: ${status}`);
         // Use string comparison since status is a string value
         if (status === 'SUBSCRIBED') {
-          setIsConnected(true);
+          setInternalIsConnected(true);
           setIsReconnecting(false);
           setLastActivity(new Date());
         }
@@ -68,9 +80,9 @@ const ConnectionStatusIndicator = ({
           const latency = endTime - startTime;
           setPingLatency(latency);
           setLastActivity(new Date());
-          setIsConnected(true);
+          setInternalIsConnected(true);
         }).catch(() => {
-          setIsConnected(false);
+          setInternalIsConnected(false);
           setPingLatency(null);
         });
       }
@@ -80,7 +92,7 @@ const ConnectionStatusIndicator = ({
       clearInterval(pingInterval);
       supabase.removeChannel(channel);
     };
-  }, [isReconnecting]);
+  }, [isReconnecting, externalIsConnected]);
 
   // Format the last activity time
   const getLastActivityText = () => {
@@ -105,7 +117,7 @@ const ConnectionStatusIndicator = ({
           <TooltipTrigger asChild>
             <div 
               className={cn(
-                "flex items-center justify-center rounded-full p-0.5 transition-colors", 
+                "flex items-center justify-center rounded-full p-0.5 transition-colors cursor-pointer", 
                 isConnected ? 
                   "text-green-500" : 
                   isReconnecting ? 
@@ -113,6 +125,7 @@ const ConnectionStatusIndicator = ({
                     "text-red-500", 
                 className
               )} 
+              onClick={onClick}
             >
               {isConnected ? (
                 <Wifi className="h-3 w-3" />
@@ -142,7 +155,7 @@ const ConnectionStatusIndicator = ({
   // Detailed variant with more information
   if (variant === "detailed") {
     return (
-      <div className={cn("border rounded-md p-3 space-y-2", className)}>
+      <div className={cn("border rounded-md p-3 space-y-2", className)} onClick={onClick}>
         <div className="flex items-center justify-between">
           <span className="font-medium">Estado de conexión</span>
           <div className={cn(
@@ -202,7 +215,7 @@ const ConnectionStatusIndicator = ({
 
   // Default variant with text
   return (
-    <div className={cn("flex items-center gap-1.5 text-xs font-medium", className)}>
+    <div className={cn("flex items-center gap-1.5 text-xs font-medium", className)} onClick={onClick}>
       <div className={cn(
         "w-2 h-2 rounded-full", 
         isConnected ? 
