@@ -96,7 +96,7 @@ const GuestList: React.FC<GuestListProps> = ({
               duration: 0.2,
               backgroundColor: { duration: 1 }
             }}
-            className={`p-3 border-b hover:bg-gray-50 transition-colors duration-200 ${
+            className={`p-2 border-b hover:bg-gray-50 transition-colors duration-200 ${
               selectedGuest?.id === guest.id && !isMobile
                 ? "bg-blue-50 border-l-4 border-l-hotel-600" 
                 : ""
@@ -107,7 +107,7 @@ const GuestList: React.FC<GuestListProps> = ({
                 className="cursor-pointer flex-grow" 
                 onClick={() => onSelectGuest(guest)}
               >
-                <p className="font-medium flex items-center flex-wrap text-sm">
+                <p className="font-medium flex items-center flex-wrap text-xs">
                   {guest.name} 
                   <span className="ml-2 text-xs text-gray-500">
                     Cabaña {guest.room_number}

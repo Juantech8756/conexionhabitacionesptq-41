@@ -63,7 +63,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefresh
 
   return (
     <ScrollArea className={`${isMobile ? "overflow-auto p-2" : "p-3"} flex-grow pb-16`} ref={scrollContainerRef}>
-      <div className={isMobile ? "space-y-3" : "space-y-3 max-w-2xl mx-auto"}>
+      <div className={isMobile ? "space-y-3" : "space-y-3 mx-auto"} style={{ maxWidth: isMobile ? "100%" : "90%" }}>
         <AnimatePresence initial={false}>
           {deduplicatedMessages.map(msg => (
             <motion.div 

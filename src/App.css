@@ -102,6 +102,7 @@ body, html {
 /* Additional header spacing fix */
 .dashboard-header-container {
   height: 56px;
+  z-index: 50;
 }
 
 /* Header positioning fixes */
@@ -165,4 +166,27 @@ body, html {
   top: 70px;
   z-index: 10;
   background-color: #fff;
+}
+
+/* Desktop layout fixes */
+@media (min-width: 768px) {
+  .reception-dashboard {
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .desktop-content-wrapper {
+    height: calc(100vh - 110px); /* Adjust for header + tabs */
+    overflow: hidden;
+  }
+  
+  .desktop-sidebar {
+    height: 100%;
+    overflow-y: auto;
+  }
+  
+  .desktop-main-content {
+    height: 100%;
+    overflow-y: auto;
+  }
 }
