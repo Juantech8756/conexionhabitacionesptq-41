@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, X } from "lucide-react";
@@ -8,13 +7,15 @@ interface AudioRecorderProps {
   onCancel: () => void;
   disabled?: boolean;
   title?: string;
+  className?: string;
 }
 
 const AudioRecorder = ({
   onAudioRecorded,
   onCancel,
   disabled = false,
-  title = "Grabar audio"
+  title = "Grabar audio",
+  className = ""
 }: AudioRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -121,7 +122,7 @@ const AudioRecorder = ({
       variant="outline"
       onClick={toggleRecording}
       disabled={disabled}
-      className={isRecording ? "bg-red-100 text-red-600 border-red-300 animate-pulse" : ""}
+      className={`${isRecording ? "bg-red-100 text-red-600 border-red-300 animate-pulse" : ""} ${className}`}
       title={title}
     >
       {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}

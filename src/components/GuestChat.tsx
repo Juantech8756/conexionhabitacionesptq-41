@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { MessageCircle, Mic, MicOff, Send, Phone, Bell } from "lucide-react";
+import { MessageCircle, Mic, MicOff, Send, Phone, Bell, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -13,7 +13,6 @@ import CallInterface from "@/components/CallInterface";
 import { showGlobalAlert } from "@/hooks/use-alerts";
 import { useNotifications } from "@/hooks/use-notifications";
 import { sendNotificationToReception, formatMessageNotification } from "@/utils/notification";
-import NotificationPermissionRequest from "@/components/NotificationPermissionRequest";
 import AudioRecorder from "@/components/AudioRecorder";
 import { useRealtime } from "@/hooks/use-realtime";
 import { RealtimeChannel } from "@supabase/supabase-js";
@@ -36,6 +35,7 @@ type MessageType = {
   media_url?: string;
   media_type?: 'image' | 'video';
   created_at: string;
+  replaceLocalMessage?: boolean;
 };
 
 // Estados locales para seguimiento de mensajes
@@ -56,7 +56,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [isLoading, setIsLoading] = useState(false);
   const [isCallActive, setIsCallActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [showNotificationsPrompt, setShowNotificationsPrompt] = useState(false);
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
   const [lastPollTime, setLastPollTime] = useState(Date.now());
   const [messageIdSet, setMessageIdSet] = useState<Set<string>>(new Set());
@@ -120,13 +119,44 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
           if (!messageIdSet.has(typedMessage.id)) {
             console.log('Adding new message from realtime with ID:', typedMessage.id);
             
-            setMessages(prev => {
-              // Double-check that the message isn't already in the array
-              if (!prev.some(msg => msg.id === typedMessage.id)) {
+            // Primero verificamos si es un reemplazo para un mensaje optimista
+            const isLocalMessageReplacement = Array.from(pendingMessages).some(
+              pm => pm.status === 'sending' && typedMessage.content === pm.content
+            );
+            
+            if (isLocalMessageReplacement) {
+              // Si es un reemplazo, actualizamos el estado de los mensajes reemplazando el mensaje optimista
+              setMessages(prev => {
+                // Encontramos el mensaje optimista por contenido (más fiable que por ID en este caso)
+                const localMsgIndex = prev.findIndex(
+                  m => m.id.startsWith('local') && m.content === typedMessage.content
+                );
+                
+                if (localMsgIndex >= 0) {
+                  // Crear un nuevo array con el mensaje real reemplazando al optimista
+                  const newMessages = [...prev];
+                  newMessages[localMsgIndex] = typedMessage;
+                  return newMessages;
+                }
+                
+                // Si no encontramos el mensaje optimista, simplemente añadimos el nuevo
                 return [...prev, typedMessage];
-              }
-              return prev;
-            });
+              });
+              
+              // También eliminamos el mensaje pendiente correspondiente
+              setPendingMessages(prev => 
+                prev.filter(pm => !(pm.content === typedMessage.content && pm.status === 'sending'))
+              );
+            } else {
+              // Si no es un reemplazo, simplemente añadimos el mensaje
+              setMessages(prev => {
+                // Verificación adicional para evitar duplicados
+                if (!prev.some(msg => msg.id === typedMessage.id)) {
+                  return [...prev, typedMessage];
+                }
+                return prev;
+              });
+            }
             
             // Track this message ID
             setMessageIdSet(prev => {
@@ -208,8 +238,11 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       
       if (!messages.length) return;
       
-      // Obtenemos la fecha del último mensaje
-      const latestMessageDate = new Date(messages[messages.length - 1]?.created_at || 0);
+      // Obtenemos la fecha del último mensaje real (no optimista)
+      const realMessages = messages.filter(m => !m.id.startsWith('local'));
+      if (realMessages.length === 0) return;
+      
+      const latestMessageDate = new Date(realMessages[realMessages.length - 1]?.created_at || 0);
       
       // Buscar mensajes más recientes que el último que tenemos
       const { data, error } = await supabase
@@ -228,13 +261,60 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         const typedMessages: MessageType[] = data.map(mapDatabaseMessageToTypedMessage);
         
         // Filter out messages we already have (improved deduplication)
-        const newMessages = typedMessages.filter(msg => !messageIdSet.has(msg.id));
+        const newMessages = typedMessages.filter(msg => {
+          // No incluir si el ID ya está en nuestro set
+          if (messageIdSet.has(msg.id)) return false;
+          
+          // También verificamos si ya existe en la lista actual de mensajes
+          if (messages.some(m => m.id === msg.id)) return false;
+          
+          // Verificar si es un reemplazo para un mensaje optimista
+          const isReplacement = messages.some(
+            m => m.id.startsWith('local') && 
+                m.content === msg.content && 
+                m.is_guest === msg.is_guest
+          );
+          
+          if (isReplacement) {
+            // Si es un reemplazo, marcar para reemplazar en lugar de agregar
+            msg.replaceLocalMessage = true;
+          }
+          
+          return true;
+        });
         
         if (newMessages.length > 0) {
           console.log(`Añadiendo ${newMessages.length} mensajes nuevos del sondeo`);
           
           // Actualizar mensajes locales con los nuevos mensajes únicos
-          setMessages(prev => [...prev, ...newMessages]);
+          setMessages(prev => {
+            // Primero manejamos los reemplazos
+            let updatedMessages = [...prev];
+            
+            for (const newMsg of newMessages) {
+              // Añadir mensaje normalmente si no es reemplazo
+              if (!newMsg.replaceLocalMessage) continue;
+              
+              // Si es reemplazo, encontramos el mensaje optimista para reemplazar
+              const localIndex = updatedMessages.findIndex(
+                m => m.id.startsWith('local') && 
+                    m.content === newMsg.content && 
+                    m.is_guest === newMsg.is_guest
+              );
+              
+              if (localIndex >= 0) {
+                // Reemplazar el mensaje optimista con el real
+                updatedMessages[localIndex] = newMsg;
+                
+                // Eliminar la propiedad temporal
+                delete newMsg.replaceLocalMessage;
+              }
+            }
+            
+            // Ahora añadimos los mensajes que no son reemplazos
+            const nonReplacements = newMessages.filter(msg => !msg.replaceLocalMessage);
+            return [...updatedMessages, ...nonReplacements];
+          });
           
           // Track these new message IDs
           setMessageIdSet(prev => {
@@ -242,6 +322,13 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             newMessages.forEach(msg => newSet.add(msg.id));
             return newSet;
           });
+          
+          // También eliminamos los mensajes pendientes correspondientes
+          setPendingMessages(prev => 
+            prev.filter(pm => !newMessages.some(
+              nm => nm.content === pm.content && pm.status === 'sending'
+            ))
+          );
           
           // Scroll hacia abajo para mostrar los nuevos mensajes
           setTimeout(() => scrollToBottom(true), 100);
@@ -312,20 +399,18 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         duration: 5000
       });
       
-      // Check if we should show notifications prompt
-      if (permission !== 'granted' && permission !== 'denied' && !isSubscribed) {
-        setShowNotificationsPrompt(true);
-      }
+      // Ya no necesitamos mostrar el prompt de notificaciones aquí
+      // ya que tenemos el banner global
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [permission, isSubscribed]);
+  }, []);
 
   // Scroll to newest messages
   const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
-        behavior: smooth ? "smooth" : "auto",
+        behavior: (isMobile && smooth) ? "auto" : smooth ? "smooth" : "auto",
         block: "end"
       });
     }
@@ -635,6 +720,12 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   // Función para enviar mensaje al servidor
   const sendMessageToServer = async (localId: string, messageText: string) => {
     try {
+      // Primero verificamos si este mensaje ya fue enviado para evitar duplicados
+      if (!messageIdSet.has(localId)) {
+        console.error("Mensaje local no encontrado, posible estado inconsistente");
+        return;
+      }
+      
       // Configurar el nuevo mensaje
       const newMessage = {
         guest_id: guestId,
@@ -656,11 +747,10 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
       
       const typedMessage = mapDatabaseMessageToTypedMessage(data);
       
-      // Track the real message ID instead of the local one
+      // Track the real message ID
       setMessageIdSet(prev => {
         const newSet = new Set(prev);
         newSet.add(typedMessage.id);
-        // But we keep the localId in the set too, to prevent duplicates if polling returns it
         return newSet;
       });
       
@@ -837,11 +927,6 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     setIsCallActive(false);
   };
 
-  // Update the handle close notification prompt
-  const handleCloseNotificationPrompt = () => {
-    setShowNotificationsPrompt(false);
-  };
-
   // Obtener hora formateada para los mensajes
   const getFormattedTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -861,61 +946,65 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   };
 
   return (
-    <div className="flex flex-col h-full relative">
-      {/* Header - removed back button */}
-      <header className="bg-gradient-to-r from-hotel-700 to-hotel-500 p-3 text-white shadow-sm flex items-center fixed top-0 left-0 right-0 z-10">
-        <div>
-          <h2 className="text-lg font-semibold">Recepción</h2>
-          <p className="text-xs text-white/80">
-            Cabaña {roomNumber} - {guestName}
-          </p>
+    <div className="grid grid-rows-[auto_1fr_auto] h-full overflow-hidden smooth-scroll-ios ios-keyboard-fix">
+      {/* Header - primera fila del grid, no necesita position fixed */}
+      <header className={`bg-gradient-to-r from-hotel-900 to-hotel-700 ${isMobile ? 'p-3 header-mobile' : 'p-4'} text-white shadow-md flex items-center justify-between z-10 animate-gradient-flow ${isMobile ? 'mobile-header-height' : ''}`}>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className={`text-white hover:bg-white/20 mr-1 animated-icon ${isMobile ? 'h-9 w-9 p-1.5' : ''} touch-feedback`}
+          >
+            <ArrowLeft className={`${isMobile ? 'h-4 w-4 mobile-icon-adjust' : 'h-5 w-5'}`} />
+          </Button>
+          <div className="animate-gentle-reveal">
+            <h2 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold`}>Recepción</h2>
+            <p className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-white/80`}>
+              Cabaña {roomNumber} - {guestName}
+            </p>
+          </div>
         </div>
-        <div className="ml-auto">
+        <div className="flex gap-2">
           <Button
             variant="ghost"
             size="icon"
             onClick={handleCallStart}
-            className="text-white hover:bg-white/20"
+            className={`text-white hover:bg-white/20 rounded-full flex items-center justify-center ripple-effect animate-gentle-reveal touch-feedback ${isMobile ? 'w-9 h-9' : 'w-10 h-10'}`}
           >
-            <Phone className="h-5 w-5" />
+            <Phone className={`${isMobile ? 'h-4 w-4 mobile-icon-adjust' : 'h-5 w-5'}`} />
           </Button>
         </div>
       </header>
 
-      {/* Notification Permission Banner */}
-      {showNotificationsPrompt && (
-        <NotificationPermissionRequest
-          type="guest"
-          guestId={guestId}
-          roomId={roomId || undefined}
-          roomNumber={roomNumber}
-          onPermissionChange={() => setShowNotificationsPrompt(false)}
-          onDismiss={handleCloseNotificationPrompt}
-        />
-      )}
-
-      {/* Chat content - modified to add padding at top and bottom */}
+      {/* Chat content - segunda fila del grid con scroll propio */}
       <div
-        className="flex-grow overflow-y-auto p-4 bg-gray-50 pb-20 pt-16"
+        className={`overflow-y-auto ${isMobile ? 'p-2 reduce-padding-mobile' : 'p-4'} bg-hotel-50/50 smooth-scroll-ios`}
         ref={scrollContainerRef}
       >
-        <div className="space-y-3 max-w-3xl mx-auto">
+        <div className={`space-y-3 ${isMobile ? 'space-y-2' : 'space-y-3'} max-w-3xl mx-auto`}>
           <AnimatePresence initial={false}>
-            {messages.map((msg) => (
+            {messages.map((msg, index) => (
               <motion.div
                 key={msg.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ 
+                  duration: isMobile ? 0.2 : 0.3, 
+                  delay: msg.id.startsWith('local') ? 0 : Math.min(0.1 * (index % 5), isMobile ? 0.3 : 0.5),
+                  type: "spring",
+                  stiffness: isMobile ? 250 : 200,
+                  damping: isMobile ? 25 : 20
+                }}
                 className={`flex ${msg.is_guest ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[85%] p-3 rounded-lg ${
+                  className={`${isMobile ? 'max-w-[85%] p-2.5 text-[13px]' : 'max-w-[85%] p-3'} rounded-2xl chat-bubble ${
                     msg.is_guest
-                      ? "bg-gradient-to-r from-hotel-500 to-hotel-600 text-white"
-                      : "bg-white border border-gray-200 text-gray-800"
-                  }`}
+                      ? "bg-gradient-to-r from-hotel-700 to-hotel-600 text-white rounded-br-sm shadow-md"
+                      : "bg-white border border-hotel-200/40 text-gray-800 rounded-bl-sm shadow-sm"
+                  } ${isMobile ? 'chat-content-container' : ''}`}
                 >
                   {msg.is_audio ? (
                     <AudioMessagePlayer
@@ -930,9 +1019,9 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
                       isGuest={msg.is_guest}
                     />
                   ) : (
-                    <p className="text-sm break-words">{msg.content}</p>
+                    <p className={`${isMobile ? 'text-xs' : 'text-sm'} break-words`}>{msg.content}</p>
                   )}
-                  <div className="mt-1 text-xs opacity-70 text-right">
+                  <div className={`${isMobile ? 'mt-0.5' : 'mt-1'} ${isMobile ? 'text-[10px]' : 'text-xs'} opacity-70 text-right`}>
                     {msg.id.startsWith('local') ? (
                       <span>Enviando...</span>
                     ) : (
@@ -959,14 +1048,15 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
         </div>
       </div>
 
-      {/* Input area - fixed to bottom */}
-      <div className="p-3 bg-white border-t shadow-inner fixed bottom-0 left-0 right-0 z-10">
-        <div className="flex items-center space-x-2">
+      {/* Input area - tercera fila del grid, no necesita position fixed */}
+      <div className={`${isMobile ? 'p-2' : 'p-3'} bg-white border-t border-hotel-200/30 shadow-lg z-10 animate-slide-in-bottom ios-keyboard-fix`}>
+        <div className={`flex items-center ${isMobile ? 'gap-1 chat-input-container' : 'gap-2'} max-w-3xl mx-auto`}>
           <AudioRecorder 
             onAudioRecorded={handleAudioRecorded}
             onCancel={handleCancelAudio}
             disabled={isLoading}
             title="Grabar mensaje de voz"
+            className={`rounded-full border-hotel-300 text-hotel-700 hover:bg-hotel-100 animated-icon ${isMobile ? 'audio-recorder-mobile' : ''}`}
           />
           
           <Input
@@ -974,7 +1064,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Escribe un mensaje..."
-            className="flex-grow"
+            className={`flex-grow rounded-full bg-hotel-50 border-hotel-200 focus-visible:ring-hotel-500 animated-input ${isMobile ? 'text-sm py-1.5 chat-input-field input-mobile-padding' : ''}`}
             onKeyPress={(e) => e.key === "Enter" && sendMessage()}
             disabled={isLoading}
           />
@@ -986,14 +1076,15 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             disabled={isLoading}
             onFileSelect={handleFileSelect}
             selectedFile={selectedFile}
+            className={`rounded-full border-hotel-300 text-hotel-700 hover:bg-hotel-100 animated-icon ${isMobile ? 'audio-recorder-mobile' : ''}`}
           />
           
           <Button
             disabled={(message.trim() === "" && !selectedFile) || isLoading}
             onClick={sendMessage}
-            className={`${(message.trim() !== "" || selectedFile) ? "bg-hotel-600 hover:bg-hotel-700" : "bg-gray-300"}`}
+            className={`rounded-full ${isMobile ? 'w-9 h-9' : 'w-10 h-10'} flex items-center justify-center advanced-button ripple-effect ${(message.trim() !== "" || selectedFile) ? "bg-hotel-700 hover:bg-hotel-800" : "bg-gray-300"} ${isMobile ? 'mobile-friendly-button p-0' : ''}`}
           >
-            <Send className="h-4 w-4" />
+            <Send className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
           </Button>
         </div>
       </div>
@@ -1005,6 +1096,11 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 30
+            }}
             className="absolute inset-0 z-50"
           >
             <CallInterface

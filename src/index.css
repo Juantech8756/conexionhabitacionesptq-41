@@ -4,76 +4,86 @@
  
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 30 30% 98%;
+    --foreground: 20 40% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 30 30% 98%;
+    --card-foreground: 20 40% 12%;
  
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 30 30% 98%;
+    --popover-foreground: 20 40% 12%;
  
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 28 40% 25%;
+    --primary-foreground: 28 30% 98%;
  
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 28 25% 94%;
+    --secondary-foreground: 28 40% 20%;
  
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 28 25% 94%;
+    --muted-foreground: 28 30% 40%;
  
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 28 25% 94%;
+    --accent-foreground: 28 40% 20%;
  
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 30 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 28 25% 90%;
+    --input: 28 25% 90%;
+    --ring: 28 40% 25%;
  
     --radius: 0.5rem;
 
-    --hotel-50: 216 100% 95%;
-    --hotel-100: 216 88% 90%;
-    --hotel-200: 216 88% 80%;
-    --hotel-300: 216 88% 70%;
-    --hotel-400: 216 88% 60%;
-    --hotel-500: 216 88% 55%;
-    --hotel-600: 216 88% 45%;
-    --hotel-700: 216 88% 35%;
-    --hotel-800: 216 88% 25%;
-    --hotel-900: 216 88% 15%;
+    --hotel-50: 28 70% 97%;
+    --hotel-100: 28 65% 92%;
+    --hotel-200: 28 60% 80%;
+    --hotel-300: 28 55% 65%;
+    --hotel-400: 28 50% 50%;
+    --hotel-500: 28 45% 40%;
+    --hotel-600: 28 40% 30%;
+    --hotel-700: 28 35% 25%;
+    --hotel-800: 28 30% 20%;
+    --hotel-900: 28 25% 15%;
+
+    --hotel-100-rgb: 252, 244, 236;
+    --hotel-200-rgb: 242, 227, 211;
+    --hotel-300-rgb: 227, 203, 178;
+    --hotel-400-rgb: 204, 169, 134;
+    --hotel-500-rgb: 179, 139, 101;
+    --hotel-600-rgb: 143, 103, 68;
+    --hotel-700-rgb: 110, 77, 49;
+    --hotel-800-rgb: 82, 57, 36;
+    --hotel-900-rgb: 56, 38, 23;
   }
  
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 20 40% 8%;
+    --foreground: 30 25% 90%;
  
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 20 40% 8%;
+    --card-foreground: 30 25% 90%;
  
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 20 40% 8%;
+    --popover-foreground: 30 25% 90%;
  
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 28 35% 45%;
+    --primary-foreground: 28 40% 10%;
  
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 28 30% 15%;
+    --secondary-foreground: 28 30% 98%;
  
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 28 30% 15%;
+    --muted-foreground: 28 20% 65%;
  
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 28 30% 15%;
+    --accent-foreground: 28 30% 98%;
  
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 30 40% 98%;
  
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 28 30% 15%;
+    --input: 28 30% 15%;
+    --ring: 28 25% 75%;
   }
 }
  
@@ -94,11 +104,11 @@
   }
   
   ::-webkit-scrollbar-track {
-    @apply bg-gray-100/80 rounded-full;
+    @apply bg-hotel-100/60 rounded-full;
   }
   
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-all;
+    @apply bg-hotel-300 rounded-full hover:bg-hotel-400 transition-all;
   }
 
   /* Mobile optimizations */
@@ -180,7 +190,7 @@
 }
 
 .sidebar-header {
-  @apply bg-gradient-to-r from-hotel-800 to-hotel-600 p-4 flex items-center justify-between;
+  @apply bg-gradient-to-r from-hotel-900 to-hotel-700 p-4 flex items-center justify-between;
 }
 
 /* Enhanced mobile sheet close button */
@@ -276,11 +286,11 @@
 
 /* Enhanced chat bubbles - optimized for mobile with better gradients */
 .chat-bubble-guest {
-  @apply bg-gradient-to-br from-hotel-600 to-hotel-500 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl shadow-md;
+  @apply bg-gradient-to-br from-hotel-800 to-hotel-700 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl shadow-md;
 }
 
 .chat-bubble-staff {
-  @apply bg-gradient-to-b from-white to-gray-50 text-gray-800 rounded-tr-2xl rounded-tl-2xl rounded-br-2xl border-hair border-gray-200/50 shadow-sm;
+  @apply bg-gradient-to-b from-white to-hotel-50 text-gray-800 rounded-tr-2xl rounded-tl-2xl rounded-br-2xl border-hair border-hotel-200/50 shadow-sm;
 }
 
 /* Enhanced recording animation */
@@ -430,11 +440,11 @@ button, a, .interactive {
 
 /* Enhanced gradients for headers */
 .gradient-header {
-  @apply bg-gradient-to-r from-hotel-700 via-hotel-600 to-hotel-500 text-white shadow-md;
+  @apply bg-gradient-to-r from-hotel-900 via-hotel-800 to-hotel-700 text-white shadow-md;
 }
 
 .gradient-header-soft {
-  @apply bg-gradient-to-r from-hotel-600/95 to-hotel-400 bg-opacity-95 text-white backdrop-blur-sm;
+  @apply bg-gradient-to-r from-hotel-800/95 to-hotel-600 bg-opacity-95 text-white backdrop-blur-sm;
 }
 
 /* Enhanced cards */
@@ -444,7 +454,7 @@ button, a, .interactive {
 
 /* Enhanced badges with gradient */
 .gradient-badge {
-  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gradient-to-r from-hotel-500 to-hotel-400 text-white shadow-sm;
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gradient-to-r from-hotel-700 to-hotel-600 text-white shadow-sm;
 }
 
 /* Enhanced mobile slide transitions */
@@ -714,4 +724,636 @@ button, a, .interactive {
 .select-button:focus-visible {
   @apply ring-2 ring-hotel-500 ring-offset-1;
   outline: none;
+}
+
+@layer components {
+  /* Nuevos estilos de botones refinados */
+  .btn-primary {
+    @apply bg-gradient-to-r from-hotel-800 to-hotel-700 text-white font-medium 
+           shadow-sm hover:shadow-md transition-all duration-300 
+           hover:translate-y-[-1px] active:translate-y-[1px] 
+           rounded-md py-2 px-4 border border-hotel-900/10 relative 
+           overflow-hidden focus:ring-2 focus:ring-hotel-600/50 focus:ring-offset-2;
+  }
+  
+  .btn-primary::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-white/0 to-white/20 
+           opacity-0 transition-opacity duration-300;
+  }
+  
+  .btn-primary:hover::before {
+    @apply opacity-100;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-hotel-800 font-medium shadow-sm hover:shadow-md 
+           transition-all duration-300 hover:translate-y-[-1px] 
+           active:translate-y-[1px] rounded-md py-2 px-4 
+           border border-hotel-300 relative overflow-hidden;
+  }
+  
+  .btn-secondary:hover {
+    @apply bg-hotel-50/80 border-hotel-400;
+  }
+  
+  .btn-outline {
+    @apply bg-transparent text-hotel-800 font-medium border border-hotel-400
+           hover:bg-hotel-50/50 hover:border-hotel-500 transition-all duration-300
+           rounded-md py-2 px-4 relative overflow-hidden;
+  }
+  
+  .btn-outline::after {
+    content: '';
+    @apply absolute inset-0 bg-hotel-500/10 scale-x-0 origin-left
+           transition-transform duration-300;
+  }
+  
+  .btn-outline:hover::after {
+    @apply scale-x-100;
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent text-hotel-700 font-medium hover:bg-hotel-50/70
+           transition-all duration-300 rounded-md py-2 px-4 relative
+           overflow-hidden hover:text-hotel-800;
+  }
+  
+  .btn-icon {
+    @apply inline-flex items-center justify-center rounded-full p-2
+           transition-all duration-300 hover:rotate-3 focus:rotate-0;
+  }
+  
+  .btn-icon-primary {
+    @apply bg-hotel-700 text-white hover:bg-hotel-800 shadow-sm hover:shadow-md;
+  }
+  
+  .btn-icon-secondary {
+    @apply bg-white text-hotel-700 border border-hotel-300 hover:bg-hotel-50;
+  }
+  
+  .btn-icon-ghost {
+    @apply bg-transparent text-hotel-700 hover:bg-hotel-50/80;
+  }
+  
+  /* Variantes de tamaño */
+  .btn-sm {
+    @apply py-1 px-3 text-sm;
+  }
+  
+  .btn-lg {
+    @apply py-2.5 px-6 text-lg;
+  }
+  
+  /* Animación de ripple para botones */
+  .btn-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .btn-ripple::after {
+    content: '';
+    @apply absolute top-[50%] left-[50%] h-[1px] w-[1px] rounded-full
+           bg-white/40 opacity-0 transform scale-0 transition-all;
+  }
+  
+  .btn-ripple:active::after {
+    @apply opacity-100 scale-[300] transition-transform duration-500;
+  }
+  
+  /* Animación de pop para botones */
+  .btn-pop {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  .btn-pop:hover {
+    transform: scale(1.03);
+  }
+  
+  .btn-pop:active {
+    transform: scale(0.97);
+  }
+
+  /* Efecto de brillo para botones */
+  .btn-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .btn-shine::before {
+    content: '';
+    @apply absolute top-0 left-0 w-full h-full bg-gradient-to-r 
+           from-transparent via-white/30 to-transparent -translate-x-full;
+    animation: shine 0s infinite;
+  }
+  
+  .btn-shine:hover::before {
+    animation: shine 1.5s infinite;
+  }
+  
+  @keyframes shine {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+}
+
+/* Nuevas animaciones refinadas para la aplicación */
+@keyframes gentle-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.9;
+  }
+}
+
+@keyframes subtle-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(var(--hotel-600-rgb), 0.1);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(var(--hotel-600-rgb), 0.25);
+  }
+}
+
+@keyframes border-shimmer {
+  0% {
+    border-color: rgba(var(--hotel-300-rgb), 0.3);
+  }
+  50% {
+    border-color: rgba(var(--hotel-500-rgb), 0.5);
+  }
+  100% {
+    border-color: rgba(var(--hotel-300-rgb), 0.3);
+  }
+}
+
+@keyframes gentle-rotate {
+  0% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+  100% {
+    transform: rotate(-1deg);
+  }
+}
+
+@keyframes float-shadow {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  }
+  50% {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 20px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes slide-in-bottom {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-left {
+  0% {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Clases de utilidad para aplicar las animaciones */
+.animate-gentle-reveal {
+  animation: gentle-reveal 0.6s ease-out forwards;
+}
+
+.animate-soft-pulse {
+  animation: soft-pulse 3s ease-in-out infinite;
+}
+
+.animate-subtle-glow {
+  animation: subtle-glow 3s ease-in-out infinite;
+}
+
+.animate-border-shimmer {
+  animation: border-shimmer 3s ease-in-out infinite;
+}
+
+.animate-gentle-rotate {
+  animation: gentle-rotate 6s ease-in-out infinite;
+}
+
+.animate-float-shadow {
+  animation: float-shadow 5s ease-in-out infinite;
+}
+
+.animate-gradient-flow {
+  background-size: 300% 300%;
+  animation: gradient-flow 8s ease infinite;
+}
+
+.animate-pop-in {
+  animation: pop-in 0.5s cubic-bezier(0.3, 1.5, 0.7, 1) forwards;
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.5s ease-out forwards;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.5s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.5s ease-out forwards;
+}
+
+/* Delays para crear efectos de cascada */
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+.delay-400 {
+  animation-delay: 400ms;
+}
+
+.delay-500 {
+  animation-delay: 500ms;
+}
+
+/* Mejoras visuales y de interacción */
+.hover-lift {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 7px 14px rgba(var(--hotel-900-rgb), 0.1), 
+              0 3px 6px rgba(var(--hotel-800-rgb), 0.08);
+}
+
+.hover-lift:active {
+  transform: translateY(-1px);
+}
+
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 15px rgba(var(--hotel-500-rgb), 0.4);
+}
+
+/* Efecto de ondas para elementos interactivos */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.7);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1);
+  transition: 0.5s;
+}
+
+.ripple-effect:active::after {
+  transform: scale(100);
+  opacity: 0;
+  transition: 0s;
+}
+
+/* Burbujas de chat mejoradas con animaciones */
+.chat-bubble {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-bubble:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(var(--hotel-900-rgb), 0.08);
+}
+
+/* Botones con efectos avanzados */
+.advanced-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.advanced-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    rgba(255, 255, 255, 0) 100%);
+  transform: translateX(-100%);
+  transition: transform 0.8s ease;
+  z-index: -1;
+}
+
+.advanced-button:hover::before {
+  transform: translateX(100%);
+}
+
+.advanced-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(
+    to bottom, 
+    rgba(255, 255, 255, 0.1), 
+    rgba(255, 255, 255, 0)
+  );
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.advanced-button:hover::after {
+  opacity: 1;
+}
+
+/* Tarjetas con animaciones */
+.animated-card {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform, box-shadow;
+}
+
+.animated-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 15px 30px rgba(var(--hotel-900-rgb), 0.1),
+              0 5px 15px rgba(var(--hotel-800-rgb), 0.1);
+}
+
+/* Elementos de entrada con animaciones */
+.animated-input {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.animated-input:focus {
+  transform: scale(1.02);
+  box-shadow: 0 0 0 2px rgba(var(--hotel-500-rgb), 0.2);
+  border-color: rgba(var(--hotel-600-rgb), 1);
+}
+
+/* Iconos con animaciones */
+.animated-icon {
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.animated-icon:hover {
+  transform: scale(1.1) rotate(5deg);
+  color: rgb(var(--hotel-700-rgb));
+}
+
+/* Mejoras específicas para dispositivos móviles */
+@media (max-width: 768px) {
+  /* Ajustes básicos para elementos de interfaz */
+  h1 {
+    @apply text-2xl;
+  }
+  
+  h2 {
+    @apply text-xl;
+  }
+  
+  p {
+    @apply text-sm;
+  }
+  
+  /* Mejora de elementos interactivos en móviles */
+  .mobile-friendly-button {
+    @apply min-h-[44px] min-w-[44px] py-2 px-3;
+    touch-action: manipulation;
+  }
+  
+  /* Mejora para burbujas de chat en móviles */
+  .chat-bubble {
+    max-width: 90% !important;
+    @apply p-2.5;
+  }
+  
+  /* Mejora espaciado de inputs en móviles */
+  .input-mobile-padding {
+    @apply px-3 py-2;
+  }
+  
+  /* Mejor escalado de tarjetas en móviles */
+  .animated-card {
+    transform: none !important;
+    @apply shadow-md hover:shadow-md;
+  }
+  
+  .animated-card:active {
+    @apply bg-hotel-50/30;
+  }
+  
+  /* Reducir animaciones en móviles para mejor rendimiento */
+  .animate-gradient-flow {
+    animation-duration: 15s;
+  }
+  
+  .animate-float-shadow {
+    animation: none;
+    @apply shadow-sm;
+  }
+  
+  /* Ajustes para grid layouts en móviles */
+  .grid-cols-adjust-mobile {
+    @apply grid-cols-1 gap-4;
+  }
+  
+  /* Ajustes para encabezados en móviles */
+  .header-mobile {
+    @apply px-3 py-2;
+  }
+  
+  /* Mejoras para elementos de entrada de texto en chat */
+  .chat-input-container {
+    @apply gap-1;
+  }
+  
+  .chat-input-field {
+    @apply text-sm py-1.5;
+  }
+  
+  /* Mejora la visualización de botones en tarjetas */
+  .card-button-mobile {
+    @apply py-2 text-sm;
+  }
+  
+  /* Ajuste para iconos en móviles */
+  .mobile-icon-adjust {
+    @apply h-4 w-4;
+  }
+  
+  /* Navegación y encabezados fijos más pequeños */
+  .mobile-header-height {
+    @apply h-14;
+  }
+  
+  /* Ajustes para animaciones en móviles */
+  .mobile-animation-optimize {
+    animation-duration: 0.3s;
+    transition-duration: 0.3s;
+  }
+  
+  /* Fix para espaciados excesivos */
+  .reduce-padding-mobile {
+    @apply p-2;
+  }
+  
+  .reduce-margin-mobile {
+    @apply my-2 mx-1;
+  }
+  
+  /* Ajustes para botón flotante de grabación */
+  .audio-recorder-mobile {
+    @apply h-10 w-10 min-h-[40px] min-w-[40px];
+  }
+
+  /* Mejorar respuesta táctil */
+  .touch-feedback:active {
+    @apply scale-95 bg-hotel-50/30;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+  }
+  
+  /* Mejora específica para burbujas de chat */
+  .chat-content-container {
+    @apply px-2 py-1;
+  }
+  
+  /* Ajuste para las tarjetas en la página principal */
+  .main-card-mobile {
+    @apply shadow-md p-4;
+  }
+  
+  /* Optimización para inputs de formularios */
+  input, select, textarea {
+    @apply text-base;
+    font-size: 16px !important; /* Prevenir zoom en iOS */
+  }
+  
+  /* Mejora de tarjetas */
+  .card-mobile {
+    @apply rounded-lg shadow-md border-0;
+  }
+  
+  /* Footer más compacto */
+  .footer-mobile {
+    @apply py-4 mt-8;
+  }
+  
+  /* Header más compacto */
+  .header-compact {
+    @apply py-2 px-3;
+  }
+  
+  /* Mejoras para formularios */
+  .form-group-mobile {
+    @apply space-y-2;
+  }
+  
+  .form-label-mobile {
+    @apply text-sm font-medium;
+  }
+}
+
+/* Superposiciones para scrolling más suave en iOS */
+@supports (-webkit-touch-callout: none) {
+  .smooth-scroll-ios {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevenir problemas con teclado en iOS */
+  .ios-keyboard-fix {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Prevenir problemas con barras de navegación */
+  .ios-nav-fix {
+    padding-top: env(safe-area-inset-top);
+  }
 }

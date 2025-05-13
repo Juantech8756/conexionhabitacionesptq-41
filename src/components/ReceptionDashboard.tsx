@@ -14,6 +14,7 @@ import MessageList from "@/components/dashboard/MessageList";
 import MessageInputPanel from "@/components/dashboard/MessageInputPanel";
 import ChatHeader from "@/components/dashboard/ChatHeader";
 import NoGuestSelected from "@/components/dashboard/NoGuestSelected";
+
 interface ReceptionDashboardProps {
   onCallGuest?: (guest: {
     id: string;
@@ -21,12 +22,10 @@ interface ReceptionDashboardProps {
     roomNumber: string;
   }) => void;
 }
-const ReceptionDashboard = ({
-  onCallGuest
-}: ReceptionDashboardProps) => {
+
+const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
   const isMobile = useIsMobile();
   const [showGuestList, setShowGuestList] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
 
   // Use custom hooks
@@ -41,6 +40,7 @@ const ReceptionDashboard = ({
     updateResponseStatus,
     loadGuestMessages
   } = useGuestData();
+
   const {
     replyText,
     setReplyText,
@@ -55,8 +55,8 @@ const ReceptionDashboard = ({
   // Wrapper function to convert Promise<boolean> to Promise<void>
   const handleAudioRecorded = async (audioBlob: Blob): Promise<void> => {
     await originalHandleAudioRecorded(audioBlob);
-    // No return value needed as we're returning void
   };
+
   const {
     isDeleteDialogOpen,
     setIsDeleteDialogOpen,
@@ -65,10 +65,7 @@ const ReceptionDashboard = ({
     setGuestToDelete,
     deleteChat
   } = useChatDeletion(refreshGuestsList, messages => {
-    // We're passing an updater function here to avoid the useState setter type issues
-    const newMessages = {
-      ...messages
-    };
+    const newMessages = { ...messages };
     if (selectedGuest) {
       delete newMessages[selectedGuest.id];
     }
@@ -94,28 +91,15 @@ const ReceptionDashboard = ({
     return () => clearInterval(intervalId);
   }, [selectedGuest, refreshCurrentGuestMessages]);
 
-  // Scroll to bottom when messages change
-  const scrollToBottom = (smooth = true) => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({
-        behavior: smooth ? "smooth" : "auto",
-        block: "end"
-      });
-    }
-  };
-
   // Load messages when selecting a guest
   useEffect(() => {
     if (selectedGuest) {
       const loadMessages = async () => {
         await loadGuestMessages(selectedGuest.id);
-        // Scroll to bottom after messages are loaded
-        setTimeout(() => scrollToBottom(false), 100);
       };
       loadMessages();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedGuest]);
+  }, [selectedGuest, loadGuestMessages]);
 
   // Call guest handler
   const handleCallGuest = () => {
@@ -170,91 +154,183 @@ const ReceptionDashboard = ({
 
   // Mobile layout with sliding panels
   if (isMobile) {
-    return <div className="flex h-full bg-gray-100 relative">
+    return (
+      <div className="flex h-full overflow-hidden bg-background">
         <AnimatePresence initial={false}>
-          {!selectedGuest ? <motion.div key="guest-list" initial={{
-          opacity: 0,
-          x: -10
-        }} animate={{
-          opacity: 1,
-          x: 0
-        }} exit={{
-          opacity: 0,
-          x: -10
-        }} transition={{
-          duration: 0.2
-        }} className="w-full h-full bg-white">
-              <div className="p-4 gradient-header flex items-center fixed top-14 left-0 right-0 z-10 my-[12px] py-[12px]">
-                <h2 className="text-lg font-semibold flex items-center text-white">
-                  <User className="mr-2 h-5 w-5" />
+          {!selectedGuest ? (
+            <motion.div 
+              key="guest-list" 
+              initial={{ opacity: 0, x: -10 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: -10 }} 
+              transition={{ duration: 0.2 }}
+              className="w-full h-full flex flex-col"
+            >
+              <div className="bg-gradient-to-r from-hotel-800 to-hotel-700 p-3 flex items-center justify-between">
+                <h2 className="text-base font-semibold flex items-center text-white">
+                  <User className="mr-2 h-4 w-4" />
                   Huéspedes
                 </h2>
+                <ConnectionStatusIndicator className="text-white" />
               </div>
               
-              <div className="pt-28">
-                <GuestList guests={guests} rooms={rooms} selectedGuest={selectedGuest} isMobile={true} recentlyUpdatedGuests={recentlyUpdatedGuests} onSelectGuest={selectGuest} onDeleteGuest={handleDeleteGuestClick} />
+              <div className="flex-1 overflow-hidden">
+                <GuestList 
+                  guests={guests} 
+                  rooms={rooms} 
+                  selectedGuest={selectedGuest} 
+                  isMobile={true}
+                  recentlyUpdatedGuests={recentlyUpdatedGuests} 
+                  onSelectGuest={selectGuest} 
+                  onDeleteGuest={handleDeleteGuestClick} 
+                />
               </div>
-            </motion.div> : <motion.div key="chat-view" initial={{
-          opacity: 0,
-          x: 10
-        }} animate={{
-          opacity: 1,
-          x: 0
-        }} exit={{
-          opacity: 0,
-          x: 10
-        }} transition={{
-          duration: 0.2
-        }} className="flex flex-col w-full h-full bg-gray-50">
-              <ChatHeader selectedGuest={selectedGuest} onCallGuest={handleCallGuest} onDeleteChat={() => setIsDeleteDialogOpen(true)} onBackToList={handleBackToGuestList} isMobile={true} rooms={rooms} />
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="chat-view" 
+              initial={{ opacity: 0, x: 10 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: 10 }} 
+              transition={{ duration: 0.2 }}
+              className="w-full h-full flex flex-col"
+            >
+              {/* Header en la parte superior */}
+              <ChatHeader 
+                selectedGuest={selectedGuest} 
+                onCallGuest={handleCallGuest} 
+                onDeleteChat={() => setIsDeleteDialogOpen(true)} 
+                onBackToList={handleBackToGuestList} 
+                isMobile={true} 
+                rooms={rooms} 
+              />
 
-              <div className="flex-grow overflow-auto pb-16 pt-28">
-                <MessageList messages={messages[selectedGuest.id] || []} isMobile={true} onRefreshRequest={refreshCurrentGuestMessages} />
+              {/* Zona de mensajes con scroll, ocupa todo el espacio disponible */}
+              <div className="flex-1 overflow-y-auto bg-hotel-50/80">
+                <MessageList 
+                  messages={messages[selectedGuest.id] || []} 
+                  isMobile={true} 
+                  onRefreshRequest={refreshCurrentGuestMessages} 
+                />
               </div>
 
-              <MessageInputPanel selectedGuest={selectedGuest} replyText={replyText} setReplyText={setReplyText} isLoading={isLoading} selectedFile={selectedFile} onFileSelect={handleFileSelect} onSendMessage={handleSendMessage} onAudioRecorded={handleAudioRecorded} onAudioCanceled={() => console.log("Audio recording cancelled")} isMobile={true} />
-            </motion.div>}
+              {/* Barra de entrada fija en la parte inferior */}
+              <div className="border-t border-hotel-100 bg-white shadow-md w-full py-2 px-2 sticky bottom-0 left-0 right-0">
+                <MessageInputPanel 
+                  selectedGuest={selectedGuest} 
+                  replyText={replyText} 
+                  setReplyText={setReplyText} 
+                  isLoading={isLoading} 
+                  selectedFile={selectedFile} 
+                  onFileSelect={handleFileSelect} 
+                  onSendMessage={handleSendMessage} 
+                  onAudioRecorded={handleAudioRecorded} 
+                  onAudioCanceled={() => console.log("Audio recording cancelled")} 
+                  isMobile={true} 
+                />
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
         
-        <DeleteChatDialog isOpen={isDeleteDialogOpen} guestName={(guestToDelete || selectedGuest)?.name || ""} roomNumber={(guestToDelete || selectedGuest)?.room_number || ""} onConfirm={handleDeleteConfirm} onCancel={() => {
-        setIsDeleteDialogOpen(false);
-        setGuestToDelete(null);
-      }} isDeleting={isDeleting} />
-      </div>;
+        <DeleteChatDialog 
+          isOpen={isDeleteDialogOpen} 
+          guestName={(guestToDelete || selectedGuest)?.name || ""} 
+          roomNumber={(guestToDelete || selectedGuest)?.room_number || ""} 
+          onConfirm={handleDeleteConfirm} 
+          onCancel={() => {
+            setIsDeleteDialogOpen(false);
+            setGuestToDelete(null);
+          }} 
+          isDeleting={isDeleting} 
+        />
+      </div>
+    );
   }
 
   // Desktop layout with side-by-side panels
-  return <div className="flex h-full">
-      <div className="w-1/3 border-r bg-white shadow-sm">
-        <div className="p-4 bg-gradient-to-r from-hotel-600 to-hotel-500 text-white flex justify-between items-center fixed top-14 left-0 z-10 w-1/3">
-          <h2 className="text-xl font-semibold flex items-center">
+  return (
+    <div className="flex h-full overflow-hidden bg-background">
+      {/* Panel izquierdo: Lista de huéspedes */}
+      <div className="w-1/3 border-r overflow-hidden flex flex-col">
+        <div className="bg-gradient-to-r from-hotel-800 to-hotel-700 p-3 flex justify-between items-center">
+          <h2 className="text-lg font-semibold flex items-center text-white">
             <User className="mr-2 h-5 w-5" />
             Huéspedes
           </h2>
-          <ConnectionStatusIndicator className="bg-white/10 text-white" />
+          <ConnectionStatusIndicator className="text-white" />
         </div>
         
-        <div className="pt-28">
-          <GuestList guests={guests} rooms={rooms} selectedGuest={selectedGuest} isMobile={false} recentlyUpdatedGuests={recentlyUpdatedGuests} onSelectGuest={selectGuest} onDeleteGuest={handleDeleteGuestClick} />
+        <div className="flex-1 overflow-hidden">
+          <GuestList 
+            guests={guests} 
+            rooms={rooms} 
+            selectedGuest={selectedGuest} 
+            isMobile={false} 
+            recentlyUpdatedGuests={recentlyUpdatedGuests} 
+            onSelectGuest={selectGuest} 
+            onDeleteGuest={handleDeleteGuestClick} 
+          />
         </div>
       </div>
       
-      <div className="flex-1 flex flex-col relative">
-        {selectedGuest ? <>
-            <ChatHeader selectedGuest={selectedGuest} onCallGuest={handleCallGuest} onDeleteChat={() => setIsDeleteDialogOpen(true)} onBackToList={handleBackToGuestList} isMobile={false} rooms={rooms} />
+      {/* Panel derecho: Chat */}
+      <div className="flex-1 overflow-hidden">
+        {selectedGuest ? (
+          <div className="h-full flex flex-col">
+            {/* ChatHeader - cabecera */}
+            <ChatHeader 
+              selectedGuest={selectedGuest} 
+              onCallGuest={handleCallGuest} 
+              onDeleteChat={() => setIsDeleteDialogOpen(true)} 
+              onBackToList={handleBackToGuestList} 
+              isMobile={false} 
+              rooms={rooms} 
+            />
             
-            <div className="flex-grow overflow-auto pb-16 pt-28">
-              <MessageList messages={messages[selectedGuest.id] || []} isMobile={false} onRefreshRequest={refreshCurrentGuestMessages} />
+            {/* MessageList - contenido con scroll */}
+            <div className="flex-1 overflow-y-auto bg-hotel-50/80">
+              <MessageList 
+                messages={messages[selectedGuest.id] || []} 
+                isMobile={false} 
+                onRefreshRequest={refreshCurrentGuestMessages} 
+              />
             </div>
-            
-            <MessageInputPanel selectedGuest={selectedGuest} replyText={replyText} setReplyText={setReplyText} isLoading={isLoading} selectedFile={selectedFile} onFileSelect={handleFileSelect} onSendMessage={handleSendMessage} onAudioRecorded={handleAudioRecorded} onAudioCanceled={() => console.log("Audio recording cancelled")} isMobile={false} />
-          </> : <NoGuestSelected />}
+
+            {/* MessageInputPanel - pie fijo */}
+            <div className="border-t border-hotel-100 bg-white shadow-md w-full p-3">
+              <MessageInputPanel 
+                selectedGuest={selectedGuest} 
+                replyText={replyText} 
+                setReplyText={setReplyText} 
+                isLoading={isLoading} 
+                selectedFile={selectedFile} 
+                onFileSelect={handleFileSelect} 
+                onSendMessage={handleSendMessage} 
+                onAudioRecorded={handleAudioRecorded} 
+                onAudioCanceled={() => console.log("Audio recording cancelled")} 
+                isMobile={false} 
+              />
+            </div>
+          </div>
+        ) : (
+          <NoGuestSelected />
+        )}
       </div>
       
-      <DeleteChatDialog isOpen={isDeleteDialogOpen} guestName={(guestToDelete || selectedGuest)?.name || ""} roomNumber={(guestToDelete || selectedGuest)?.room_number || ""} onConfirm={handleDeleteConfirm} onCancel={() => {
-      setIsDeleteDialogOpen(false);
-      setGuestToDelete(null);
-    }} isDeleting={isDeleting} />
-    </div>;
+      <DeleteChatDialog 
+        isOpen={isDeleteDialogOpen} 
+        guestName={(guestToDelete || selectedGuest)?.name || ""} 
+        roomNumber={(guestToDelete || selectedGuest)?.room_number || ""} 
+        onConfirm={handleDeleteConfirm} 
+        onCancel={() => {
+          setIsDeleteDialogOpen(false);
+          setGuestToDelete(null);
+        }} 
+        isDeleting={isDeleting} 
+      />
+    </div>
+  );
 };
+
 export default ReceptionDashboard;

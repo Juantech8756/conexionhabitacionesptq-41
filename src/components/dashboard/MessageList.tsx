@@ -1,7 +1,5 @@
-
 import React, { useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 import MediaMessage from "@/components/MediaMessage";
 import { Message } from "@/types/dashboard";
@@ -13,7 +11,6 @@ interface MessageListProps {
 }
 
 const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefreshRequest }) => {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const processedMessageIds = useRef(new Set<string>());
   
@@ -25,6 +22,13 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefresh
       minute: '2-digit'
     }).format(date);
   };
+
+  // Auto-scroll al final cuando llegan nuevos mensajes
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages.length]);
 
   // Set up automatic refresh interval
   useEffect(() => {
@@ -54,55 +58,94 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefresh
     return uniqueMessages;
   }, [messages]);
 
-  return (
-    <ScrollArea className={`${isMobile ? "overflow-auto p-2" : "p-4"} flex-grow pb-16`} ref={scrollContainerRef}>
-      <div className={isMobile ? "space-y-3" : "space-y-4 max-w-3xl mx-auto"}>
-        <AnimatePresence initial={false}>
-          {deduplicatedMessages.map(msg => (
-            <motion.div 
-              key={msg.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'}`}
-            >
-              <div className={`${isMobile 
-                ? `rounded-lg ${msg.is_guest ? 'chat-bubble-guest' : 'chat-bubble-staff'} mx-2 my-1 px-3 py-2` 
-                : `max-w-[85%] p-3 rounded-lg ${
-                    msg.is_guest 
-                      ? 'bg-white border border-gray-200 text-gray-800' 
-                      : 'bg-gradient-to-r from-hotel-600 to-hotel-500 text-white'
-                  }`}`}
-              >
-                {msg.is_audio ? (
-                  <AudioMessagePlayer 
-                    audioUrl={msg.audio_url || ''} 
-                    isGuest={!msg.is_guest}
-                    isDark={!msg.is_guest}
-                  />
-                ) : msg.is_media ? (
-                  <MediaMessage 
-                    mediaUrl={msg.media_url || ''} 
-                    mediaType={msg.media_type || 'image'} 
-                    isGuest={msg.is_guest} 
-                  />
-                ) : (
-                  <p className="text-sm break-words">{msg.content}</p>
-                )}
-                
-                {!isMobile && (
-                  <div className="mt-1 text-xs opacity-70 text-right">
-                    {formatTime(msg.created_at)}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        
-        <div ref={messagesEndRef} className="h-16" />
+  // Group messages by date
+  const messagesByDate = React.useMemo(() => {
+    const grouped: { [date: string]: Message[] } = {};
+    
+    deduplicatedMessages.forEach(message => {
+      const date = new Date(message.created_at).toLocaleDateString('es');
+      if (!grouped[date]) {
+        grouped[date] = [];
+      }
+      grouped[date].push(message);
+    });
+    
+    return grouped;
+  }, [deduplicatedMessages]);
+
+  // Get date display text
+  const getDateDisplay = (dateStr: string) => {
+    const today = new Date().toLocaleDateString('es');
+    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('es');
+    
+    if (dateStr === today) return "Hoy";
+    if (dateStr === yesterday) return "Ayer";
+    return dateStr;
+  };
+
+  if (deduplicatedMessages.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full p-8 text-center text-muted-foreground">
+        No hay mensajes aún
       </div>
-    </ScrollArea>
+    );
+  }
+
+  return (
+    <div className="w-full h-full overflow-y-auto px-3 py-3">
+      <div className="max-w-2xl mx-auto space-y-4 pb-2">
+        {Object.entries(messagesByDate).map(([date, dateMessages]) => (
+          <div key={date} className="space-y-2">
+            <div className="flex justify-center my-2">
+              <div className="px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                {getDateDisplay(date)}
+              </div>
+            </div>
+            
+            <AnimatePresence initial={false}>
+              {dateMessages.map(msg => (
+                <motion.div 
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className={`flex ${msg.is_guest ? 'justify-start' : 'justify-end'} mb-2`}
+                >
+                  <div className={`max-w-[85%] rounded-lg shadow-sm ${
+                    msg.is_guest 
+                      ? 'bg-white border border-border text-card-foreground mr-auto rounded-tl-none' 
+                      : 'bg-primary text-primary-foreground ml-auto rounded-tr-none'
+                  } p-2.5`}
+                  >
+                    {msg.is_audio ? (
+                      <AudioMessagePlayer 
+                        audioUrl={msg.audio_url || ''} 
+                        isGuest={!msg.is_guest}
+                        isDark={!msg.is_guest}
+                      />
+                    ) : msg.is_media ? (
+                      <MediaMessage 
+                        mediaUrl={msg.media_url || ''} 
+                        mediaType={msg.media_type || 'image'} 
+                        isGuest={msg.is_guest} 
+                      />
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
+                    )}
+                    
+                    <div className="mt-1 text-[10px] opacity-70 text-right flex items-center justify-end gap-1">
+                      {formatTime(msg.created_at)}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        ))}
+        
+        <div ref={messagesEndRef} className="h-10 mb-4" />
+      </div>
+    </div>
   );
 };
 

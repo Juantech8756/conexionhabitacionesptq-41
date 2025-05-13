@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,6 +11,7 @@ import ReceptionLogin from "./pages/ReceptionLogin";
 import ReceptionDashboardPage from "./pages/ReceptionDashboardPage";
 import QrCodeDisplay from "./components/QrCodeDisplay";
 import QrCodeAdminPage from "./pages/QrCodeAdminPage";
+import { ConnectivityBanner } from "./components/ConnectivityBanner";
 
 // Create a new QueryClient instance with updated configuration
 const queryClient = new QueryClient({
@@ -29,6 +29,7 @@ const App = () => (
       <BrowserRouter>
         <Toaster />
         <Sonner />
+        <ConnectivityBanner />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/guest" element={<GuestPortal />} />

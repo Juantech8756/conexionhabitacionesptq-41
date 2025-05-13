@@ -1,9 +1,8 @@
-
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Home, Users } from "lucide-react";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 import MessageNotificationBadge from "@/components/MessageNotificationBadge";
 import { Guest, Room } from "@/types/dashboard";
@@ -43,10 +42,11 @@ const GuestList: React.FC<GuestListProps> = ({
     if (guest.room_id && rooms[guest.room_id]) {
       const room = rooms[guest.room_id];
       return (
-        <div className="flex flex-col mt-1">
-          <div className="text-xs text-gray-500">
+        <div className="flex flex-col mt-0.5">
+          <div className={`flex items-center ${isMobile ? 'text-[10px]' : 'text-xs'} text-muted-foreground gap-2`}>
             {room.type && (
-              <span className="mr-2">
+              <span className="flex items-center">
+                <Home className={`${isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'} mr-1`} />
                 {room.type === 'family' 
                   ? 'Cabaña familiar' 
                   : room.type === 'couple' 
@@ -54,9 +54,9 @@ const GuestList: React.FC<GuestListProps> = ({
                     : room.type}
               </span>
             )}
-            {room.floor && <span className="mr-2">Piso {room.floor}</span>}
             {guest.guest_count && (
-              <span className="font-medium text-hotel-600">
+              <span className="flex items-center font-medium text-primary">
+                <Users className={`${isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'} mr-1`} />
                 {guest.guest_count} {guest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
               </span>
             )}
@@ -70,18 +70,17 @@ const GuestList: React.FC<GuestListProps> = ({
   // Handle empty guests list
   if (guests.length === 0) {
     return (
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="p-4 text-gray-500 text-center"
-      >
-        No hay huéspedes registrados
-      </motion.div>
+      <div className="flex flex-col items-center justify-center h-full p-8 text-muted-foreground">
+        <div className="rounded-full bg-muted p-3 mb-4">
+          <Users className="h-6 w-6" />
+        </div>
+        <p className="text-center">No hay huéspedes registrados</p>
+      </div>
     );
   }
 
   return (
-    <ScrollArea className={isMobile ? "h-[calc(100%-64px)]" : "h-[calc(100%-65px)]"}>
+    <ScrollArea className="h-full">
       <AnimatePresence>
         {guests.map((guest) => (
           <motion.div 
@@ -90,15 +89,15 @@ const GuestList: React.FC<GuestListProps> = ({
             animate={{ 
               opacity: 1, 
               y: 0,
-              backgroundColor: recentlyUpdatedGuests[guest.id] ? 'rgba(219, 234, 254, 0.8)' : 'transparent'
+              backgroundColor: recentlyUpdatedGuests[guest.id] ? 'var(--highlight-background)' : 'transparent'
             }}
             transition={{
               duration: 0.2,
               backgroundColor: { duration: 1 }
             }}
-            className={`p-4 border-b hover:bg-gray-50 transition-colors duration-200 ${
-              selectedGuest?.id === guest.id && !isMobile
-                ? "bg-blue-50 border-l-4 border-l-hotel-600" 
+            className={`${isMobile ? 'py-2 px-3' : 'p-4'} border-b hover:bg-accent/50 transition-colors ${
+              selectedGuest?.id === guest.id
+                ? "bg-accent border-l-4 border-l-primary" 
                 : ""
             }`}
           >
@@ -107,16 +106,16 @@ const GuestList: React.FC<GuestListProps> = ({
                 className="cursor-pointer flex-grow" 
                 onClick={() => onSelectGuest(guest)}
               >
-                <p className="font-medium flex items-center flex-wrap">
+                <p className={`font-medium ${isMobile ? 'text-sm' : ''} flex items-center flex-wrap`}>
                   {guest.name} 
-                  <span className="ml-2 text-sm text-gray-500">
+                  <span className={`ml-2 ${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
                     Cabaña {guest.room_number}
                   </span>
                 </p>
                 
                 {getRoomInfo(guest)}
                 
-                <p className="text-xs text-gray-500 mt-1">
+                <p className={`${isMobile ? 'text-[10px] mt-0.5' : 'text-xs mt-1'} text-muted-foreground`}>
                   {formatLastActivity(guest.last_activity)}
                 </p>
               </div>
@@ -125,11 +124,11 @@ const GuestList: React.FC<GuestListProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-100"
+                  className={`${isMobile ? 'h-7 w-7' : 'h-8 w-8'} text-destructive hover:text-destructive-foreground hover:bg-destructive/10`}
                   onClick={(e) => onDeleteGuest(e, guest)}
                   title="Eliminar conversación"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
                   <span className="sr-only">Eliminar</span>
                 </Button>
                 

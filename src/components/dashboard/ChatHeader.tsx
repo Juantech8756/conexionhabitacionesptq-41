@@ -1,16 +1,18 @@
 import React from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Phone, Trash2, ArrowLeft } from "lucide-react";
-import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
-import { Guest } from "@/types/dashboard";
+import { ArrowLeft, Home, Phone, Trash, Users, MessageSquare } from "lucide-react";
+import { Guest, Room } from "@/types/dashboard";
+
 interface ChatHeaderProps {
   selectedGuest: Guest;
   onCallGuest: () => void;
   onDeleteChat: () => void;
   onBackToList: () => void;
   isMobile: boolean;
-  rooms: Record<string, any>;
+  rooms: Record<string, Room>;
 }
+
 const ChatHeader: React.FC<ChatHeaderProps> = ({
   selectedGuest,
   onCallGuest,
@@ -19,85 +21,91 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   isMobile,
   rooms
 }) => {
-  const getRoomInfo = (guest: Guest) => {
-    if (guest.room_id && rooms[guest.room_id]) {
-      const room = rooms[guest.room_id];
-      return <div className="flex flex-col mt-1">
-          <div className="text-xs text-gray-500">
-            {room.type && <span className="mr-2">
-                {room.type === 'family' ? 'Cabaña familiar' : room.type === 'couple' ? 'Cabaña pareja' : room.type}
-              </span>}
-            {room.floor && <span className="mr-2">Piso {room.floor}</span>}
-            {guest.guest_count && <span className="font-medium text-hotel-600">
-                {guest.guest_count} {guest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
-              </span>}
-          </div>
-        </div>;
-    }
-    return null;
+  // Get room info as badges
+  const getRoomBadges = () => {
+    const roomInfo = selectedGuest.room_id && rooms[selectedGuest.room_id] ? rooms[selectedGuest.room_id] : null;
+    
+    return (
+      <div className="flex items-center flex-wrap gap-0.5">
+        <span className="inline-flex items-center bg-white/20 px-1 py-0.5 rounded-full text-[9px] leading-none">
+          <Home className="h-2 w-2 text-white/90 mr-0.5" />
+          {selectedGuest.room_number}
+        </span>
+        
+        {roomInfo?.type && (
+          <span className="inline-flex items-center bg-white/20 px-1 py-0.5 rounded-full text-[9px] leading-none">
+            {roomInfo.type === 'family' ? 'Fam' : roomInfo.type === 'couple' ? 'Par' : roomInfo.type}
+          </span>
+        )}
+        
+        {selectedGuest.guest_count && (
+          <span className="inline-flex items-center bg-white/30 px-1 py-0.5 rounded-full text-[9px] leading-none">
+            <Users className="h-2 w-2 mr-0.5" />
+            {selectedGuest.guest_count}
+          </span>
+        )}
+      </div>
+    );
   };
 
-  // Mobile header
-  if (isMobile) {
-    return <header className="bg-gradient-to-r from-hotel-600 to-hotel-500 p-3 text-white shadow-sm fixed top-14 left-0 right-0 z-20 px-[9px] py-[8px] my-[11px]">
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" className="mr-2 text-white hover:bg-white/20" onClick={onBackToList}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-grow">
-            <h2 className="text-base font-semibold">{selectedGuest.name}</h2>
-            <p className="text-xs text-white/90 flex items-center">
-              <span>Cabaña {selectedGuest.room_number}</span>
-              {selectedGuest.guest_count && <span className="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
-                  {selectedGuest.guest_count} {selectedGuest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
-                </span>}
-            </p>
-          </div>
+  return (
+    <motion.div 
+      initial={{ opacity: 0.5, y: -5 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="border-b bg-gradient-to-r from-hotel-800 to-hotel-700 shadow-sm sticky top-0 z-10 h-10"
+    >
+      <div className="flex items-center justify-between h-full px-2">
+        <div className="flex items-center gap-1">
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onBackToList}
+              className="h-6 w-6 text-white hover:bg-white/20 rounded-full flex-shrink-0 p-0"
+              aria-label="Volver a la lista de huéspedes"
+            >
+              <ArrowLeft className="h-3 w-3" />
+            </Button>
+          )}
+          
           <div className="flex items-center">
-            <Button variant="ghost" size="icon" onClick={onDeleteChat} className="text-white hover:bg-white/20 mr-1" title="Eliminar chat">
-              <Trash2 className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={onCallGuest} className="text-white hover:bg-white/20" title="Llamar a huésped">
-              <Phone className="h-5 w-5" />
-            </Button>
+            <MessageSquare className="h-3 w-3 text-white/90 mr-1 flex-shrink-0" />
+            <div className="flex flex-col">
+              <h2 className="text-xs font-medium leading-tight text-white truncate max-w-[140px]">
+                {selectedGuest.name}
+              </h2>
+              <div className="text-white/90">
+                {getRoomBadges()}
+              </div>
+            </div>
           </div>
-        </div>
-      </header>;
-  }
-
-  // Desktop header
-  return <header className="p-4 bg-white border-b shadow-sm fixed top-14 left-1/3 right-0 z-10">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">{selectedGuest.name}</h2>
-          <p className="text-sm text-gray-500 flex flex-wrap items-center gap-2">
-            <span>Cabaña {selectedGuest.room_number}</span>
-            
-            {selectedGuest.guest_count && <span className="bg-blue-50 text-hotel-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                {selectedGuest.guest_count} {selectedGuest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
-              </span>}
-            
-            {selectedGuest.wait_time_minutes && selectedGuest.wait_time_minutes > 0 ? <span className="text-amber-600">
-                Esperando respuesta: {selectedGuest.wait_time_minutes} min
-              </span> : null}
-          </p>
-          {getRoomInfo(selectedGuest)}
         </div>
         
-        <div className="flex items-center gap-2">
-          <ConnectionStatusIndicator />
-          
-          <Button size="sm" variant="outline" onClick={onDeleteChat} className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
-            <Trash2 className="h-4 w-4 mr-2" />
-            Eliminar chat
+        <div className="flex gap-1 flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onCallGuest}
+            className="border border-white/30 text-white hover:bg-white/20 rounded-full h-6 px-1.5 min-w-0"
+          >
+            <Phone className="h-2.5 w-2.5 mr-0.5" />
+            <span className="text-[9px]">Llamar</span>
           </Button>
           
-          <Button size="sm" onClick={onCallGuest} className="bg-green-500 hover:bg-green-600">
-            <Phone className="h-4 w-4 mr-2" />
-            Llamar
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDeleteChat}
+            className="border border-white/30 text-white hover:bg-red-500/20 rounded-full h-6 px-1.5 min-w-0"
+          >
+            <Trash className="h-2.5 w-2.5 mr-0.5" />
+            <span className="text-[9px]">Eliminar</span>
           </Button>
         </div>
       </div>
-    </header>;
+    </motion.div>
+  );
 };
+
 export default ChatHeader;

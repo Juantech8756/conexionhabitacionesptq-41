@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Hotel } from "lucide-react";
 import { showGlobalAlert } from "@/hooks/use-alerts";
 import { checkExistingRegistration } from "@/utils/registration";
+import NotificationBanner from "@/components/NotificationBanner";
 
 const GuestPortal = () => {
   const [isRegistered, setIsRegistered] = useState(false);
@@ -257,6 +258,9 @@ const GuestPortal = () => {
 
   return (
     <div className="min-h-screen w-full bg-gray-50 overflow-x-hidden">
+      {/* Notification Banner for Guest */}
+      <NotificationBanner type="guest" guestId={guestId} roomId={roomId || undefined} roomNumber={roomNumber} />
+      
       {/* Enhanced welcome animation with staggered elements */}
       <AnimatePresence>
         {showWelcome && roomData && (

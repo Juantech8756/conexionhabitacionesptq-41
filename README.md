@@ -1,73 +1,129 @@
-# Welcome to your Lovable project
+# Sistema de Gestión de Habitaciones con QR
 
-## Project info
+## 🌟 Características Principales
 
-**URL**: https://lovable.dev/projects/193f4134-98d7-48c2-a5bd-fd08b51f51ba
+### 🏨 Portal de Huéspedes
+- Acceso fácil mediante códigos QR
+- Interfaz intuitiva para huéspedes
+- Gestión de servicios y solicitudes
 
-## How can I edit this code?
+### 👩‍💼 Panel de Recepción
+- Dashboard administrativo completo
+- Gestión de check-in/check-out
+- Monitoreo en tiempo real de habitaciones
 
-There are several ways of editing your application.
+### 🔐 Sistema de Códigos QR
+- Generación dinámica de códigos QR
+- Asignación de habitaciones
+- Control de acceso seguro
 
-**Use Lovable**
+## 🚀 Tecnologías Utilizadas
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/193f4134-98d7-48c2-a5bd-fd08b51f51ba) and start prompting.
+- ⚛️ React 18
+- 🏃‍♂️ Vite
+- 💾 Supabase
+- 🎨 Tailwind CSS + Shadcn/UI
+- 📱 Diseño Responsive
+- 🔄 TanStack Query
 
-Changes made via Lovable will be committed automatically to this repo.
+## 📱 Rutas de la Aplicación
 
-**Use your preferred IDE**
+- `/` - Página principal
+- `/guest` - Portal de huéspedes
+- `/reception` - Login de recepción
+- `/reception/dashboard` - Panel de control de recepción
+- `/qr-code` - Administración de códigos QR
+- `/qr-code/:roomId` - Visualización de QR específico
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠️ Instalación
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+# Clonar el repositorio
+git clone [URL_DEL_REPOSITORIO]
 
-Follow these steps:
+# Instalar dependencias
+npm install
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Configurar variables de entorno
+cp .env.example .env
+# Editar .env con tus credenciales de Supabase
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Iniciar en desarrollo
 npm run dev
+
+# Construir para producción
+npm run build
 ```
 
-**Edit a file directly in GitHub**
+## 🔧 Configuración de Supabase
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Crear una cuenta en Supabase
+2. Crear un nuevo proyecto
+3. Copiar las credenciales de la API
+4. Configurar las variables de entorno
 
-**Use GitHub Codespaces**
+## 📦 Variables de Entorno Necesarias
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```env
+VITE_SUPABASE_URL=tu_url_de_supabase
+VITE_SUPABASE_ANON_KEY=tu_clave_anonima
+```
 
-## What technologies are used for this project?
+## 🖥️ Previsualización de la Aplicación
 
-This project is built with:
+### Portal de Huéspedes
+- Interfaz moderna y limpia
+- Acceso rápido mediante QR
+- Solicitud de servicios en tiempo real
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Dashboard de Recepción
+- Vista general de habitaciones
+- Gestión de huéspedes
+- Estadísticas en tiempo real
 
-## How can I deploy this project?
+### Administración de QR
+- Generación de códigos
+- Asignación a habitaciones
+- Control de accesos
 
-Simply open [Lovable](https://lovable.dev/projects/193f4134-98d7-48c2-a5bd-fd08b51f51ba) and click on Share -> Publish.
+## 👥 Roles de Usuario
 
-## Can I connect a custom domain to my Lovable project?
+### Huéspedes
+- Escaneo de QR
+- Solicitud de servicios
+- Vista de información de habitación
 
-Yes, you can!
+### Recepcionistas
+- Gestión de check-in/check-out
+- Monitoreo de habitaciones
+- Atención de solicitudes
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Administradores
+- Gestión de códigos QR
+- Configuración del sistema
+- Reportes y estadísticas
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 📊 Estructura del Proyecto
+
+```
+src/
+├── components/     # Componentes reutilizables
+├── pages/         # Páginas principales
+├── hooks/         # Hooks personalizados
+├── lib/           # Utilidades y configuraciones
+├── types/         # Definiciones de TypeScript
+└── utils/         # Funciones auxiliares
+```
+
+## 🤝 Contribución
+
+Las contribuciones son bienvenidas. Por favor, sigue estos pasos:
+
+1. Fork el repositorio
+2. Crea una rama para tu feature
+3. Realiza tus cambios
+4. Envía un Pull Request
+
+## 📝 Licencia
+
+Este proyecto está bajo la Licencia MIT.

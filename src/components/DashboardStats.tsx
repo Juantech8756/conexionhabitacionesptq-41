@@ -346,27 +346,27 @@ const DashboardStats = () => {
     if (minutes === null || minutes === 0) return 0;
     return Math.round(minutes);
   };
-  return <div className="container mx-auto p-2 sm:p-4 h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-2">
-        <h2 className="text-xl sm:text-2xl font-bold">Estadísticas del Sistema</h2>
+  return <div className="container mx-auto p-1 sm:p-2 h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 sm:mb-3 gap-1">
+        <h2 className="text-lg sm:text-xl font-bold text-hotel-800">Estadísticas del Sistema</h2>
         
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end">
+        <div className="flex flex-wrap items-center gap-1 sm:gap-2 sm:justify-end">
           <div className="text-xs text-gray-500 order-2 sm:order-1 flex items-center">
             <span className="mr-1">Actualizado:</span>
             {formatLastUpdated()}
           </div>
           
-          <ConnectionStatusIndicator className="order-1 sm:order-2" />
+          <ConnectionStatusIndicator className="order-1 sm:order-2 text-gray-700" />
           
-          <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isRefreshing} className="flex items-center gap-1 ml-auto sm:ml-0 order-3">
-            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isRefreshing} className="flex items-center gap-1 ml-auto sm:ml-0 order-3 h-7 text-xs">
+            <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span>Actualizar</span>
           </Button>
         </div>
       </div>
       
       {/* Main stats cards - 2 rows of 4 on desktop, stacked on mobile */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-3">
         <AnimatePresence mode="wait">
           <motion.div key={`card-guests-${summary.totalGuests}`} initial={{
           opacity: 0.8,
@@ -377,13 +377,13 @@ const DashboardStats = () => {
         }} transition={{
           duration: 0.2
         }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2">
+            <Card className="overflow-hidden bg-white shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
                 <CardTitle className="text-xs sm:text-sm font-medium">Total Huéspedes</CardTitle>
-                <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
               </CardHeader>
-              <CardContent>
-                <div className="text-lg sm:text-2xl font-bold">{summary.totalGuests}</div>
+              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
+                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.totalGuests}</div>
               </CardContent>
             </Card>
           </motion.div>
@@ -398,13 +398,13 @@ const DashboardStats = () => {
           duration: 0.2,
           delay: 0.05
         }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2">
+            <Card className="overflow-hidden bg-white shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
                 <CardTitle className="text-xs sm:text-sm font-medium">Total Mensajes</CardTitle>
-                <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
               </CardHeader>
-              <CardContent>
-                <div className="text-lg sm:text-2xl font-bold">{summary.totalMessages}</div>
+              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
+                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.totalMessages}</div>
               </CardContent>
             </Card>
           </motion.div>
@@ -419,13 +419,13 @@ const DashboardStats = () => {
           duration: 0.2,
           delay: 0.1
         }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2">
+            <Card className="overflow-hidden bg-white shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
                 <CardTitle className="text-xs sm:text-sm font-medium">Mensajes Pendientes</CardTitle>
-                <Bell className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
               </CardHeader>
-              <CardContent>
-                <div className="text-lg sm:text-2xl font-bold">{summary.pendingMessages}</div>
+              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
+                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.pendingMessages}</div>
               </CardContent>
             </Card>
           </motion.div>
@@ -440,23 +440,23 @@ const DashboardStats = () => {
           duration: 0.2,
           delay: 0.15
         }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2">
+            <Card className="overflow-hidden bg-white shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
                 <CardTitle className="text-xs sm:text-sm font-medium">Tiempo Promedio</CardTitle>
-                <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
               </CardHeader>
-              <CardContent>
-                <div className="text-lg sm:text-2xl font-bold">
+              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
+                <div className="text-lg sm:text-2xl font-bold text-hotel-800">
                   {formatResponseTime(summary.avgResponseTime)}
                 </div>
-                <p className="text-xs text-muted-foreground hidden sm:block">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
                   minutos:segundos
                 </p>
               </CardContent>
             </Card>
           </motion.div>
           
-          {/* New stats - second row */}
+          {/* Segunda fila de estadísticas */}
           <motion.div key={`card-active-rooms-${summary.activeRooms}`} initial={{
           opacity: 0.8,
           scale: 0.95
@@ -467,13 +467,13 @@ const DashboardStats = () => {
           duration: 0.2,
           delay: 0.2
         }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2">
+            <Card className="overflow-hidden bg-white shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
                 <CardTitle className="text-xs sm:text-sm font-medium">Cabañas Activas</CardTitle>
-                <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
               </CardHeader>
-              <CardContent>
-                <div className="text-lg sm:text-2xl font-bold">{summary.activeRooms}</div>
+              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
+                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.activeRooms}</div>
               </CardContent>
             </Card>
           </motion.div>
@@ -488,13 +488,13 @@ const DashboardStats = () => {
           duration: 0.2,
           delay: 0.25
         }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2">
+            <Card className="overflow-hidden bg-white shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
                 <CardTitle className="text-xs sm:text-sm font-medium">Huéspedes Hoy</CardTitle>
-                <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
               </CardHeader>
-              <CardContent>
-                <div className="text-lg sm:text-2xl font-bold">{summary.guestsToday}</div>
+              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
+                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.guestsToday}</div>
               </CardContent>
             </Card>
           </motion.div>
@@ -509,13 +509,13 @@ const DashboardStats = () => {
           duration: 0.2,
           delay: 0.3
         }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2">
+            <Card className="overflow-hidden bg-white shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
                 <CardTitle className="text-xs sm:text-sm font-medium">Msgs por Huésped</CardTitle>
-                <User className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
               </CardHeader>
-              <CardContent>
-                <div className="text-lg sm:text-2xl font-bold">{summary.messagesPerGuest.toFixed(1)}</div>
+              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
+                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.messagesPerGuest.toFixed(1)}</div>
               </CardContent>
             </Card>
           </motion.div>
@@ -530,46 +530,65 @@ const DashboardStats = () => {
           duration: 0.2,
           delay: 0.35
         }}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2">
+            <Card className="overflow-hidden bg-white shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
                 <CardTitle className="text-xs sm:text-sm font-medium">Tasa de Respuesta</CardTitle>
-                <Activity className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
               </CardHeader>
-              <CardContent>
-                <div className="text-lg sm:text-2xl font-bold">{formatPercentage(summary.responseRate)}</div>
+              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
+                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{formatPercentage(summary.responseRate)}</div>
               </CardContent>
             </Card>
           </motion.div>
         </AnimatePresence>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6 flex-grow">
+      {/* Time range selector */}
+      <div className="flex justify-between items-center mb-3 bg-hotel-50/50 p-2 rounded-lg">
+        <h3 className="text-sm sm:text-base font-semibold text-hotel-800">Actividad por Período</h3>
+        <div className="flex space-x-2">
+          <Button
+            size="sm"
+            variant={timeRange === 'day' ? 'default' : 'outline'}
+            onClick={() => handleTimeRangeChange('day')}
+            className={`text-xs h-7 px-2 sm:h-8 sm:px-3 ${timeRange === 'day' ? 'bg-hotel-700 hover:bg-hotel-800' : ''}`}
+          >
+            Día
+          </Button>
+          <Button
+            size="sm"
+            variant={timeRange === 'week' ? 'default' : 'outline'}
+            onClick={() => handleTimeRangeChange('week')}
+            className={`text-xs h-7 px-2 sm:h-8 sm:px-3 ${timeRange === 'week' ? 'bg-hotel-700 hover:bg-hotel-800' : ''}`}
+          >
+            Semana
+          </Button>
+          <Button
+            size="sm"
+            variant={timeRange === 'month' ? 'default' : 'outline'}
+            onClick={() => handleTimeRangeChange('month')}
+            className={`text-xs h-7 px-2 sm:h-8 sm:px-3 ${timeRange === 'month' ? 'bg-hotel-700 hover:bg-hotel-800' : ''}`}
+          >
+            Mes
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 flex-grow">
         {/* Daily Activity Chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
+        <Card className="lg:col-span-2 bg-white shadow-sm">
+          <CardHeader className="p-3">
             <div className="flex flex-wrap items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg py-[5px] my-[8px]">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <BarChartIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                 Actividad Diaria
               </CardTitle>
-              
-              <div className="flex space-x-1 text-xs">
-                <Button size="sm" variant={timeRange === 'day' ? 'default' : 'outline'} onClick={() => handleTimeRangeChange('day')} className="h-7 px-2 py-1 text-xs">
-                  Día
-                </Button>
-                <Button size="sm" variant={timeRange === 'week' ? 'default' : 'outline'} onClick={() => handleTimeRangeChange('week')} className="h-7 px-2 py-1 text-xs">
-                  Semana
-                </Button>
-                <Button size="sm" variant={timeRange === 'month' ? 'default' : 'outline'} onClick={() => handleTimeRangeChange('month')} className="h-7 px-2 py-1 text-xs">
-                  Mes
-                </Button>
-              </div>
             </div>
-            <CardDescription className="text-xs sm:text-sm">
+            <CardDescription className="text-xs sm:text-sm mt-1">
               Mensajes y huéspedes activos por día
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-[220px] sm:h-[260px]">
+          <CardContent className="px-3 pb-3 h-[200px] sm:h-[240px]">
             {dailyActivity.length > 0 ? <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dailyActivity} margin={{
               top: 5,
@@ -599,17 +618,17 @@ const DashboardStats = () => {
         </Card>
 
         {/* Guest Activity Pie Chart */}
-        <Card>
-          <CardHeader>
+        <Card className="bg-white shadow-sm">
+          <CardHeader className="p-3">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Users className="h-4 w-4 sm:h-5 sm:w-5" />
               Actividad de Huéspedes
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
+            <CardDescription className="text-xs sm:text-sm mt-1">
               Huéspedes activos en las últimas 24h
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-[220px] sm:h-[260px]">
+          <CardContent className="px-3 pb-3 h-[200px] sm:h-[240px]">
             {activeGuests + inactiveGuests > 0 ? <div className="h-full flex flex-col items-center justify-center">
                 <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
@@ -642,17 +661,17 @@ const DashboardStats = () => {
         </Card>
         
         {/* Response Time Chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
+        <Card className="lg:col-span-2 bg-white shadow-sm">
+          <CardHeader className="p-3">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
               Tiempos de Respuesta
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
+            <CardDescription className="text-xs sm:text-sm mt-1">
               Tiempo promedio y máximo de respuesta por huésped (segundos)
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-[220px] sm:h-[260px]">
+          <CardContent className="px-3 pb-3 h-[200px] sm:h-[240px]">
             {chartData.length > 0 ? <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{
               top: 5,
@@ -682,36 +701,38 @@ const DashboardStats = () => {
         </Card>
         
         {/* Room Activity Table */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
+        <Card className="lg:col-span-1 bg-white shadow-sm">
+          <CardHeader className="p-3">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
               Actividad por Cabaña
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
+            <CardDescription className="text-xs sm:text-sm mt-1">
               Mensajes y huéspedes por cabaña
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-[220px] sm:h-[260px]">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="text-xs py-2 pl-4">Cabaña</TableHead>
+                  <TableHead className="text-xs text-center py-2">Huésp.</TableHead>
+                  <TableHead className="text-xs text-center py-2 pr-4">Msgs.</TableHead>
+                </TableRow>
+              </TableHeader>
+            </Table>
+            <ScrollArea className="h-[160px] sm:h-[200px]">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Cabaña</TableHead>
-                    <TableHead className="text-xs text-center">Huésp.</TableHead>
-                    <TableHead className="text-xs text-center">Msgs.</TableHead>
-                  </TableRow>
-                </TableHeader>
                 <TableBody>
                   {isLoading ? <TableRow>
                       <TableCell colSpan={3} className="text-center">
-                        <div className="flex items-center justify-center py-2">
+                        <div className="flex items-center justify-center py-3">
                           <RefreshCw className="h-4 w-4 animate-spin mr-2" />
                           <span className="text-xs">Cargando...</span>
                         </div>
                       </TableCell>
                     </TableRow> : roomActivity.length === 0 ? <TableRow>
-                      <TableCell colSpan={3} className="text-center text-xs">
+                      <TableCell colSpan={3} className="text-center text-xs py-3">
                         No hay datos disponibles
                       </TableCell>
                     </TableRow> : <AnimatePresence>
@@ -725,14 +746,14 @@ const DashboardStats = () => {
                     opacity: 0
                   }} transition={{
                     duration: 0.2
-                  }} className="group hover:bg-muted/50">
-                          <TableCell className="font-medium text-xs py-2">
+                  }} className="group hover:bg-muted/40">
+                          <TableCell className="font-medium text-xs py-2.5 pl-4">
                             {room.room_number}
                           </TableCell>
-                          <TableCell className="text-center text-xs py-2">
+                          <TableCell className="text-center text-xs py-2.5">
                             {room.guest_count}
                           </TableCell>
-                          <TableCell className="text-center text-xs py-2">
+                          <TableCell className="text-center text-xs py-2.5 pr-4">
                             {room.message_count}
                           </TableCell>
                         </motion.tr>)}
@@ -744,37 +765,39 @@ const DashboardStats = () => {
         </Card>
         
         {/* Pending Messages Table */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
+        <Card className="lg:col-span-3 bg-white shadow-sm">
+          <CardHeader className="p-3">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
               Mensajes Sin Responder
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
+            <CardDescription className="text-xs sm:text-sm mt-1">
               Huéspedes con mensajes pendientes
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex-grow overflow-hidden p-0">
-            <ScrollArea className="h-[160px] sm:h-[200px]">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="text-xs py-2 pl-4">Huésped</TableHead>
+                  <TableHead className="text-xs py-2">Hab.</TableHead>
+                  <TableHead className="text-xs text-right py-2">Tiempo Espera</TableHead>
+                  <TableHead className="text-xs text-right py-2 pr-4">Pendientes</TableHead>
+                </TableRow>
+              </TableHeader>
+            </Table>
+            <ScrollArea className="h-[140px] sm:h-[180px]">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Huésped</TableHead>
-                    <TableHead className="text-xs">Hab.</TableHead>
-                    <TableHead className="text-xs text-right">Tiempo Espera</TableHead>
-                    <TableHead className="text-xs text-right">Pendientes</TableHead>
-                  </TableRow>
-                </TableHeader>
                 <TableBody>
                   {isLoading ? <TableRow>
                       <TableCell colSpan={4} className="text-center">
-                        <div className="flex items-center justify-center py-2">
+                        <div className="flex items-center justify-center py-3">
                           <RefreshCw className="h-4 w-4 animate-spin mr-2" />
                           <span className="text-xs">Cargando...</span>
                         </div>
                       </TableCell>
                     </TableRow> : stats.filter(s => (s.pending_messages || 0) > 0).length === 0 ? <TableRow>
-                      <TableCell colSpan={4} className="text-center text-xs">
+                      <TableCell colSpan={4} className="text-center text-xs py-3">
                         No hay mensajes pendientes
                       </TableCell>
                     </TableRow> : <AnimatePresence>
@@ -788,19 +811,19 @@ const DashboardStats = () => {
                     opacity: 0
                   }} transition={{
                     duration: 0.2
-                  }} className="group hover:bg-muted/50">
-                            <TableCell className="font-medium text-xs py-2">
+                  }} className="group hover:bg-muted/40">
+                            <TableCell className="font-medium text-xs py-2.5 pl-4">
                               {stat.guest_name}
                             </TableCell>
-                            <TableCell className="text-xs py-2">
+                            <TableCell className="text-xs py-2.5">
                               {stat.room_number}
                             </TableCell>
-                            <TableCell className="text-right text-xs py-2">
+                            <TableCell className="text-right text-xs py-2.5">
                               <span className="">
                                 {formatWaitTime(stat.wait_time_minutes)} min
                               </span>
                             </TableCell>
-                            <TableCell className="text-right text-xs py-2">
+                            <TableCell className="text-right text-xs py-2.5 pr-4">
                               <span className="inline-flex items-center justify-center bg-amber-100 text-amber-800 rounded-full px-2 py-0.5">
                                 {stat.pending_messages}
                               </span>

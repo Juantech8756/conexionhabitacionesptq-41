@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +11,7 @@ interface MediaUploaderProps {
   disabled?: boolean;
   onFileSelect: (file: File | null) => void;
   selectedFile: File | null;
+  className?: string;
 }
 
 const MediaUploader = ({ 
@@ -19,7 +19,8 @@ const MediaUploader = ({
   onUploadComplete, 
   disabled = false, 
   onFileSelect,
-  selectedFile
+  selectedFile,
+  className = ""
 }: MediaUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -110,7 +111,7 @@ const MediaUploader = ({
           size="icon"
           variant="outline"
           onClick={handleButtonClick}
-          className="flex-shrink-0"
+          className={`flex-shrink-0 ${className}`}
           disabled={disabled || isUploading}
           title="Seleccionar imagen o video"
         >
