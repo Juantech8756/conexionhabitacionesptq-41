@@ -2,7 +2,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Trash2, Home, Users } from "lucide-react";
+import { Trash2, Home, Users, Pencil } from "lucide-react";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 import MessageNotificationBadge from "@/components/MessageNotificationBadge";
 import { Guest, Room } from "@/types/dashboard";
@@ -15,7 +15,21 @@ interface GuestListProps {
   recentlyUpdatedGuests: Record<string, boolean>;
   onSelectGuest: (guest: Guest) => void;
   onDeleteGuest: (e: React.MouseEvent, guest: Guest) => void;
+  typingGuests?: Record<string, boolean>;
+  typingGuestInfo?: Record<string, { name: string; room: string }>;
 }
+
+// Mini componente para mostrar el indicador de typing en la lista de huéspedes
+const GuestTypingIndicator = ({ visible }: { visible: boolean }) => {
+  if (!visible) return null;
+  
+  return (
+    <div className="flex items-center gap-1 text-hotel-700 animate-fade-in text-[10px] mt-1">
+      <Pencil className="h-2.5 w-2.5 animate-pulse" />
+      <span>Escribiendo...</span>
+    </div>
+  );
+};
 
 const GuestList: React.FC<GuestListProps> = ({
   guests,
@@ -25,6 +39,8 @@ const GuestList: React.FC<GuestListProps> = ({
   recentlyUpdatedGuests,
   onSelectGuest,
   onDeleteGuest,
+  typingGuests = {},
+  typingGuestInfo = {}
 }) => {
   // Format last activity time
   const formatLastActivity = (dateString: string) => {
@@ -115,9 +131,15 @@ const GuestList: React.FC<GuestListProps> = ({
                 
                 {getRoomInfo(guest)}
                 
-                <p className={`${isMobile ? 'text-[10px] mt-0.5' : 'text-xs mt-1'} text-muted-foreground`}>
-                  {formatLastActivity(guest.last_activity)}
-                </p>
+                {/* Indicador de typing */}
+                <GuestTypingIndicator visible={!!typingGuests[guest.id]} />
+                
+                {/* Solo mostramos el tiempo de última actividad si no está escribiendo */}
+                {!typingGuests[guest.id] && (
+                  <p className={`${isMobile ? 'text-[10px] mt-0.5' : 'text-xs mt-1'} text-muted-foreground`}>
+                    {formatLastActivity(guest.last_activity)}
+                  </p>
+                )}
               </div>
               
               <div className="flex items-center gap-2">

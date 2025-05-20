@@ -1,0 +1,82 @@
+/* Corrección para el problema de colores diferentes en el chat */
+
+/* Asegurar que todos los contenedores tengan el mismo color de fondo */
+.message-list-container,
+.message-input-panel-container,
+.chat-input-bar,
+.messages-area {
+  background-color: white !important;
+}
+
+/* Eliminar cualquier borde o sombra que pueda crear líneas visibles */
+.message-input-panel-container {
+  box-shadow: none !important;
+  border-top: none !important;
+}
+
+.chat-input-bar {
+  box-shadow: none !important;
+  border-top: none !important;
+}
+
+/* Asegurar que el espacio al final de los mensajes tenga el mismo color */
+.message-list-container > div > div:last-child {
+  background-color: white !important;
+}
+
+/* Eliminar cualquier margen o padding que pueda crear espacios visibles */
+.message-list-container {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Asegurar que el fondo de toda el área del chat sea blanco */
+.chat-container {
+  background-color: white !important;
+}
+
+/* Asegurar que cualquier elemento que pueda estar creando el espacio gris tenga fondo blanco */
+.message-list-container::after,
+.message-list-container::before {
+  background-color: white !important;
+}
+
+/* Eliminar posibles espacios en blanco entre contenedores */
+.message-list-container,
+.message-input-panel-container {
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Ajustar el espacio entre el último mensaje y la barra de entrada */
+.message-list-container .max-w-2xl {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Asegurar que el div de referencia para el scroll tenga el mismo color */
+[ref="messagesEndRef"] {
+  background-color: white !important;
+}
+
+/* Corregir posible problema con el área de mensajes y su contenedor */
+.message-list-container > div {
+  background-color: white !important;
+}
+
+/* Eliminar el recuadro en el centro del historial del chat */
+.message-list-container .max-w-2xl .flex.justify-center .px-3.py-1 {
+  background-color: transparent !important;
+  color: #666 !important;
+  font-size: 11px !important;
+}
+
+/* Eliminar el espacio de referencia al final que puede estar causando el recuadro */
+.message-list-container div[ref="messagesEndRef"],
+.message-list-container .h-10.mb-4 {
+  height: 0 !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  background-color: transparent !important;
+  display: none !important;
+} 

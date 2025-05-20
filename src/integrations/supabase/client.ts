@@ -8,4 +8,37 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+  global: {
+    // Habilitar registro detallado de todas las peticiones a Supabase
+    fetch: (url, options) => {
+      console.log(`Supabase Request: ${options?.method || 'GET'} ${url}`);
+      
+      // Registrar el cuerpo de la petición si existe
+      if (options?.body) {
+        try {
+          const body = JSON.parse(options.body as string);
+          console.log('Request Body:', body);
+        } catch (e) {
+          console.log('Request Body:', options.body);
+        }
+      }
+      
+      // Realizar la petición y registrar la respuesta
+      return fetch(url, options).then(async (response) => {
+        const responseClone = response.clone();
+        try {
+          const data = await responseClone.json();
+          console.log(`Supabase Response (${response.status}):`, data);
+        } catch (e) {
+          console.log(`Supabase Response (${response.status}): No se pudo analizar como JSON`);
+        }
+        return response;
+      });
+    },
+  }
+});

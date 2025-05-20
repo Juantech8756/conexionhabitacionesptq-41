@@ -23,8 +23,8 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-hotel-50 to-white animate-gradient-flow overflow-hidden">
-      <div className={`container mx-auto px-4 ${isMobile ? 'py-6' : 'py-12'}`}>
+    <div className="min-h-screen w-screen max-w-[100vw] bg-gradient-to-b from-hotel-50 to-white animate-gradient-flow overflow-hidden layout-fullwidth">
+      <div className={`container-fullwidth mx-auto px-4 ${isMobile ? 'py-6' : 'py-12'}`}>
         <header className={`text-center ${isMobile ? 'mb-8' : 'mb-16'} ${isLoaded ? 'animate-gentle-reveal' : 'opacity-0'}`}>
           <div className="flex items-center justify-center mb-4">
             <Hotel className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} text-hotel-800 mr-3 animated-icon`} />
@@ -122,8 +122,8 @@ const Index = () => {
           </p>
         </div>
       </div>
-      <footer className={`bg-hotel-900 text-white ${isMobile ? 'py-4 mt-8 footer-mobile' : 'py-6 mt-12'} ${isLoaded ? 'animate-slide-in-bottom delay-500' : 'opacity-0'}`}>
-        <div className="container mx-auto px-4 text-center">
+      <footer className={`bg-hotel-900 text-white w-full ${isMobile ? 'py-4 mt-8 footer-mobile' : 'py-6 mt-12'} ${isLoaded ? 'animate-slide-in-bottom delay-500' : 'opacity-0'}`}>
+        <div className="container-fullwidth mx-auto px-4 text-center">
           <p>© 2025 Parque Temático Quimbaya. Todos los derechos reservados.</p>
           <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-hotel-300 mt-2`}>
             Una aplicación de comunicación para parques temáticos

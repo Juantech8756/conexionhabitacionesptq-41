@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User } from "lucide-react";
+import { User, Home, Users, ArrowLeft } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import DeleteChatDialog from "@/components/DeleteChatDialog";
 import { useGuestData } from "@/hooks/use-guest-data";
@@ -15,20 +15,44 @@ import MessageInputPanel from "@/components/dashboard/MessageInputPanel";
 import ChatHeader from "@/components/dashboard/ChatHeader";
 import NoGuestSelected from "@/components/dashboard/NoGuestSelected";
 
+// Componente de indicador de typing para el lado del receptor
+const TypingIndicator = ({ visible }: { visible: boolean }) => {
+  if (!visible) return null;
+  
+  return (
+    <div className="flex items-center space-x-1 text-gray-500 p-2 animate-in fade-in ml-4 mb-2">
+      <span className="text-xs">Escribiendo...</span>
+      <div className="flex space-x-1">
+        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.6s]"></div>
+      </div>
+    </div>
+  );
+};
+
 interface ReceptionDashboardProps {
   onCallGuest?: (guest: {
     id: string;
     name: string;
     roomNumber: string;
   }) => void;
+  typingGuests?: Record<string, boolean>;
+  typingGuestInfo?: Record<string, { name: string; room: string }>;
+  onSendTypingEvent?: (guestId: string) => Promise<void>;
 }
 
-const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
+const ReceptionDashboard = ({ 
+  onCallGuest,
+  typingGuests = {},
+  typingGuestInfo = {},
+  onSendTypingEvent 
+}: ReceptionDashboardProps) => {
   const isMobile = useIsMobile();
   const [showGuestList, setShowGuestList] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
 
-  // Use custom hooks
+  //  hooks personalizados
   const {
     guests,
     rooms,
@@ -55,6 +79,19 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
   // Wrapper function to convert Promise<boolean> to Promise<void>
   const handleAudioRecorded = async (audioBlob: Blob): Promise<void> => {
     await originalHandleAudioRecorded(audioBlob);
+  };
+
+  // Estado para controlar cuando el recepcionista está escribiendo
+  const [isTyping, setIsTyping] = useState(false);
+
+  // Función para manejar el cambio en el input con indicador de typing
+  const handleReplyChange = (value: React.SetStateAction<string>) => {
+    setReplyText(value);
+    
+    // Disparar evento de typing si el usuario está escribiendo y hay un huésped seleccionado
+    if (selectedGuest && typeof value === 'string' && value.trim() !== '' && onSendTypingEvent) {
+      onSendTypingEvent(selectedGuest.id);
+    }
   };
 
   const {
@@ -129,9 +166,9 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
 
   // Back to guests list (mobile)
   const handleBackToGuestList = () => {
-    if (isMobile) {
-      setSelectedGuest(null);
-    }
+    // Siempre deseleccionar el huésped actual, sin importar si es móvil o escritorio
+    setSelectedGuest(null);
+    console.log("Volviendo a la lista de huéspedes");
   };
 
   // Delete guest action
@@ -182,7 +219,9 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
                   isMobile={true}
                   recentlyUpdatedGuests={recentlyUpdatedGuests} 
                   onSelectGuest={selectGuest} 
-                  onDeleteGuest={handleDeleteGuestClick} 
+                  onDeleteGuest={handleDeleteGuestClick}
+                  typingGuests={typingGuests}
+                  typingGuestInfo={typingGuestInfo}
                 />
               </div>
             </motion.div>
@@ -198,62 +237,98 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
               {/* Header en la parte superior */}
               <ChatHeader 
                 selectedGuest={selectedGuest} 
+                onBackClick={undefined}
                 onCallGuest={handleCallGuest} 
-                onDeleteChat={() => setIsDeleteDialogOpen(true)} 
-                onBackToList={handleBackToGuestList} 
+                onDeleteChat={() => {
+                  setGuestToDelete(selectedGuest);
+                  setIsDeleteDialogOpen(true);
+                }}
                 isMobile={true} 
-                rooms={rooms} 
               />
-
-              {/* Zona de mensajes con scroll, ocupa todo el espacio disponible */}
-              <div className="flex-1 overflow-y-auto bg-hotel-50/80">
+              
+              {/* Header de información del cliente para móvil - Ahora con posición fija */}
+              <div className="bg-white p-2 border-b shadow-sm client-info-header">
+                <div className="flex flex-row items-center">
+                  {/* Botón de retroceso */}
+                  <button 
+                    className="back-button-mobile"
+                    onClick={handleBackToGuestList}
+                    aria-label="Volver a la lista de huéspedes"
+                  >
+                    <span>← Volver</span>
+                  </button>
+                  
+                  {/* Información del cliente */}
+                  <div className="client-info-content">
+                    <h3 className="font-medium text-base text-gray-800">
+                      {selectedGuest.name}
+                    </h3>
+                    <div className="flex items-center space-x-3 mt-0.5">
+                      <span className="text-xs text-gray-600 flex items-center">
+                        <Home className="h-3.5 w-3.5 mr-1 text-hotel-600" />
+                        Cabaña {selectedGuest.room_number}
+                      </span>
+                      {selectedGuest.guest_count && (
+                        <span className="text-xs text-gray-600 flex items-center">
+                          <Users className="h-3.5 w-3.5 mr-1 text-hotel-600" />
+                          {selectedGuest.guest_count} {selectedGuest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Lista de mensajes - cuerpo de la conversación */}
+              <div className="flex-1 overflow-hidden">
                 <MessageList 
                   messages={messages[selectedGuest.id] || []} 
-                  isMobile={true} 
-                  onRefreshRequest={refreshCurrentGuestMessages} 
-                />
-              </div>
-
-              {/* Barra de entrada fija en la parte inferior */}
-              <div className="border-t border-hotel-100 bg-white shadow-md w-full py-2 px-2 sticky bottom-0 left-0 right-0">
-                <MessageInputPanel 
                   selectedGuest={selectedGuest} 
-                  replyText={replyText} 
-                  setReplyText={setReplyText} 
-                  isLoading={isLoading} 
-                  selectedFile={selectedFile} 
-                  onFileSelect={handleFileSelect} 
-                  onSendMessage={handleSendMessage} 
-                  onAudioRecorded={handleAudioRecorded} 
-                  onAudioCanceled={() => console.log("Audio recording cancelled")} 
                   isMobile={true} 
+                  onRefresh={refreshCurrentGuestMessages}
                 />
+                
+                {/* Indicador de typing */}
+                {typingGuests[selectedGuest.id] && (
+                  <TypingIndicator visible={true} />
+                )}
               </div>
+              
+              {/* Panel de entrada de mensajes - fijo en la parte inferior */}
+              <MessageInputPanel 
+                replyText={replyText}
+                setReplyText={handleReplyChange}
+                isLoading={isLoading}
+                selectedFile={selectedFile}
+                onFileSelect={handleFileSelect}
+                onSendMessage={handleSendMessage}
+                onAudioRecorded={handleAudioRecorded}
+                onMediaUploadComplete={handleMediaUploadComplete}
+                isMobile={true}
+              />
             </motion.div>
           )}
         </AnimatePresence>
         
+        {/* Delete dialog */}
         <DeleteChatDialog 
           isOpen={isDeleteDialogOpen} 
-          guestName={(guestToDelete || selectedGuest)?.name || ""} 
-          roomNumber={(guestToDelete || selectedGuest)?.room_number || ""} 
-          onConfirm={handleDeleteConfirm} 
-          onCancel={() => {
-            setIsDeleteDialogOpen(false);
-            setGuestToDelete(null);
-          }} 
-          isDeleting={isDeleting} 
+          isDeleting={isDeleting}
+          guestName={guestToDelete?.name || ""}
+          roomNumber={guestToDelete?.room_number || ""}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setIsDeleteDialogOpen(false)}
         />
       </div>
     );
   }
 
-  // Desktop layout with side-by-side panels
+  // Desktop layout with two columns
   return (
-    <div className="flex h-full overflow-hidden bg-background">
-      {/* Panel izquierdo: Lista de huéspedes */}
-      <div className="w-1/3 border-r overflow-hidden flex flex-col">
-        <div className="bg-gradient-to-r from-hotel-800 to-hotel-700 p-3 flex justify-between items-center">
+    <div className="flex h-full overflow-hidden bg-background rounded-md">
+      {/* Sidebar with guest list */}
+      <div className="w-1/3 border-r border-border h-full flex flex-col">
+        <div className="bg-gradient-to-r from-hotel-800 to-hotel-700 p-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center text-white">
             <User className="mr-2 h-5 w-5" />
             Huéspedes
@@ -266,68 +341,94 @@ const ReceptionDashboard = ({ onCallGuest }: ReceptionDashboardProps) => {
             guests={guests} 
             rooms={rooms} 
             selectedGuest={selectedGuest} 
-            isMobile={false} 
+            isMobile={false}
             recentlyUpdatedGuests={recentlyUpdatedGuests} 
             onSelectGuest={selectGuest} 
-            onDeleteGuest={handleDeleteGuestClick} 
+            onDeleteGuest={handleDeleteGuestClick}
+            typingGuests={typingGuests}
+            typingGuestInfo={typingGuestInfo}
           />
         </div>
       </div>
       
-      {/* Panel derecho: Chat */}
-      <div className="flex-1 overflow-hidden">
+      {/* Main chat area */}
+      <div className="w-2/3 flex flex-col h-full">
         {selectedGuest ? (
-          <div className="h-full flex flex-col">
-            {/* ChatHeader - cabecera */}
+          <>
+            {/* Header para el chat */}
             <ChatHeader 
               selectedGuest={selectedGuest} 
+              onBackClick={handleBackToGuestList}
               onCallGuest={handleCallGuest} 
-              onDeleteChat={() => setIsDeleteDialogOpen(true)} 
-              onBackToList={handleBackToGuestList} 
+              onDeleteChat={() => {
+                setGuestToDelete(selectedGuest);
+                setIsDeleteDialogOpen(true);
+              }}
               isMobile={false} 
-              rooms={rooms} 
             />
             
-            {/* MessageList - contenido con scroll */}
-            <div className="flex-1 overflow-y-auto bg-hotel-50/80">
+            {/* Header de información del cliente */}
+            <div className="bg-white p-3 border-b shadow-sm client-info-header">
+              <div className="flex flex-col">
+                <h3 className="font-medium text-lg text-gray-800">
+                  {selectedGuest.name}
+                </h3>
+                <div className="flex items-center space-x-4 mt-1">
+                  <span className="text-sm text-gray-600 flex items-center">
+                    <Home className="h-4 w-4 mr-1 text-hotel-600" />
+                    Cabaña {selectedGuest.room_number}
+                  </span>
+                  {selectedGuest.guest_count && (
+                    <span className="text-sm text-gray-600 flex items-center">
+                      <Users className="h-4 w-4 mr-1 text-hotel-600" />
+                      {selectedGuest.guest_count} {selectedGuest.guest_count === 1 ? 'Hospedado' : 'Hospedados'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Lista de mensajes */}
+            <div className="flex-1 overflow-hidden">
               <MessageList 
                 messages={messages[selectedGuest.id] || []} 
-                isMobile={false} 
-                onRefreshRequest={refreshCurrentGuestMessages} 
+                selectedGuest={selectedGuest}
+                isMobile={false}
+                onRefresh={refreshCurrentGuestMessages}
               />
+              
+              {/* Indicador de typing */}
+              {typingGuests[selectedGuest.id] && (
+                <TypingIndicator visible={true} />
+              )}
             </div>
-
-            {/* MessageInputPanel - pie fijo */}
-            <div className="border-t border-hotel-100 bg-white shadow-md w-full p-3">
-              <MessageInputPanel 
-                selectedGuest={selectedGuest} 
-                replyText={replyText} 
-                setReplyText={setReplyText} 
-                isLoading={isLoading} 
-                selectedFile={selectedFile} 
-                onFileSelect={handleFileSelect} 
-                onSendMessage={handleSendMessage} 
-                onAudioRecorded={handleAudioRecorded} 
-                onAudioCanceled={() => console.log("Audio recording cancelled")} 
-                isMobile={false} 
-              />
-            </div>
-          </div>
+            
+            {/* Panel de entrada de mensajes */}
+            <MessageInputPanel 
+              replyText={replyText}
+              setReplyText={handleReplyChange}
+              isLoading={isLoading}
+              selectedFile={selectedFile}
+              onFileSelect={handleFileSelect}
+              onSendMessage={handleSendMessage}
+              onAudioRecorded={handleAudioRecorded}
+              onMediaUploadComplete={handleMediaUploadComplete}
+              isMobile={false}
+            />
+          </>
         ) : (
           <NoGuestSelected />
         )}
       </div>
       
+      {/* Delete dialog */}
       <DeleteChatDialog 
         isOpen={isDeleteDialogOpen} 
-        guestName={(guestToDelete || selectedGuest)?.name || ""} 
-        roomNumber={(guestToDelete || selectedGuest)?.room_number || ""} 
-        onConfirm={handleDeleteConfirm} 
-        onCancel={() => {
-          setIsDeleteDialogOpen(false);
-          setGuestToDelete(null);
-        }} 
-        isDeleting={isDeleting} 
+        isDeleting={isDeleting}
+        guestName={guestToDelete?.name || ""}
+        roomNumber={guestToDelete?.room_number || ""}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setIsDeleteDialogOpen(false)}
       />
     </div>
   );

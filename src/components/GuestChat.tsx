@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, Mic, MicOff, Send, Phone, Bell, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { useIsMobile } from "@/hooks/use-mobile";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 import MediaMessage from "@/components/MediaMessage";
 import MediaUploader from "@/components/MediaUploader";
@@ -50,6 +49,22 @@ type PendingMessage = {
   retryCount: number;
 };
 
+// Componente de indicador de escritura
+const TypingIndicator = ({ visible }: { visible: boolean }) => {
+  if (!visible) return null;
+  
+  return (
+    <div className="flex items-center space-x-1 text-gray-500 p-2 animate-in fade-in">
+      <span className="text-xs">Recepción está escribiendo</span>
+      <div className="flex space-x-1">
+        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.6s]"></div>
+      </div>
+    </div>
+  );
+};
+
 const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<MessageType[]>([]);
@@ -61,37 +76,17 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
   const [messageIdSet, setMessageIdSet] = useState<Set<string>>(new Set());
   const [shouldPoll, setShouldPoll] = useState(true);
   const [pollingEnabled, setPollingEnabled] = useState(true);
-  
-  // New state to track if refresh is needed
   const [needsRefresh, setNeedsRefresh] = useState(false);
-  
-  // Obtener el roomId de la tabla de huéspedes
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [isReceptionTyping, setIsReceptionTyping] = useState(false);
   
-  useEffect(() => {
-    // Obtener el roomId basado en el guestId
-    const fetchRoomId = async () => {
-      const { data, error } = await supabase
-        .from('guests')
-        .select('room_id')
-        .eq('id', guestId)
-        .single();
-      
-      if (data && data.room_id) {
-        setRoomId(data.room_id);
-      }
-    };
-    
-    if (guestId) {
-      fetchRoomId();
-    }
-  }, [guestId]);
-  
+  // Referencias
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Hooks
   const { toast } = useToast();
-  const isMobile = useIsMobile();
   const { permission, isSubscribed } = useNotifications({
     type: 'guest',
     guestId,
@@ -406,11 +401,11 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     return () => clearTimeout(timer);
   }, []);
 
-  // Scroll to newest messages
+  // Scroll to newest messages - sin referencia a isMobile
   const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
-        behavior: (isMobile && smooth) ? "auto" : smooth ? "smooth" : "auto",
+        behavior: smooth ? "smooth" : "auto",
         block: "end"
       });
     }
@@ -945,66 +940,141 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
     });
   };
 
+  // Suscripción al canal de typing
+  useEffect(() => {
+    if (!guestId) return;
+    
+    // Crear un canal específico para los eventos de typing
+    const typingChannel = supabase.channel(`typing-${guestId}`)
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        if (payload.payload.guestId === guestId) {
+          setIsReceptionTyping(payload.payload.isTyping);
+          
+          // Desactivar el indicador después de 3 segundos si no se reciben más eventos
+          if (payload.payload.isTyping) {
+            setTimeout(() => {
+              setIsReceptionTyping(false);
+            }, 3000);
+          }
+        }
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(typingChannel);
+    };
+  }, [guestId]);
+  
+  // Enviar evento de typing cuando el huésped escribe
+  useEffect(() => {
+    if (!guestId || !message.trim()) return;
+    
+    // Enviar evento de typing
+    const sendTypingEvent = async () => {
+      await supabase.channel(`typing-reception`)
+        .send({
+          type: 'broadcast',
+          event: 'typing',
+          payload: { 
+            guestId,
+            isTyping: true,
+            guestName,
+            roomNumber
+          }
+        });
+    };
+    
+    sendTypingEvent();
+  }, [message, guestId, guestName, roomNumber]);
+
   return (
-    <div className="grid grid-rows-[auto_1fr_auto] h-full overflow-hidden smooth-scroll-ios ios-keyboard-fix">
-      {/* Header - primera fila del grid, no necesita position fixed */}
-      <header className={`bg-gradient-to-r from-hotel-900 to-hotel-700 ${isMobile ? 'p-3 header-mobile' : 'p-4'} text-white shadow-md flex items-center justify-between z-10 animate-gradient-flow ${isMobile ? 'mobile-header-height' : ''}`}>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className={`text-white hover:bg-white/20 mr-1 animated-icon ${isMobile ? 'h-9 w-9 p-1.5' : ''} touch-feedback`}
-          >
-            <ArrowLeft className={`${isMobile ? 'h-4 w-4 mobile-icon-adjust' : 'h-5 w-5'}`} />
-          </Button>
-          <div className="animate-gentle-reveal">
-            <h2 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold`}>Recepción</h2>
-            <p className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-white/80`}>
-              Cabaña {roomNumber} - {guestName}
-            </p>
+    <div className="flex flex-col h-full w-full overflow-hidden chat-container chat-background layout-fullwidth">
+      {/* Header de información */}
+      <header className="dashboard-header-container" style={{
+        height: '80px',
+        width: '100%',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        background: 'linear-gradient(to right, #115e45, #1a7f64)',
+        color: 'white',
+        opacity: 1,
+        visibility: 'visible'
+      }}>
+        <div className="flex items-center justify-between h-20 px-6 md:px-8 w-full">
+          <div className="flex items-center">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-semibold">Recepción</h1>
+              <span className="ml-4 text-base text-white/90 hidden sm:inline-block">
+                Servicio de Habitaciones
+              </span>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleCallStart}
-            className={`text-white hover:bg-white/20 rounded-full flex items-center justify-center ripple-effect animate-gentle-reveal touch-feedback ${isMobile ? 'w-9 h-9' : 'w-10 h-10'}`}
+          <Button 
+            className="bg-amber-500 hover:bg-amber-600 text-white rounded-full"
+            onClick={() => alert("¡Botón de prueba funcionando!")}
           >
-            <Phone className={`${isMobile ? 'h-4 w-4 mobile-icon-adjust' : 'h-5 w-5'}`} />
+            Prueba
           </Button>
         </div>
       </header>
 
-      {/* Chat content - segunda fila del grid con scroll propio */}
-      <div
-        className={`overflow-y-auto ${isMobile ? 'p-2 reduce-padding-mobile' : 'p-4'} bg-hotel-50/50 smooth-scroll-ios`}
+      {/* Header minimalista */}
+      <header className="chat-header-minimal" style={{ top: '80px' }}>
+        <div className="flex items-center gap-1.5 w-full px-3 justify-between">
+          <div className="flex items-center">
+            <div>
+              <h2 className="text-sm font-medium leading-tight">Recepción</h2>
+              <p className="text-[10px] text-white/70">
+                {roomNumber} · {guestName}
+              </p>
+            </div>
+          </div>
+          
+          {/* Botón de llamada a la derecha */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleCallStart}
+            className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
+            title="Llamar a recepción"
+          >
+            <Phone className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Contenido del chat */}
+      <div 
+        className="messages-area ios-scroll-fix"
         ref={scrollContainerRef}
+        style={{ paddingTop: '140px' }} /* Ajustado para considerar ambos headers */
       >
-        <div className={`space-y-3 ${isMobile ? 'space-y-2' : 'space-y-3'} max-w-3xl mx-auto`}>
+        <div className="space-y-2 max-w-none w-full px-3 pb-2">
           <AnimatePresence initial={false}>
             {messages.map((msg, index) => (
               <motion.div
                 key={msg.id}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
                 transition={{ 
-                  duration: isMobile ? 0.2 : 0.3, 
-                  delay: msg.id.startsWith('local') ? 0 : Math.min(0.1 * (index % 5), isMobile ? 0.3 : 0.5),
-                  type: "spring",
-                  stiffness: isMobile ? 250 : 200,
-                  damping: isMobile ? 25 : 20
+                  duration: 0.2,
+                  delay: msg.id.startsWith('local') ? 0 : Math.min(0.05 * (index % 3), 0.1)
                 }}
-                className={`flex ${msg.is_guest ? "justify-end" : "justify-start"}`}
+                className={`flex w-full ${msg.is_guest ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`${isMobile ? 'max-w-[85%] p-2.5 text-[13px]' : 'max-w-[85%] p-3'} rounded-2xl chat-bubble ${
+                  className={`p-2 ${
                     msg.is_guest
-                      ? "bg-gradient-to-r from-hotel-700 to-hotel-600 text-white rounded-br-sm shadow-md"
-                      : "bg-white border border-hotel-200/40 text-gray-800 rounded-bl-sm shadow-sm"
-                  } ${isMobile ? 'chat-content-container' : ''}`}
+                      ? "chat-bubble-guest"
+                      : "chat-bubble-reception"
+                  }`}
                 >
                   {msg.is_audio ? (
                     <AudioMessagePlayer
@@ -1019,9 +1089,9 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
                       isGuest={msg.is_guest}
                     />
                   ) : (
-                    <p className={`${isMobile ? 'text-xs' : 'text-sm'} break-words`}>{msg.content}</p>
+                    <p className="text-sm break-words">{msg.content}</p>
                   )}
-                  <div className={`${isMobile ? 'mt-0.5' : 'mt-1'} ${isMobile ? 'text-[10px]' : 'text-xs'} opacity-70 text-right`}>
+                  <div className="mt-0.5 text-[10px] opacity-70 text-right">
                     {msg.id.startsWith('local') ? (
                       <span>Enviando...</span>
                     ) : (
@@ -1030,7 +1100,7 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
                   </div>
                 </div>
                 
-                {/* Indicadores de estado para mensajes pendientes */}
+                {/* Indicadores de estado */}
                 {msg.id.startsWith('local') && (
                   <div className="self-end ml-2">
                     {pendingMessages.find(pm => pm.localId === msg.id)?.status === 'sending' && (
@@ -1044,19 +1114,32 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
               </motion.div>
             ))}
           </AnimatePresence>
+          
+          {/* Indicador de escritura */}
+          {isReceptionTyping && (
+            <div className="flex items-center space-x-1 text-gray-500 p-2 animate-in fade-in w-full">
+              <span className="text-xs">Recepción está escribiendo</span>
+              <div className="flex space-x-1">
+                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.6s]"></div>
+              </div>
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input area - tercera fila del grid, no necesita position fixed */}
-      <div className={`${isMobile ? 'p-2' : 'p-3'} bg-white border-t border-hotel-200/30 shadow-lg z-10 animate-slide-in-bottom ios-keyboard-fix`}>
-        <div className={`flex items-center ${isMobile ? 'gap-1 chat-input-container' : 'gap-2'} max-w-3xl mx-auto`}>
+      {/* Área de input */}
+      <div className="chat-input-bar w-full" style={{ bottom: '0', position: 'fixed' }}>
+        <div className="flex items-center gap-1.5 w-full">
           <AudioRecorder 
             onAudioRecorded={handleAudioRecorded}
             onCancel={handleCancelAudio}
             disabled={isLoading}
             title="Grabar mensaje de voz"
-            className={`rounded-full border-hotel-300 text-hotel-700 hover:bg-hotel-100 animated-icon ${isMobile ? 'audio-recorder-mobile' : ''}`}
+            className="h-9 w-9 p-0 rounded-full border-gray-300 text-hotel-700 hover:bg-gray-100 flex-shrink-0"
           />
           
           <Input
@@ -1064,32 +1147,31 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Escribe un mensaje..."
-            className={`flex-grow rounded-full bg-hotel-50 border-hotel-200 focus-visible:ring-hotel-500 animated-input ${isMobile ? 'text-sm py-1.5 chat-input-field input-mobile-padding' : ''}`}
+            className="flex-grow h-9 rounded-full text-sm py-1.5 px-3 bg-gray-100 border-gray-200 focus-visible:ring-hotel-500"
             onKeyPress={(e) => e.key === "Enter" && sendMessage()}
             disabled={isLoading}
           />
           
-          {/* Media Uploader Component */}
           <MediaUploader
             guestId={guestId}
             onUploadComplete={() => {}}
             disabled={isLoading}
             onFileSelect={handleFileSelect}
             selectedFile={selectedFile}
-            className={`rounded-full border-hotel-300 text-hotel-700 hover:bg-hotel-100 animated-icon ${isMobile ? 'audio-recorder-mobile' : ''}`}
+            className="h-9 w-9 p-0 rounded-full border-gray-300 text-hotel-700 hover:bg-gray-100 flex-shrink-0"
           />
           
           <Button
             disabled={(message.trim() === "" && !selectedFile) || isLoading}
             onClick={sendMessage}
-            className={`rounded-full ${isMobile ? 'w-9 h-9' : 'w-10 h-10'} flex items-center justify-center advanced-button ripple-effect ${(message.trim() !== "" || selectedFile) ? "bg-hotel-700 hover:bg-hotel-800" : "bg-gray-300"} ${isMobile ? 'mobile-friendly-button p-0' : ''}`}
+            className={`h-9 w-9 p-0 rounded-full flex items-center justify-center flex-shrink-0 ${(message.trim() !== "" || selectedFile) ? "bg-hotel-700 hover:bg-hotel-800" : "bg-gray-300"}`}
           >
-            <Send className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+            <Send className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
 
-      {/* Call interface */}
+      {/* Interfaz de llamada */}
       <AnimatePresence>
         {isCallActive && (
           <motion.div
@@ -1101,7 +1183,8 @@ const GuestChat = ({ guestName, roomNumber, guestId, onBack }: GuestChatProps) =
               stiffness: 300,
               damping: 30
             }}
-            className="absolute inset-0 z-50"
+            className="absolute inset-0 z-50 w-full h-full"
+            style={{ top: '80px' }} /* Ajustar para considerar el header de información */
           >
             <CallInterface
               isGuest={true}

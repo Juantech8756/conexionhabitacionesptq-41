@@ -2,15 +2,21 @@ import React, { useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AudioMessagePlayer from "@/components/AudioMessagePlayer";
 import MediaMessage from "@/components/MediaMessage";
-import { Message } from "@/types/dashboard";
+import { Message, Guest } from "@/types/dashboard";
 
 interface MessageListProps {
   messages: Message[];
+  selectedGuest: Guest;
   isMobile: boolean;
-  onRefreshRequest?: () => void;
+  onRefresh?: () => void;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefreshRequest }) => {
+const MessageList: React.FC<MessageListProps> = ({ 
+  messages, 
+  selectedGuest,
+  isMobile, 
+  onRefresh 
+}) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const processedMessageIds = useRef(new Set<string>());
   
@@ -32,15 +38,15 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefresh
 
   // Set up automatic refresh interval
   useEffect(() => {
-    if (!onRefreshRequest) return;
+    if (!onRefresh) return;
     
     // Set up a silent refresh every 500ms (half a second) for more immediate updates
     const refreshInterval = setInterval(() => {
-      onRefreshRequest();
+      onRefresh();
     }, 500);
     
     return () => clearInterval(refreshInterval);
-  }, [onRefreshRequest]);
+  }, [onRefresh]);
 
   // Deduplicate messages to prevent rendering duplicates
   const deduplicatedMessages = React.useMemo(() => {
@@ -86,17 +92,17 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefresh
   if (deduplicatedMessages.length === 0) {
     return (
       <div className="flex items-center justify-center h-full p-8 text-center text-muted-foreground">
-        No hay mensajes aún
+        <p>No hay mensajes con {selectedGuest.name} (Cabaña {selectedGuest.room_number})</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full overflow-y-auto px-3 py-3">
+    <div className="w-full h-full overflow-y-auto px-3 py-2 message-list-container bg-white">
       <div className="max-w-2xl mx-auto space-y-4 pb-2">
         {Object.entries(messagesByDate).map(([date, dateMessages]) => (
           <div key={date} className="space-y-2">
-            <div className="flex justify-center my-2">
+            <div className="flex justify-center my-3">
               <div className="px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
                 {getDateDisplay(date)}
               </div>
@@ -143,7 +149,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isMobile, onRefresh
           </div>
         ))}
         
-        <div ref={messagesEndRef} className="h-10 mb-4" />
+        <div ref={messagesEndRef} className="h-10 mb-4 bg-white" />
       </div>
     </div>
   );

@@ -1,0 +1,137 @@
+/* Mejoras para el botón de retroceso en el chat */
+
+/* Estilos para el botón de retroceso */
+button[aria-label="Volver a la lista de huéspedes"],
+.chat-header-minimal button:has([aria-label="Volver a la lista de huéspedes"]),
+.back-button-reception {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  border-radius: 6px !important;
+  padding: 8px 14px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+  height: auto !important;
+  width: auto !important;
+  margin-right: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Efecto hover */
+button[aria-label="Volver a la lista de huéspedes"]:hover,
+.chat-header-minimal button:has([aria-label="Volver a la lista de huéspedes"]):hover,
+.back-button-reception:hover {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Efecto active */
+button[aria-label="Volver a la lista de huéspedes"]:active,
+.chat-header-minimal button:has([aria-label="Volver a la lista de huéspedes"]):active,
+.back-button-reception:active {
+  transform: translateY(1px) !important;
+  background-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: none !important;
+}
+
+/* Asegurar que el icono tenga el tamaño correcto */
+button[aria-label="Volver a la lista de huéspedes"] svg,
+.chat-header-minimal button:has([aria-label="Volver a la lista de huéspedes"]) svg,
+.back-button-reception svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+  stroke-width: 2.5px !important;
+  color: white !important;
+}
+
+/* Asegurar que el texto sea visible */
+button[aria-label="Volver a la lista de huéspedes"] span,
+.chat-header-minimal button:has([aria-label="Volver a la lista de huéspedes"]) span,
+.back-button-reception span {
+  display: inline-block !important;
+  color: white !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+}
+
+/* Ajustes para dispositivos móviles */
+@media (max-width: 640px) {
+  button[aria-label="Volver a la lista de huéspedes"],
+  .chat-header-minimal button:has([aria-label="Volver a la lista de huéspedes"]),
+  .back-button-reception {
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+  }
+  
+  button[aria-label="Volver a la lista de huéspedes"] svg,
+  .chat-header-minimal button:has([aria-label="Volver a la lista de huéspedes"]) svg,
+  .back-button-reception svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  
+  button[aria-label="Volver a la lista de huéspedes"] span,
+  .chat-header-minimal button:has([aria-label="Volver a la lista de huéspedes"]) span,
+  .back-button-reception span {
+    font-size: 13px !important;
+  }
+}
+
+/* Estilos específicos para el portal de recepción */
+.chat-header-minimal {
+  position: relative;
+}
+
+/* Asegurar que el botón siempre sea visible */
+.chat-header-minimal .back-button-reception {
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: relative !important;
+  z-index: 100 !important;
+  display: flex !important;
+}
+
+/* Estilos específicos para la versión de escritorio */
+@media (min-width: 768px) {
+  .chat-header-minimal .back-button-reception {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    padding: 8px 16px !important;
+    margin-right: 15px !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  }
+  
+  .chat-header-minimal .back-button-reception span {
+    font-size: 15px !important;
+  }
+  
+  .chat-header-minimal .back-button-reception svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+}
+
+/* Efecto de brillo para hacer el botón más visible */
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+/* Aplicar animación al botón */
+.chat-header-minimal .back-button-reception {
+  animation: pulse-border 2s infinite;
+} 

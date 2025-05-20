@@ -91,6 +91,12 @@
   * {
     @apply border-border;
   }
+  
+  html, body, #root {
+    @apply h-full w-full m-0 p-0;
+    max-width: 100vw;
+  }
+  
   body {
     @apply bg-background text-foreground overflow-x-hidden overflow-y-auto;
     touch-action: manipulation; /* Improve touch experience */
@@ -158,29 +164,267 @@
     .checkbox-modern svg {
       @apply h-3.5 w-3.5 !important;
     }
-    
-    /* Mobile specific checkbox modern style fixes */
-    @media (max-width: 768px) {
-      .toggle-group-cabin {
-        @apply gap-1.5 !important;
-      }
-      
-      .checkbox-modern {
-        @apply h-7 w-7;
-        transform-origin: center;
-        transition: all 0.2s ease;
-      }
-      
-      /* Subtle touch feedback */
-      .checkbox-modern:active {
-        @apply scale-90 bg-gray-50;
-      }
-      
-      /* Improve checked state on mobile */
-      .checkbox-modern[data-state="checked"] {
-        @apply bg-hotel-600 border-hotel-600;
-      }
-    }
+  }
+}
+
+/* Clases para asegurar que los componentes ocupen todo el ancho disponible */
+.layout-fullwidth {
+  width: 100vw;
+  max-width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.container-fullwidth {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.content-fullwidth {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Chat background y estilos específicos del chat */
+.chat-background {
+  background-color: #ece5dd;
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23b9b3a8' fill-opacity='0.2' fill-rule='evenodd'%3E%3Cpath d='M0 0h40v40H0V0zm40 40h40v40H40V40zm0-40h2l-2 2V0zm0 4l4-4h2l-6 6V4zm0 4l8-8h2L40 10V8zm0 4L52 0h2L40 14v-2zm0 4L56 0h2L40 18v-2zm0 4L60 0h2L40 22v-2zm0 4L64 0h2L40 26v-2zm0 4L68 0h2L40 30v-2zm0 4L72 0h2L40 34v-2zm0 4L76 0h2L40 38v-2zm0 4L80 0v2L42 40h-2zm4 0L80 4v2L46 40h-2zm4 0L80 8v2L50 40h-2zm4 0l28-28v2L54 40h-2zm4 0l24-24v2L58 40h-2zm4 0l20-20v2L62 40h-2zm4 0l16-16v2L66 40h-2zm4 0l12-12v2L70 40h-2zm4 0l8-8v2l-6 6h-2zm4 0l4-4v2l-2 2h-2z' /%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Burbujas de chat más compactas */
+.chat-bubble-guest {
+  border-radius: 16px 0 16px 16px;
+  background-color: #1a7f64; /* Color del tema hotel*/
+  color: #ffffff;
+  box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
+  max-width: 85%;
+  word-break: break-word;
+}
+
+.chat-bubble-reception {
+  border-radius: 0 16px 16px 16px;
+  background-color: white;
+  color: #303030;
+  box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
+  max-width: 85%;
+  word-break: break-word;
+}
+
+/* Input siempre visible */
+.chat-input-bar {
+  background-color: #f0f0f0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 10;
+  border-radius: 0;
+  padding: 8px;
+  box-shadow: 0 -1px 5px rgba(0,0,0,0.05);
+}
+
+/* Header minimalista */
+.chat-header-minimal {
+  height: 50px;
+  padding-left: 12px;
+  padding-right: 12px;
+  background-color: #115e45; /* Color más acorde al tema hotel */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 30;
+  color: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Contenedor de mensajes con padding adecuado */
+.messages-container {
+  padding: 12px;
+  padding-bottom: 60px; /* Espacio para el input */
+  width: 100%;
+}
+
+/* Área de mensajes con espaciado correcto para header y footer */
+.messages-area {
+  padding-top: 60px; /* Espacio para el header */
+  padding-bottom: 70px; /* Espacio para el input */
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mejoras específicas para dispositivos móviles */
+@media (max-width: 767px) {
+  .chat-header-minimal {
+    height: 50px;
+  }
+  
+  .messages-area {
+    padding-top: 50px;
+  }
+  
+  .chat-bubble-guest,
+  .chat-bubble-reception {
+    max-width: 85%;
+    padding: 8px 10px;
+    margin: 2px 0;
+  }
+  
+  .chat-input-bar {
+    padding: 6px 8px;
+  }
+}
+
+/* Mejoras para tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .chat-container {
+    max-width: 100%;
+    border-radius: 0;
+  }
+  
+  .chat-header-minimal {
+    height: 56px;
+  }
+  
+  .messages-area {
+    padding-top: 66px; /* Ajustado para header más alto en tablets */
+  }
+  
+  .chat-bubble-guest,
+  .chat-bubble-reception {
+    max-width: 75%; /* Burbujas más estrechas en pantallas grandes */
+  }
+}
+
+/* Mejoras específicas para laptops */
+@media (min-width: 1024px) {
+  .chat-container {
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    max-width: 1200px;
+    margin: 0 auto;
+    height: calc(100vh - 40px);
+    top: 20px;
+    bottom: 20px;
+  }
+  
+  .chat-header-minimal {
+    border-radius: 8px 8px 0 0;
+    height: 60px;
+  }
+  
+  .messages-area {
+    padding-top: 70px; /* Ajustado para header más alto en laptops */
+  }
+  
+  .chat-input-bar {
+    border-radius: 0 0 8px 8px;
+    padding: 10px 16px;
+  }
+  
+  .chat-bubble-guest,
+  .chat-bubble-reception {
+    max-width: 70%; /* Burbujas aún más estrechas en laptops */
+    padding: 10px 12px;
+  }
+}
+
+/* Mejorar scroll en iOS */
+.ios-scroll-fix {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  width: 100%;
+}
+
+/* Corrige problemas con pantallas pequeñas */
+@media (max-width: 320px) {
+  .chat-input-bar {
+    padding: 4px;
+  }
+  
+  .chat-header-minimal {
+    padding-left: 8px;
+    padding-right: 8px;
+    height: 45px;
+  }
+  
+  .messages-area {
+    padding-top: 45px;
+  }
+}
+
+/* Correcciones específicas para el dashboard de recepción */
+.reception-dashboard {
+  padding-top: 56px; /* Height of the header */
+  width: 100%;
+  max-width: 100vw;
+}
+
+/* Header del dashboard */
+.dashboard-header-container {
+  height: 56px;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: linear-gradient(to right, #6e4d31, #8b5a2b) !important;
+}
+
+/* Corrección para la navegación de pestañas en escritorio */
+.top-56px {
+  top: 56px;
+}
+
+/* Ajustes para el contenido debajo de los headers fijos */
+.pt-header {
+  padding-top: 56px;
+}
+
+.pt-header-tabs {
+  padding-top: 112px; /* 56px header + 56px tabs */
+}
+
+/* Mejoras para la navegación en laptops */
+@media (min-width: 1024px) {
+  .reception-dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .dashboard-header-container {
+    height: 60px;
+  }
+  
+  .top-56px {
+    top: 60px;
+  }
+  
+  .pt-header {
+    padding-top: 60px;
+  }
+  
+  .pt-header-tabs {
+    padding-top: 120px; /* 60px header + 60px tabs */
   }
 }
 
@@ -1356,4 +1600,74 @@ button, a, .interactive {
   .ios-nav-fix {
     padding-top: env(safe-area-inset-top);
   }
+}
+
+/* Estilos para las burbujas de chat de recepción */
+.message-list-container .max-w-2xl div[class*="bg-primary"] {
+  background-color: #6e4d31 !important;
+  border-radius: 10px 10px 0 10px !important;
+}
+
+/* Estilos para las burbujas de chat del huésped */
+.message-list-container .max-w-2xl div[class*="bg-white"] {
+  background-color: #f5f5f5 !important;
+  border-radius: 10px 10px 10px 0 !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+/* Estilos para el contenedor de mensajes */
+.message-list-container {
+  background-color: #f5f5f5 !important;
+  padding-top: 90px !important; /* Ajustado para tener en cuenta los dos headers */
+  padding-bottom: 0 !important;
+}
+
+/* Asegurar que no haya espacio en blanco en el contenedor de mensajes */
+.message-list-container > div {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+@media (max-width: 767px) {
+  .message-list-container {
+    padding-top: 85px !important; /* Ajustado para móviles */
+  }
+}
+
+/* Estilos para el header de información del cliente */
+.client-info-header {
+  position: fixed;
+  top: 50px; /* Justo debajo del header principal en móvil */
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 25; /* Entre el header principal (30) y el contenido (20) */
+  background-color: white;
+  border-bottom: 1px solid #e5e5e5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+@media (min-width: 768px) {
+  .client-info-header {
+    top: 60px; /* Ajustado para el header más alto en desktop */
+  }
+}
+
+/* Ajustes para el contenedor de mensajes con el nuevo header fijo */
+.message-list-container {
+  background-color: #f5f5f5 !important;
+  padding-top: 90px !important; /* Ajustado para tener en cuenta los dos headers */
+}
+
+@media (max-width: 767px) {
+  .message-list-container {
+    padding-top: 85px !important; /* Ajustado para móviles */
+  }
+}
+
+/* Ajustes para el panel de entrada de mensajes */
+.message-input-panel-container {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+  background-color: white;
 }

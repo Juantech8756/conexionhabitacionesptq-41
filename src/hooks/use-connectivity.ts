@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -10,7 +10,7 @@ export function useConnectivity() {
   const [reconnecting, setReconnecting] = useState<boolean>(false);
 
   // Función para reconectar a Supabase
-  const reconnectToSupabase = async () => {
+  const reconnectToSupabase = useCallback(async () => {
     if (!isOnline) return;
     
     try {
@@ -20,18 +20,15 @@ export function useConnectivity() {
       const { error } = await supabase.auth.refreshSession();
       
       if (error) {
-        console.error('Error al reconectar a Supabase:', error);
         // Intentar de nuevo después de un tiempo
         setTimeout(reconnectToSupabase, 5000);
-      } else {
-        console.log('Reconectado a Supabase exitosamente');
       }
     } catch (err) {
-      console.error('Error inesperado al reconectar:', err);
+      // Error handling
     } finally {
       setReconnecting(false);
     }
-  };
+  }, [isOnline]);
 
   useEffect(() => {
     // Manejadores para conectividad de red
@@ -58,7 +55,7 @@ export function useConnectivity() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [isOnline]);
+  }, [isOnline, reconnectToSupabase]);
 
   return { isOnline, reconnecting };
 } 

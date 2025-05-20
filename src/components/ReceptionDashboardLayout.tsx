@@ -4,22 +4,21 @@ import CallInterface from "@/components/CallInterface";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ReceptionDashboardLayoutProps {
-  activeTab: string;
   children: ReactNode;
-  isCallActive: boolean;
-  selectedGuest: {
+  isCallActive?: boolean;
+  selectedGuest?: {
     id: string;
     name: string;
     roomNumber: string;
   } | null;
-  handleEndCall: () => void;
+  onEndCall?: () => void;
 }
 
 const ReceptionDashboardLayout = ({
   children,
-  isCallActive,
-  selectedGuest,
-  handleEndCall
+  isCallActive = false,
+  selectedGuest = null,
+  onEndCall = () => {}
 }: ReceptionDashboardLayoutProps) => {
   const isMobile = useIsMobile();
 
@@ -44,7 +43,7 @@ const ReceptionDashboardLayout = ({
       />
       
       {/* Main Content Area con altura mínima optimizada para diferentes dispositivos */}
-      <div className={`${isMobile ? 'min-h-[calc(100vh-180px)]' : 'min-h-[calc(100vh-180px)]'} flex flex-col`}>
+      <div className="min-h-[calc(100vh-180px)] flex flex-col">
         {children}
       </div>
 
@@ -75,7 +74,7 @@ const ReceptionDashboardLayout = ({
                   guestId={selectedGuest.id}
                   roomNumber={selectedGuest.roomNumber}
                   guestName={selectedGuest.name}
-                  onClose={handleEndCall}
+                  onClose={onEndCall}
                 />
               </div>
             </motion.div>

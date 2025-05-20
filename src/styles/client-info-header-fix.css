@@ -1,0 +1,119 @@
+/* Mejoras para el header de información del cliente en el chat de recepción */
+
+/* Aumentar el tamaño y mejorar la visibilidad del header de información */
+.client-info-header {
+  position: fixed !important;
+  top: 80px !important; /* Aumentado desde 50px para dejarlo debajo del header principal */
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  background-color: #f8f8f8 !important;
+  padding: 10px 15px !important;
+  z-index: 25 !important;
+  border-bottom: 1px solid #e5e5e5 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  height: auto !important;
+  min-height: 60px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Contenedor interno para mejor organización */
+.client-info-header > div {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: row !important; /* Cambiado a row para poner el botón a la izquierda */
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+/* Contenedor de la información del cliente */
+.client-info-content {
+  flex: 1 !important;
+  padding-left: 10px !important;
+}
+
+/* Mejorar el estilo del nombre del cliente */
+.client-info-header h3 {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin: 0 !important;
+  line-height: 1.3 !important;
+}
+
+/* Mejorar los estilos de la información adicional */
+.client-info-header .flex {
+  margin-top: 4px !important;
+}
+
+.client-info-header span {
+  font-size: 13px !important;
+  color: #555 !important;
+}
+
+/* Botón de retroceso para móviles */
+.back-button-mobile {
+  display: inline-block !important;
+  background-color: #6e4d31 !important;
+  color: white !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s ease !important;
+  margin-right: 10px !important;
+  text-align: center !important;
+  line-height: 1.2 !important;
+  min-width: 80px !important;
+  cursor: pointer !important;
+}
+
+/* Texto del botón */
+.back-button-mobile span {
+  color: white !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+/* Efecto hover */
+.back-button-mobile:hover {
+  background-color: #5d4128 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Efecto active */
+.back-button-mobile:active {
+  transform: translateY(1px) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Ajustes para el área de mensajes */
+.messages-area {
+  padding-top: 150px !important; /* Aumentado desde 120px para ajustarse al nuevo espacio del header */
+  margin-top: 60px !important; /* Ajustar para el header de información */
+}
+
+/* Ajustes para pantallas muy pequeñas */
+@media (max-width: 360px) {
+  .back-button-mobile {
+    padding: 6px 10px !important;
+    min-width: 70px !important;
+  }
+}
+
+/* Ajustes para pantallas medianas */
+@media (min-width: 361px) and (max-width: 640px) {
+  .back-button-mobile span {
+    display: inline-block !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .messages-area {
+    padding-top: 160px !important; /* Aumentado desde 130px para más espacio en móvil */
+  }
+} 

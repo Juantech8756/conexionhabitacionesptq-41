@@ -1,0 +1,221 @@
+/* Mejoras para la barra de chat estilo WhatsApp/Telegram */
+
+/* Contenedor principal del chat - asegura que ocupe toda la pantalla */
+.chat-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important; /* Para dispositivos móviles modernos */
+  display: flex !important;
+  flex-direction: column !important;
+  z-index: 100 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background-color: white !important; /* Fondo blanco para todo el contenedor */
+}
+
+/* Header fijo en la parte superior */
+.chat-header-minimal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 50px !important;
+  z-index: 30 !important;
+  margin: 0 !important;
+  padding: 0 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background-color: #115e45 !important;
+  color: white !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+/* Área de mensajes con scroll - ocupa todo el espacio disponible */
+.messages-area {
+  flex: 1 !important;
+  width: 100% !important;
+  height: calc(100% - 120px) !important; /* Altura total menos header y input */
+  margin-top: 50px !important; /* Altura del header */
+  margin-bottom: 60px !important; /* Altura del input */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain !important;
+  padding: 10px 0 !important;
+  position: relative !important;
+  background-color: white !important; /* Fondo blanco para el área de mensajes */
+}
+
+/* Barra de input fija en la parte inferior */
+.chat-input-bar {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  min-height: 60px !important;
+  z-index: 30 !important;
+  background-color: white !important; /* Cambiado a blanco para coincidir con el resto */
+  border-top: 1px solid rgba(0,0,0,0.05) !important;
+  padding: 8px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-shadow: 0 -1px 5px rgba(0,0,0,0.05) !important;
+  padding-bottom: env(safe-area-inset-bottom, 8px) !important; /* Para dispositivos con notch */
+}
+
+/* Contenedor de los controles de input */
+.chat-input-bar .flex {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Mejoras para el input de texto */
+.chat-input-bar input {
+  flex: 1 !important;
+  height: 40px !important;
+  border-radius: 20px !important;
+  padding: 8px 12px !important;
+  background-color: #f3f4f6 !important;
+  border: 1px solid rgba(0,0,0,0.1) !important;
+  font-size: 16px !important; /* Evita zoom en iOS */
+}
+
+/* Mejoras para los botones de la barra de chat */
+.chat-input-bar button,
+.chat-input-bar .button-like {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  background-color: #115e45 !important;
+  color: white !important;
+  transition: all 0.2s ease !important;
+}
+
+.chat-input-bar button:active,
+.chat-input-bar .button-like:active {
+  transform: scale(0.9) !important;
+}
+
+/* Ajustes para dispositivos pequeños */
+@media (max-width: 320px) {
+  .chat-input-bar {
+    padding: 6px 8px !important;
+  }
+  
+  .chat-header-minimal {
+    height: 45px !important;
+    padding: 0 8px !important;
+  }
+  
+  .messages-area {
+    margin-top: 45px !important;
+    margin-bottom: 55px !important;
+    height: calc(100% - 100px) !important;
+  }
+}
+
+/* Ajustes para tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .chat-header-minimal {
+    height: 56px !important;
+  }
+  
+  .messages-area {
+    margin-top: 56px !important;
+    height: calc(100% - 126px) !important;
+  }
+  
+  .chat-input-bar {
+    min-height: 70px !important;
+  }
+}
+
+/* Ajustes para laptops */
+@media (min-width: 1024px) {
+  .chat-header-minimal {
+    height: 60px !important;
+  }
+  
+  .messages-area {
+    margin-top: 60px !important;
+    height: calc(100% - 130px) !important;
+  }
+  
+  .chat-input-bar {
+    min-height: 70px !important;
+    padding: 10px 16px !important;
+  }
+  
+  .chat-input-bar input {
+    height: 44px !important;
+  }
+  
+  .chat-input-bar button,
+  .chat-input-bar .button-like {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+}
+
+/* Asegurar que el área de mensajes tenga espacio suficiente para el scroll */
+.messages-area .space-y-2 {
+  width: 100% !important;
+  padding: 10px 12px 20px !important;
+  min-height: 100% !important;
+}
+
+/* Agregar espacio adicional al contenedor de mensajes para evitar solapamiento con el header */
+.message-list-container {
+  padding-top: 30px !important;
+  background-color: white !important; /* Fondo blanco para el contenedor de mensajes */
+}
+
+/* Asegurar que los primeros mensajes no se solapen con el header */
+.message-list-container .space-y-4 {
+  padding-top: 15px !important;
+}
+
+/* Mejorar el indicador de escritura */
+.typing-indicator {
+  position: absolute !important;
+  bottom: 65px !important;
+  left: 12px !important;
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  padding: 6px 12px !important;
+  border-radius: 16px !important;
+  z-index: 20 !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Asegurar que las burbujas de chat tengan el estilo correcto */
+.chat-bubble-guest {
+  border-radius: 16px 0 16px 16px !important;
+  padding: 8px 12px !important;
+  margin-bottom: 4px !important;
+}
+
+.chat-bubble-reception {
+  border-radius: 0 16px 16px 16px !important;
+  padding: 8px 12px !important;
+  margin-bottom: 4px !important;
+} 

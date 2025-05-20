@@ -1,0 +1,56 @@
+/* Correcciones para los menús de selección */
+
+/* Asegurar que los selectores tengan márgenes adecuados */
+.select-container {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: auto !important;
+  max-width: 100% !important;
+}
+
+/* Corregir el alineamiento de los menús desplegables */
+[data-radix-select-trigger] {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 100% !important;
+}
+
+/* Asegurar que el contenido del menú desplegable esté centrado */
+[data-radix-select-content] {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+/* Corregir el ancho de los elementos del menú */
+[data-radix-select-item] {
+  width: 100% !important;
+  text-align: left !important;
+}
+
+/* Asegurar que los selectores en formularios tengan el ancho correcto */
+form .select-container,
+.form-group .select-container {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Corregir el alineamiento en dispositivos móviles */
+@media (max-width: 767px) {
+  [data-radix-select-trigger] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  [data-radix-select-content] {
+    width: calc(100% - 32px) !important;
+    max-width: calc(100% - 32px) !important;
+  }
+}
+
+/* Corregir específicamente los selectores de Radix UI */
+[id^="radix-"] {
+  margin-left: auto !important;
+  margin-right: auto !important;
+} 

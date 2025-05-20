@@ -1,0 +1,84 @@
+/* Estilos para fijar el panel de entrada de mensajes en la parte inferior */
+
+/* Contenedor principal del panel de entrada de mensajes */
+.message-input-panel-container {
+  position: fixed !important;
+  bottom: 60px !important; /* Espacio para la barra de navegación inferior */
+  left: 0 !important;
+  right: 0 !important;
+  background-color: white !important;
+  padding: 8px 10px !important; /* Reducido el padding */
+  z-index: 40 !important;
+  box-shadow: none !important; /* Eliminada la sombra */
+  border-top: none !important; /* Eliminado el borde superior */
+}
+
+/* Contenido interno del panel - añadido para centrar mejor */
+.message-input-panel-container > div {
+  max-width: 95% !important; /* Reducido del 100% para mover ligeramente a la izquierda */
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 100% !important;
+}
+
+/* Ajuste para el espacio entre el panel de entrada y la barra inferior (en móvil) */
+@media (max-width: 768px) {
+  .message-input-panel-container {
+    bottom: 60px !important; /* Ajustado para dejar espacio para la barra de navegación */
+    padding: 6px 10px !important; /* Padding más pequeño en móvil */
+  }
+  
+  /* Añadir espacio inferior a la lista de mensajes para que no queden ocultos */
+  .message-list-container {
+    padding-bottom: 70px !important; /* Reducido */
+    margin-bottom: 60px !important;
+    background-color: white !important; /* Fondo blanco para el contenedor de mensajes */
+  }
+  
+  /* Centrado ajustado para móvil */
+  .message-input-panel-container > div {
+    max-width: 93% !important;
+  }
+}
+
+/* En escritorio, necesitamos un enfoque diferente ya que no hay barra de navegación */
+@media (min-width: 769px) {
+  .message-input-panel-container {
+    bottom: 0 !important;
+    position: sticky !important;
+    padding: 8px 12px !important;
+    background-color: white !important;
+  }
+}
+
+/* Estilos para los elementos dentro del panel */
+.message-input-panel-container .textarea {
+  border-radius: 18px !important; /* Redondeado un poco menor */
+  padding: 6px 12px !important; /* Padding vertical más pequeño */
+  min-height: 36px !important; /* Altura mínima reducida */
+  max-height: 36px !important; /* Altura máxima limitada */
+  background-color: #f3f4f6 !important;
+  border-color: #e5e7eb !important;
+  font-size: 0.875rem !important; /* Tamaño de texto un poco más pequeño */
+}
+
+/* Ajustar el placeholder */
+.message-input-panel-container .textarea::placeholder {
+  color: #9ca3af !important;
+  font-size: 0.875rem !important;
+}
+
+/* Asegurar que el icono de la foto esté correctamente centrado verticalmente */
+.message-input-panel-container .flex-1 > button {
+  transform: translateY(-50%) !important;
+  top: 50% !important;
+}
+
+/* Estilos para los botones de acción */
+.message-input-panel-container button {
+  transition: all 0.2s ease !important;
+}
+
+.message-input-panel-container button:hover {
+  transform: translateY(-1px) !important;
+} 

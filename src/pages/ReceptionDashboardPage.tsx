@@ -12,7 +12,6 @@ import { MessageSquare, BarChart, Bed } from "lucide-react";
 // Imported components
 import LoadingScreen from "@/components/LoadingScreen";
 import ReceptionHeader from "@/components/ReceptionHeader";
-import ReceptionDesktopTabs from "@/components/ReceptionDesktopTabs";
 import ReceptionDashboardLayout from "@/components/ReceptionDashboardLayout";
 import ReceptionDashboardWrapper from "@/components/ReceptionDashboardWrapper";
 import DashboardStats from "@/components/DashboardStats";
@@ -25,7 +24,6 @@ const ReceptionDashboardPage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("messages");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCallActive, setIsCallActive] = useState(false);
   const [selectedGuest, setSelectedGuest] = useState<{
     id: string;
@@ -164,7 +162,7 @@ const ReceptionDashboardPage = () => {
       initial={{ y: 50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50"
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 mobile-nav"
     >
       <div className="flex justify-around py-1">
         <NavButton 
@@ -199,105 +197,86 @@ const ReceptionDashboardPage = () => {
     // Clonar el icono con las propiedades necesarias
     const iconElement = React.isValidElement(icon)
       ? React.cloneElement(icon as React.ReactElement, {
-          size: 18,
-          className: `${isActive ? "text-hotel-700" : "text-gray-500"}`
+          className: `h-5 w-5 ${isActive ? 'text-hotel-700' : 'text-gray-500'}`
         })
       : null;
-    
+      
     return (
       <button
         onClick={onClick}
-        className={`flex flex-col items-center justify-center px-4 py-0.5 ${
-          isActive 
-            ? "text-hotel-800" 
-            : "text-gray-500"
+        className={`flex flex-col items-center justify-center p-2 ${
+          isActive ? 'text-hotel-700' : 'text-gray-500'
         }`}
       >
-        <div className={`mb-0.5 ${isActive ? "text-hotel-700" : ""}`}>
-          {iconElement}
-        </div>
-        <span className="text-[10px]">{label}</span>
-        {isActive && (
-          <motion.div 
-            layoutId="bottom-nav-indicator"
-            className="absolute top-0 h-0.5 w-10 bg-hotel-700" 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }}
-          />
-        )}
+        {iconElement}
+        <span className="text-xs mt-1">{label}</span>
       </button>
     );
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Notification Banner */}
+    <div className="min-h-screen bg-gray-50 layout-fullwidth reception-container">
+      {/* Notification Banner for Reception */}
       <NotificationBanner type="reception" />
-    
-      {/* Header */}
+      
+      {/* Header con información completa */}
       <ReceptionHeader 
-        user={user}
-        handleLogout={handleLogout}
+        user={user} 
+        onLogout={handleLogout}
         isMobile={isMobile}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        onToggleSidebar={() => {}}
       />
-
-      {/* Main Content Area */}
-      <main className={`pt-[80px] ${isMobile ? 'pb-16' : ''}`}>
-        <div className="container mx-auto px-3 py-2 max-w-7xl">
-          <Tabs 
-            value={activeTab} 
-            onValueChange={setActiveTab} 
-            className="space-y-3"
+      
+      <div className="reception-dashboard w-full" style={{ paddingTop: '80px' }}>
+        <Tabs value={activeTab} className="w-full desktop-tabs-content">
+          <TabsContent value="messages" className="m-0 p-0 dashboard-content">
+            <ReceptionDashboardWrapper
+              onStartCall={handleStartCall}
+              onEndCall={handleEndCall}
+              isCallActive={isCallActive}
+              selectedGuest={selectedGuest}
+            />
+          </TabsContent>
+          
+          <TabsContent value="stats" className="m-0 p-0 pb-20 md:pb-0 dashboard-content">
+            <DashboardStats />
+          </TabsContent>
+          
+          <TabsContent value="rooms" className="m-0 p-0 pb-20 md:pb-0 dashboard-content">
+            <RoomManagement />
+          </TabsContent>
+        </Tabs>
+        
+        {isMobile ? <MobileNavBar /> : (
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 mobile-nav"
           >
-            {/* Tabs Content */}
-            <div className={`min-h-[calc(100vh-180px)] ${isMobile ? 'mb-16' : ''}`}>
-              {/* Messages Tab */}
-              <TabsContent 
-                value="messages" 
-                className="m-0 h-full data-[state=active]:animate-in fade-in-50 duration-200"
-              >
-                <ReceptionDashboardLayout
-                  activeTab={activeTab}
-                  isCallActive={isCallActive}
-                  selectedGuest={selectedGuest}
-                  handleEndCall={handleEndCall}
-                >
-                  <ReceptionDashboardWrapper onCallGuest={handleStartCall} />
-                </ReceptionDashboardLayout>
-              </TabsContent>
-              
-              {/* Stats Tab */}
-              <TabsContent 
-                value="stats" 
-                className="m-0 h-full data-[state=active]:animate-in fade-in-50 duration-200"
-              >
-                <div className="p-1">
-                  <h2 className="text-xl font-semibold mb-2">Estadísticas</h2>
-                  <DashboardStats />
-                </div>
-              </TabsContent>
-              
-              {/* Rooms Tab */}
-              <TabsContent 
-                value="rooms" 
-                className="m-0 h-full data-[state=active]:animate-in fade-in-50 duration-200"
-              >
-                <div className="p-1">
-                  <h2 className="text-xl font-semibold mb-2">Gestión de Habitaciones</h2>
-                  <RoomManagement showGuestCount={true} />
-                </div>
-              </TabsContent>
+            <div className="flex justify-around py-1">
+              <NavButton 
+                icon={<MessageSquare />}
+                label="Mensajes"
+                isActive={activeTab === "messages"}
+                onClick={() => setActiveTab("messages")}
+              />
+              <NavButton 
+                icon={<BarChart />}
+                label="Estadísticas"
+                onClick={() => setActiveTab("stats")}
+                isActive={activeTab === "stats"}
+              />
+              <NavButton 
+                icon={<Bed />}
+                label="Cabañas"
+                onClick={() => setActiveTab("rooms")}
+                isActive={activeTab === "rooms"}
+              />
             </div>
-          </Tabs>
-        </div>
-      </main>
-
-      {/* Barra de navegación móvil */}
-      {isMobile && <MobileNavBar />}
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 };

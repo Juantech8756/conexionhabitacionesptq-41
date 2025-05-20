@@ -1,0 +1,30 @@
+/* Sobrescritura de estilos para el componente TabsList */
+
+/* Sobrescribir el estilo base del componente TabsList */
+[role="tablist"].inline-flex {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+/* Asegurar que los estilos de Tailwind no interfieran */
+.inline-flex.h-10.items-center.justify-center {
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+/* Sobrescribir estilos específicos de Radix UI */
+[data-orientation="horizontal"] {
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+/* Estilos para el componente TabsList en la aplicación */
+.desktop-tabs-container [role="tablist"] {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: center !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+} 

@@ -1,0 +1,244 @@
+/* Estilos adicionales para mejorar la experiencia en dispositivos móviles y laptops */
+
+/* Correcciones generales para todos los dispositivos */
+html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Asegurar que todos los contenedores principales ocupen todo el ancho */
+.full-width-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Correcciones específicas para móviles */
+@media (max-width: 767px) {
+  /* Restaurar márgenes para contenedores */
+  .container {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    max-width: 100% !important;
+    width: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  
+  /* Mejorar espaciado en componentes de chat */
+  .messages-area {
+    padding-top: 50px;
+    padding-bottom: 65px;
+  }
+  
+  /* Ajustar tamaño de botones para mejor usabilidad */
+  .mobile-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Mejorar visualización de headers */
+  .dashboard-header-container {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    width: 100vw !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+  
+  /* Eliminar bordes redondeados en móviles */
+  .chat-container, 
+  .chat-header-minimal, 
+  .chat-input-bar {
+    border-radius: 0 !important;
+  }
+  
+  /* Corregir navegación inferior */
+  .mobile-nav {
+    width: 100vw !important;
+    left: 0 !important;
+    right: 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    z-index: 50 !important;
+  }
+}
+
+/* Correcciones específicas para tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Ajustar contenedores para tablets */
+  .container {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+    max-width: 100% !important;
+    width: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  
+  /* Eliminar bordes redondeados en tablets */
+  .chat-container, 
+  .chat-header-minimal, 
+  .chat-input-bar {
+    border-radius: 0 !important;
+  }
+  
+  /* Corregir header en tablets */
+  .dashboard-header-container {
+    width: 100vw !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+}
+
+/* Correcciones específicas para laptops */
+@media (min-width: 1024px) {
+  /* Ajustar contenedores para laptops */
+  .container {
+    padding-left: 32px !important;
+    padding-right: 32px !important;
+    max-width: 1280px !important;
+    width: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  
+  /* Asegurar que los contenedores no tengan márgenes laterales */
+  .reception-dashboard {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  /* Eliminar bordes redondeados en laptops para un diseño más integrado */
+  .chat-container, 
+  .chat-header-minimal, 
+  .chat-input-bar {
+    border-radius: 0 !important;
+  }
+  
+  /* Mejorar el espaciado de contenido */
+  .desktop-content-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* Corregir header en laptops */
+  .dashboard-header-container {
+    width: 100vw !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+}
+
+/* Correcciones para el dashboard */
+.reception-dashboard {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Asegurar que las pestañas ocupen todo el ancho y estén centradas */
+.desktop-tabs-container {
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Asegurar que el contenido de las pestañas ocupe todo el ancho */
+.desktop-tabs-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ajustes para el contenido del dashboard */
+.dashboard-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin: 0 !important;
+  padding-bottom: 80px !important; /* Espacio para la barra de navegación inferior */
+}
+
+/* Correcciones para el header principal */
+.dashboard-header-container {
+  width: 100vw !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 80px !important; /* Ajustado a la nueva altura */
+}
+
+.dashboard-header-container > div {
+  height: 100% !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+@media (min-width: 768px) {
+  .dashboard-header-container > div {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+}
+
+/* Correcciones para la navegación móvil */
+.mobile-nav {
+  width: 100vw !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  position: fixed !important;
+  z-index: 50 !important;
+}
+
+/* Optimizaciones para iOS */
+@supports (-webkit-touch-callout: none) {
+  /* Mejorar scroll en iOS */
+  .ios-scroll-fix {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  
+  /* Evitar problemas con la barra de navegación inferior en iOS */
+  .ios-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Evitar problemas con la barra de estado en iOS */
+  .ios-safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Ajustes para el contenido bajo el header */
+.guest-list-header, 
+.chat-header {
+  position: fixed !important;
+  top: 80px !important; /* Ajustado a la nueva altura del header */
+  z-index: 20 !important;
+  width: 100%;
+  left: 0;
+  right: 0;
+  margin: 0;
+} 

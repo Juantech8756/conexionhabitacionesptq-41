@@ -1,0 +1,128 @@
+/* Correcciones para el header del chat del cliente */
+
+/* Contenedor del header */
+.chat-header-minimal {
+  display: flex !important;
+  justify-content: flex-start !important;
+  padding: 0 12px !important;
+  height: 60px !important;
+  background-color: #6e4d31 !important;
+  color: white !important;
+  align-items: center !important;
+  width: 100% !important;
+  position: fixed !important;
+  z-index: 40 !important; /* Asegurar que esté por encima del header principal pero debajo del header de info */
+}
+
+/* Contenedor interno - redistribución mejorada */
+.chat-header-minimal > div {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 8px 0 !important;
+  gap: 8px !important;
+}
+
+/* Estilo para el container de información del huésped */
+.chat-header-minimal .flex-1 {
+  width: calc(100% - 96px) !important;
+  max-width: calc(100% - 96px) !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-shrink: 1 !important;
+  margin-right: 8px !important;
+}
+
+/* Asegurar que el contenedor del nombre e info tenga el ancho correcto */
+.chat-header-minimal .flex-col {
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Ajuste del texto */
+.chat-header-minimal h2 {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: block !important;
+  width: 100% !important;
+  visibility: visible !important;
+}
+
+.chat-header-minimal p {
+  font-size: 12px !important;
+  opacity: 0.8 !important;
+  margin: 3px 0 0 0 !important;
+}
+
+/* Asegurar que la información de habitación sea visible */
+.chat-header-minimal .flex-col > div {
+  display: flex !important;
+  visibility: visible !important;
+  width: 100% !important;
+}
+
+.chat-header-minimal .flex-col > div span {
+  display: flex !important;
+  visibility: visible !important;
+}
+
+/* Botón de retroceso */
+.chat-header-minimal button:has([aria-label="Volver a la lista de huéspedes"]) {
+  margin-right: 4px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Botón de eliminar */
+.chat-header-minimal button:has(.trash-icon) {
+  margin-left: auto !important;
+  height: 36px !important;
+  width: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: transparent !important;
+  border: none !important;
+  flex-shrink: 0 !important;
+}
+
+.chat-header-minimal .trash-icon {
+  height: 18px !important;
+  width: 18px !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.chat-header-minimal button:hover .trash-icon {
+  color: #f87171 !important;
+}
+
+/* Área de mensajes con espaciado para ambos headers */
+.messages-area {
+  padding-top: 140px !important; /* 80px del header principal + 60px del header del chat */
+  padding-bottom: 70px !important; /* Espacio para el input */
+}
+
+/* Ajustes para pantallas pequeñas */
+@media (max-width: 320px) {
+  .chat-header-minimal {
+    padding: 0 8px !important;
+  }
+  
+  .chat-header-minimal > div {
+    gap: 4px !important;
+  }
+  
+  .chat-header-minimal h2 {
+    font-size: 14px !important;
+  }
+  
+  .chat-header-minimal p {
+    font-size: 10px !important;
+  }
+} 

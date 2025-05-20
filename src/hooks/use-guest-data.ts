@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { Guest, Room, Message } from "@/types/dashboard";
 import { useRealtime } from "@/hooks/use-realtime";
 
@@ -131,7 +130,7 @@ export const useGuestData = () => {
   ], "reception-dashboard-realtime");
   
   // Force refresh guests list
-  const refreshGuestsList = async () => {
+  const refreshGuestsList = useCallback(async () => {
     try {
       // Join guests and response_statistics to get wait times
       const { data: statsData, error: statsError } = await supabase
@@ -184,7 +183,7 @@ export const useGuestData = () => {
     } catch (error) {
       console.error("Error refreshing guests list:", error);
     }
-  };
+  }, []);
   
   // Update response status for messages when staff replies
   const updateResponseStatus = async (guestId: string) => {
@@ -279,8 +278,7 @@ export const useGuestData = () => {
   // Load initial guests list
   useEffect(() => {
     refreshGuestsList();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshGuestsList]);
   
   return {
     guests,

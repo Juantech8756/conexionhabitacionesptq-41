@@ -1,0 +1,98 @@
+/* Estilos específicos para centrar el menú de navegación */
+
+/* ===== NAVEGACIÓN MÓVIL ===== */
+.mobile-nav {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.mobile-nav > div {
+  display: flex !important;
+  justify-content: space-around !important;
+  width: 100% !important;
+  max-width: 500px !important;
+  margin: 0 auto !important;
+}
+
+.mobile-nav button {
+  flex: 1 1 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* ===== NAVEGACIÓN ESCRITORIO ===== */
+/* Reset para eliminar cualquier estilo que pueda interferir */
+.desktop-tabs-container,
+.desktop-tabs-container *,
+.desktop-tabs-container *::before,
+.desktop-tabs-container *::after {
+  box-sizing: border-box !important;
+}
+
+/* Contenedor principal */
+.desktop-tabs-container {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Contenedor interno */
+.desktop-tabs-container .tabs-inner-container {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: 600px !important;
+  margin: 0 auto !important;
+}
+
+/* Lista de pestañas */
+.desktop-tabs-container [role="tablist"],
+.desktop-tabs-container .h-14 {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+/* Resetear clase inline-flex que puede interferir */
+.desktop-tabs-container .inline-flex {
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+/* Pestañas individuales */
+.desktop-tabs-container [role="tab"] {
+  flex: 1 !important;
+  max-width: 200px !important;
+  min-width: 120px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  margin: 0 8px !important;
+}
+
+/* Ajustes para dispositivos móviles */
+@media (max-width: 767px) {
+  .desktop-tabs-container [role="tab"] {
+    min-width: 100px !important;
+    padding: 0 8px !important;
+    margin: 0 4px !important;
+  }
+}
+
+/* Estilos para el contenido de las pestañas */
+.desktop-tabs-content {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+} 

@@ -1,0 +1,88 @@
+/* Solución específica para el menú de navegación inferior */
+
+/* Resetear estilos que puedan interferir */
+.mobile-nav,
+.mobile-nav *,
+.mobile-nav *::before,
+.mobile-nav *::after {
+  box-sizing: border-box !important;
+}
+
+/* Centrar el menú de navegación inferior */
+.mobile-nav {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 50 !important;
+  background-color: white !important;
+  border-top: 1px solid #e5e7eb !important;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.05) !important;
+}
+
+/* Centrar los botones en el menú */
+.mobile-nav > div {
+  display: flex !important;
+  justify-content: space-around !important;
+  width: 100% !important;
+  max-width: 600px !important; /* Aumentado para pantallas más grandes */
+  margin: 0 auto !important;
+  padding: 0 !important;
+}
+
+/* Estilos para los botones individuales */
+.mobile-nav button {
+  flex: 1 1 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  margin: 0 !important;
+  padding: 10px 0 !important; /* Aumentado para mejor usabilidad */
+}
+
+/* Asegurar que el texto esté centrado */
+.mobile-nav button span {
+  text-align: center !important;
+  width: 100% !important;
+  display: block !important;
+  font-size: 12px !important;
+  margin-top: 4px !important;
+}
+
+/* Asegurar que los iconos estén centrados */
+.mobile-nav button svg {
+  margin: 0 auto !important;
+  display: block !important;
+  height: 20px !important; /* Tamaño consistente */
+  width: 20px !important;
+}
+
+/* Ajustes para pantallas más grandes */
+@media (min-width: 768px) {
+  .mobile-nav {
+    height: auto !important;
+    padding: 5px 0 !important;
+  }
+  
+  .mobile-nav button {
+    padding: 12px 0 !important;
+  }
+  
+  .mobile-nav button span {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+  }
+  
+  .mobile-nav button svg {
+    height: 24px !important;
+    width: 24px !important;
+  }
+} 

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import GuestRegistrationForm from "./GuestRegistrationForm";
 import NotificationPermissionRequest from "./NotificationPermissionRequest";
@@ -51,11 +50,13 @@ const GuestRegistrationFormWrapper = ({
   // If there's no registration data yet, show the form
   if (!registrationData) {
     return (
-      <GuestRegistrationForm 
-        onRegister={handleRegistration}
-        preselectedRoomId={preselectedRoomId}
-        showSuccessToast={showSuccessToast}
-      />
+      <div className="w-full h-full layout-fullwidth">
+        <GuestRegistrationForm 
+          onRegister={handleRegistration}
+          preselectedRoomId={preselectedRoomId}
+          showSuccessToast={showSuccessToast}
+        />
+      </div>
     );
   }
   
@@ -70,7 +71,7 @@ const GuestRegistrationFormWrapper = ({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-6 flex flex-col items-center justify-center"
+        className="p-6 flex flex-col items-center justify-center w-full h-full layout-fullwidth"
       >
         <div className="w-full max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-xl font-semibold text-center mb-4">

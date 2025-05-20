@@ -33,10 +33,11 @@ echo.
 echo 🔧 Selecciona el modo de ejecución:
 echo.
 echo 1) Modo Desarrollo (cambios en tiempo real)
-echo 2) Modo Producción (versión optimizada)
-echo 3) Salir
+echo 2) Modo Desarrollo con acceso desde la red (para pruebas móviles)
+echo 3) Modo Producción (versión optimizada)
+echo 4) Salir
 echo.
-set /p OPCION="Elige una opción (1-3): "
+set /p OPCION="Elige una opción (1-4): "
 
 if "%OPCION%"=="1" (
     echo.
@@ -50,6 +51,20 @@ if "%OPCION%"=="1" (
 )
 
 if "%OPCION%"=="2" (
+    echo.
+    echo 📱 Iniciando servidor de desarrollo accesible desde la red...
+    echo 🌐 La aplicación estará disponible en:
+    echo    - Local: http://localhost:5173
+    ipconfig | findstr "IPv4"
+    echo    - Accede desde dispositivos móviles usando la dirección IP de tu PC y el puerto 5173
+    echo 🔄 Los cambios se verán en tiempo real
+    echo ⚡ Presiona Ctrl + C para detener el servidor
+    echo.
+    call npm run dev:host
+    goto MENU
+)
+
+if "%OPCION%"=="3" (
     echo.
     echo 🛠️ Construyendo el proyecto para producción...
     call npm run build
@@ -75,7 +90,7 @@ if "%OPCION%"=="2" (
     goto MENU
 )
 
-if "%OPCION%"=="3" (
+if "%OPCION%"=="4" (
     echo 👋 ¡Hasta luego!
     exit /b 0
 )

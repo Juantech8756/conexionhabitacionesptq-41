@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Type for sending notifications
@@ -21,7 +20,6 @@ export const sendNotificationToGuest = async (
   notification: NotificationPayload
 ) => {
   try {
-    console.log('Sending notification to guest:', guestId);
     // Call the edge function to send the notification
     const { data, error } = await supabase.functions.invoke('send-notification', {
       body: {
@@ -32,13 +30,10 @@ export const sendNotificationToGuest = async (
     });
     
     if (error) {
-      console.error('Error invoking send-notification function:', error);
       throw error;
     }
-    console.log('Notification sent successfully:', data);
     return data;
   } catch (error) {
-    console.error('Error sending notification to guest:', error);
     return null;
   }
 };
@@ -48,7 +43,6 @@ export const sendNotificationToReception = async (
   notification: NotificationPayload
 ) => {
   try {
-    console.log('Sending notification to reception');
     // Call the edge function to send the notification
     const { data, error } = await supabase.functions.invoke('send-notification', {
       body: {
@@ -58,13 +52,10 @@ export const sendNotificationToReception = async (
     });
     
     if (error) {
-      console.error('Error invoking send-notification function:', error);
       throw error;
     }
-    console.log('Notification sent successfully:', data);
     return data;
   } catch (error) {
-    console.error('Error sending notification to reception:', error);
     return null;
   }
 };

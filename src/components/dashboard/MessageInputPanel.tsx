@@ -1,25 +1,22 @@
-import React, { useRef, useState } from "react";
-import { SendHorizonal, Mic, X, Image } from "lucide-react";
+import React, { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Guest } from "@/types/dashboard";
+import { X, Send, Mic, Image } from "lucide-react";
 import AudioRecorder from "@/components/AudioRecorder";
 
 interface MessageInputPanelProps {
-  selectedGuest: Guest;
   replyText: string;
-  setReplyText: (text: string) => void;
+  setReplyText: (value: React.SetStateAction<string>) => void;
   isLoading: boolean;
   selectedFile: File | null;
-  onFileSelect: (file: File) => void;
-  onSendMessage: () => void;
-  onAudioRecorded: (blob: Blob) => Promise<void>;
-  onAudioCanceled: () => void;
-  isMobile: boolean;
+  onFileSelect: (file: File | null) => void;
+  onSendMessage: () => Promise<void>;
+  onAudioRecorded: (audioBlob: Blob) => Promise<void>;
+  onMediaUploadComplete?: (mediaUrl: string, mediaType: 'image' | 'video') => Promise<boolean>;
+  isMobile?: boolean;
 }
 
 const MessageInputPanel: React.FC<MessageInputPanelProps> = ({
-  selectedGuest,
   replyText,
   setReplyText,
   isLoading,
@@ -27,49 +24,50 @@ const MessageInputPanel: React.FC<MessageInputPanelProps> = ({
   onFileSelect,
   onSendMessage,
   onAudioRecorded,
-  onAudioCanceled,
-  isMobile
+  onMediaUploadComplete,
+  isMobile = false
 }) => {
-  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Handle key press (Enter to send)
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setReplyText(e.target.value);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isLoading && replyText.trim()) {
       e.preventDefault();
-      if (replyText.trim() || selectedFile) {
-        onSendMessage();
-      }
+      onSendMessage();
     }
   };
-  
-  // Handle file click
+
   const handleFileClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
-  
-  // Handle file change
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onFileSelect(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      onFileSelect(files[0]);
     }
   };
-  
-  // Reset selected file
+
   const handleResetFile = () => {
+    onFileSelect(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = '';
     }
-    onFileSelect(null as unknown as File);
+  };
+
+  const handleAudioCancel = () => {
+    setShowAudioRecorder(false);
   };
 
   return (
-    <div className={`bg-white py-2 px-3 shadow-[0_-2px_5px_rgba(0,0,0,0.05)] border-t border-hotel-100
-      ${isMobile ? 'sticky bottom-0 left-0 right-0 z-20' : ''}`}>
-      <div className="max-w-2xl mx-auto w-full">
+    <div className={`message-input-panel-container bg-white shadow-[0_-2px_5px_rgba(0,0,0,0.05)] border-t border-hotel-100`}>
+      <div className="max-w-2xl mx-auto w-full px-3">
         {selectedFile && (
           <div className="mb-2 flex items-center bg-muted/70 p-1.5 rounded-md">
             <div className="flex-1 font-medium text-xs truncate">
@@ -101,10 +99,7 @@ const MessageInputPanel: React.FC<MessageInputPanelProps> = ({
             </div>
             <AudioRecorder 
               onAudioRecorded={onAudioRecorded}
-              onCancel={() => {
-                onAudioCanceled();
-                setShowAudioRecorder(false);
-              }}
+              onCancel={handleAudioCancel}
               title="Grabar mensaje de audio"
             />
           </div>
@@ -113,10 +108,10 @@ const MessageInputPanel: React.FC<MessageInputPanelProps> = ({
             <div className="flex-1 relative">
               <Textarea
                 value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
+                onChange={handleTextChange}
                 onKeyDown={handleKeyPress}
                 placeholder="Escribe un mensaje..."
-                className="min-h-[36px] max-h-[36px] resize-none pr-10 py-1.5 bg-muted/30 border-muted focus-visible:ring-primary/30 rounded-xl text-sm"
+                className="min-h-[36px] max-h-[36px] py-1.5 pl-3 resize-none pr-10 bg-muted/30 border-muted focus-visible:ring-primary/30 rounded-xl text-sm"
                 disabled={isLoading}
               />
               
@@ -124,12 +119,12 @@ const MessageInputPanel: React.FC<MessageInputPanelProps> = ({
                 variant="ghost"
                 size="icon"
                 type="button"
-                className="absolute bottom-1 right-1 h-5 w-5 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                className="absolute top-1/2 right-2.5 -translate-y-1/2 h-5 w-5 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 onClick={handleFileClick}
                 title="Adjuntar imagen"
                 disabled={isLoading}
               >
-                <Image className="h-3 w-3" />
+                <Image className="h-3.5 w-3.5" />
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -140,30 +135,27 @@ const MessageInputPanel: React.FC<MessageInputPanelProps> = ({
               </Button>
             </div>
             
-            <div className="flex gap-1.5">
-              <Button
-                variant="outline"
-                size="icon"
-                type="button"
-                onClick={() => setShowAudioRecorder(true)}
-                disabled={isLoading}
-                title="Grabar audio"
-                className="h-7 w-7 rounded-full border-muted bg-muted/30 hover:bg-muted/50"
-              >
-                <Mic className="h-3 w-3 text-muted-foreground" />
-              </Button>
-              
-              <Button
-                type="button"
-                size="icon"
-                onClick={onSendMessage}
-                disabled={(!replyText.trim() && !selectedFile) || isLoading}
-                title="Enviar mensaje"
-                className="h-7 w-7 rounded-full bg-primary hover:bg-primary/90"
-              >
-                <SendHorizonal className="h-3 w-3" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowAudioRecorder(true)}
+              disabled={isLoading}
+              className="h-9 w-9 rounded-full text-muted-foreground bg-muted/30 hover:text-foreground hover:bg-muted/50"
+              title="Enviar mensaje de voz"
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant="default"
+              size="icon"
+              onClick={onSendMessage}
+              disabled={isLoading || (!replyText.trim() && !selectedFile)}
+              className="h-9 w-9 p-0 rounded-full text-white bg-primary hover:bg-primary/90"
+              title="Enviar mensaje"
+            >
+              <Send className="h-3.5 w-3.5" />
+            </Button>
           </div>
         )}
       </div>

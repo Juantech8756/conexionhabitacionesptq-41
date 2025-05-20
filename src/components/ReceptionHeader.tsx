@@ -1,185 +1,170 @@
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Hotel, LogOut, Menu, MessageSquare, BarChart, Bed } from "lucide-react";
-import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
+import { useState, useEffect } from "react";
 import { User } from "@supabase/supabase-js";
-import ReceptionMobileSidebar from "./ReceptionMobileSidebar";
+import { Button } from "@/components/ui/button";
+import { LogOut, Bell, X } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { useNotifications } from "@/hooks/use-notifications";
+import { useRealtime } from "@/hooks/use-realtime";
 
 interface ReceptionHeaderProps {
   user: User | null;
-  handleLogout: () => void;
+  onLogout: () => Promise<void>;
   isMobile: boolean;
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
+  onToggleSidebar: () => void;
 }
 
 const ReceptionHeader = ({
   user,
-  handleLogout,
+  onLogout,
   isMobile,
-  sidebarOpen,
-  setSidebarOpen,
-  activeTab,
-  setActiveTab
+  onToggleSidebar
 }: ReceptionHeaderProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const { permission, isSubscribed } = useNotifications({ type: "reception" });
+  
+  // Use the realtime connection status hook
+  const { isConnected } = useRealtime([], "reception-header");
+  
+  // Obtener la hora actual formateada
+  const getCurrentTime = () => {
+    const now = new Date();
+    return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  };
+  
+  // Estado para la hora actual
+  const [currentTime, setCurrentTime] = useState(getCurrentTime());
+  
+  // Actualizar la hora cada minuto
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(getCurrentTime());
+    }, 60000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   return (
-    <header className={`bg-gradient-to-r from-hotel-800 to-hotel-700 shadow-lg fixed top-0 left-0 right-0 z-50 ${isMobile ? 'py-2' : 'py-3'}`}>
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center">
-          <motion.div 
-            className="flex items-center" 
-            initial={{ x: -10, opacity: 0 }} 
-            animate={{ x: 0, opacity: 1 }} 
-            transition={{ duration: 0.3 }}
-          >
-            {isMobile && (
-              <ReceptionMobileSidebar
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                user={user}
-                handleLogout={handleLogout}
-              />
+    <header className="dashboard-header-container" style={{
+      height: '80px',
+      width: '100%',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1000,
+      boxShadow: '0 2px 10px rgba(0, 0, 0, 0.15)',
+      display: 'flex',
+      alignItems: 'center',
+      background: 'linear-gradient(to right, #6e4d31, #8b5a2b)', /* Color marrón como en la imagen */
+      color: 'white',
+      opacity: 1,
+      visibility: 'visible'
+    }}>
+      <div className="flex items-center justify-between h-20 px-6 md:px-8 w-full">
+        <div className="flex flex-col">
+          <div className="flex items-center">
+            <h1 className="text-xl font-semibold">Hola</h1>
+            {user && (
+              <span className="ml-2 text-base text-white/90">
+                {user.email?.split('@')[0]}
+              </span>
             )}
-            
-            <motion.div 
-              className="flex items-center" 
-              initial={{ scale: 0.9 }} 
-              animate={{ scale: 1 }} 
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
-              <motion.div 
-                className={`bg-white/10 ${isMobile ? 'p-1' : 'p-1.5'} rounded-full mr-3 flex items-center justify-center`}
-                whileHover={{ 
-                  scale: 1.05,
-                  boxShadow: "0 0 10px rgba(255, 255, 255, 0.3)",
-                  backgroundColor: "rgba(255, 255, 255, 0.15)"
-                }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 400, 
-                  damping: 10 
-                }}
-              >
-                <Hotel className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-white`} />
-              </motion.div>
-              <motion.h1 
-                className={`font-bold ${isMobile ? "text-base" : "text-xl"} text-white`}
-                whileHover={{ letterSpacing: "0.01em" }}
-                transition={{ duration: 0.3 }}
-              >
-                Parque Temático Quimbaya
-              </motion.h1>
-            </motion.div>
-          </motion.div>
-          
-          <div className="flex items-center space-x-2">
-            {!isMobile && <ConnectionStatusIndicator className="text-white" />}
-            
-            {user && !isMobile && (
-              <motion.span 
-                initial={{ opacity: 0, x: 20 }} 
-                animate={{ opacity: 1, x: 0 }} 
-                transition={{ duration: 0.3 }} 
-                className="text-sm bg-white/10 px-3 py-1 rounded-full text-white group"
-                whileHover={{ 
-                  backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  scale: 1.02
-                }}
-              >
-                <span className="inline-block group-hover:translate-x-0.5 transition-transform">
-                  {user.email}
-                </span>
-              </motion.span>
-            )}
-            
-            <motion.div 
-              whileHover={{ scale: 1.05 }} 
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button 
-                variant="ghost" 
-                className="text-white hover:bg-white/20 hover:text-white transition-colors relative overflow-hidden btn-ripple" 
-                onClick={handleLogout} 
-                size={isMobile ? "sm" : "default"}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                {isMobile ? "" : "Cerrar sesión"}
-              </Button>
-            </motion.div>
+          </div>
+          <div className="text-sm text-white/80">
+            {currentTime}
           </div>
         </div>
-        
-        {/* Opciones de navegación en versión escritorio - removidas de la versión móvil */}
-        {!isMobile && (
-          <div className="flex items-center mt-3 border-t border-white/20 pt-2">
-            <NavButton 
-              icon={<MessageSquare className="h-4 w-4 mr-2 transition-transform group-hover:scale-110" />}
-              label="Mensajes"
-              isActive={activeTab === "messages"}
-              onClick={() => setActiveTab("messages")}
+
+        <div className="flex items-center space-x-4">
+          {/* Indicador de estado de conexión */}
+          <div className="hidden md:flex items-center mr-4">
+            <div 
+              className={`h-3 w-3 rounded-full mr-2 ${
+                isConnected ? 'bg-green-400' : 'bg-amber-400'
+              }`}
             />
-            <NavButton 
-              icon={<BarChart className="h-4 w-4 mr-2 transition-transform group-hover:scale-110" />}
-              label="Estadísticas"
-              isActive={activeTab === "stats"}
-              onClick={() => setActiveTab("stats")}
-            />
-            <NavButton 
-              icon={<Bed className="h-4 w-4 mr-2 transition-transform group-hover:scale-110" />}
-              label="Cabañas"
-              isActive={activeTab === "rooms"}
-              onClick={() => setActiveTab("rooms")}
-            />
+            <span className="text-base text-white/90">
+              {isConnected ? 'Conectado' : 'Reconectando...'}
+            </span>
           </div>
-        )}
+          
+          {/* Notificaciones */}
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="lg"
+                className="relative text-white hover:bg-white/15 h-12 w-12 rounded-full"
+              >
+                <Bell className="h-6 w-6" />
+                {!isSubscribed && (
+                  <span className="notification-indicator" />
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="sidebar-sheet-content p-0 w-full sm:w-[85vw] sm:max-w-[350px]">
+              <div className="sidebar-header bg-gradient-to-r from-hotel-800 to-hotel-700 text-white p-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Notificaciones</h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsOpen(false)}
+                  className="text-white hover:bg-white/15 h-8 w-8 rounded-full"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="p-4">
+                <h4 className="text-sm font-medium mb-3">Estado de notificaciones</h4>
+                <div className="bg-gray-100 p-4 rounded-lg shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Notificaciones</span>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                      isSubscribed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {isSubscribed ? 'Activadas' : 'Desactivadas'}
+                    </span>
+                  </div>
+                  <Separator className="my-3" />
+                  <p className="text-sm text-gray-600 mb-3">
+                    {isSubscribed
+                      ? "Recibirás notificaciones cuando lleguen nuevos mensajes."
+                      : "Activa las notificaciones para recibir alertas de nuevos mensajes."}
+                  </p>
+                  {!isSubscribed && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-sm h-9"
+                      onClick={() => {
+                        if (permission === "default") {
+                          Notification.requestPermission();
+                        } else if (permission === "denied") {
+                          alert("Por favor, activa las notificaciones en la configuración de tu navegador.");
+                        }
+                      }}
+                    >
+                      Activar notificaciones
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+          
+          {/* Botón de cerrar sesión */}
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={onLogout}
+            className="text-white hover:bg-white/15 h-12 w-12 rounded-full"
+          >
+            <LogOut className="h-6 w-6" />
+          </Button>
+        </div>
       </div>
     </header>
-  );
-};
-
-// Componente mejorado para botones de navegación
-interface NavButtonProps {
-  icon: React.ReactNode;
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
-}
-
-const NavButton = ({ icon, label, isActive, onClick }: NavButtonProps) => {
-  return (
-    <Button
-      variant="ghost"
-      className={`text-white hover:bg-white/20 hover:text-white transition-all duration-300 relative group btn-ripple
-        ${isActive ? "bg-white/10 font-medium" : "font-normal"}
-      `}
-      onClick={onClick}
-    >
-      {icon}
-      <span className="relative">
-        {label}
-        {!isActive && (
-          <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-white transition-all duration-300 group-hover:w-full"></span>
-        )}
-      </span>
-      {isActive && (
-        <motion.div 
-          layoutId="active-tab-indicator" 
-          className="absolute -bottom-[2px] left-0 right-0 h-0.5 bg-white" 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          exit={{ opacity: 0 }} 
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 30
-          }}
-        />
-      )}
-    </Button>
   );
 };
 

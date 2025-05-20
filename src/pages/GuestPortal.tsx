@@ -34,14 +34,11 @@ const GuestPortal = () => {
   // Check if the user has registered previously and load their chat
   useEffect(() => {
     const checkRegistration = async () => {
-      console.log("Checking registration status with roomIdFromUrl:", roomIdFromUrl);
       setIsCheckingRegistration(true);
       
       try {
         // Specifically check for QR scanned room regardless of localStorage state
         if (roomIdFromUrl) {
-          console.log("QR code scan detected, checking if the room already has a registration");
-          
           // First, directly check if this room has any guest record
           const { data: existingRoomGuest, error } = await supabase
             .from('guests')
@@ -49,14 +46,8 @@ const GuestPortal = () => {
             .eq('room_id', roomIdFromUrl)
             .maybeSingle();
             
-          if (error) {
-            console.error("Error checking for existing room guests:", error);
-          }
-          
           // If a guest record exists for this room from any device, use that
           if (existingRoomGuest) {
-            console.log("Found existing registration for this room:", existingRoomGuest);
-            
             // Save to localStorage for future visits
             localStorage.setItem('guest_id', existingRoomGuest.id);
             localStorage.setItem('guestName', existingRoomGuest.name);
@@ -69,8 +60,6 @@ const GuestPortal = () => {
             setGuestId(existingRoomGuest.id);
             setRoomId(roomIdFromUrl);
             setIsRegistered(true);
-            
-            // REMOVED: Eliminated toast notification for returning users
           }
           
           // If no direct guest record, check room status
@@ -79,32 +68,21 @@ const GuestPortal = () => {
             .select('status, room_number')
             .eq('id', roomIdFromUrl)
             .maybeSingle();
-            
-          if (room && room.status === 'occupied') {
-            console.log("Room is marked as occupied but no guest found. This is inconsistent.");
-            // IMPORTANT: REMOVED toast notification for occupied cabins
-            // The alerts are now completely suppressed in the use-alerts.tsx hook
-          }
         }
         
         // Use the updated checkExistingRegistration as fallback
         const existingGuest = await checkExistingRegistration(false, roomIdFromUrl || undefined);
         
         if (existingGuest) {
-          console.log("Found existing guest registration:", existingGuest);
           setGuestName(existingGuest.name);
           setRoomNumber(existingGuest.room_number);
           setGuestId(existingGuest.id);
           setRoomId(existingGuest.room_id || '');
           setIsRegistered(true);
-          
-          // REMOVED: Eliminated toast notification for returning users
         } else {
-          console.log("No existing registration found, showing form");
           setIsRegistered(false);
         }
       } catch (error) {
-        console.error("Error during registration check:", error);
         setIsRegistered(false);
       } finally {
         setIsCheckingRegistration(false);
@@ -121,7 +99,6 @@ const GuestPortal = () => {
       
       setIsLoading(true);
       try {
-        console.log("Fetching room data for room ID:", roomIdFromUrl);
         const { data, error } = await supabase
           .from('rooms')
           .select('room_number, type, status')
@@ -129,12 +106,10 @@ const GuestPortal = () => {
           .single();
         
         if (error) {
-          console.error("Error fetching room data:", error);
           throw error;
         }
         
         if (data) {
-          console.log("Room data fetched:", data);
           setRoomData(data);
           
           // MODIFIED: Only show welcome animation if:
@@ -154,7 +129,7 @@ const GuestPortal = () => {
           }
         }
       } catch (error) {
-        console.error("Error in room data fetch:", error);
+        // Error handling
       } finally {
         setIsLoading(false);
       }
@@ -164,10 +139,7 @@ const GuestPortal = () => {
   }, [roomIdFromUrl, isRegistered]);
 
   const handleRegister = async (name: string, room: string, id: string, newRoomId: string) => {
-    console.log("Registration successful, setting up chat...", {name, room, id, newRoomId});
-    
     if (!id) {
-      console.error("Error: Received empty guest ID during registration");
       toast({
         title: "Error en el registro",
         description: "No se pudo completar el registro. ID de invitado no válido.",
@@ -247,7 +219,7 @@ const GuestPortal = () => {
   // Show loading indicator while checking registration
   if (isCheckingRegistration) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen w-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center justify-center p-6 bg-white shadow-lg rounded-lg">
           <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
           <p className="text-gray-700">Verificando su registro...</p>
@@ -257,7 +229,7 @@ const GuestPortal = () => {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 overflow-x-hidden">
+    <div className="min-h-screen w-screen max-w-[100vw] bg-gray-50 overflow-hidden layout-fullwidth">
       {/* Notification Banner for Guest */}
       <NotificationBanner type="guest" guestId={guestId} roomId={roomId || undefined} roomNumber={roomNumber} />
       
@@ -269,7 +241,7 @@ const GuestPortal = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.3 } }}
             transition={{ duration: 0.4 }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-hotel-700 to-hotel-500 bg-opacity-95 text-white p-6"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-hotel-700 to-hotel-500 bg-opacity-95 text-white p-6 w-full h-full"
           >
             <motion.div 
               initial={{ y: -20, opacity: 0 }}
@@ -330,7 +302,7 @@ const GuestPortal = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.3 }}
-          className="h-full"
+          className="h-full w-full"
         >
           {isRegistered ? (
             <GuestChat

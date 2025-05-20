@@ -402,154 +402,144 @@ const GuestRegistrationForm = ({ onRegister, preselectedRoomId, showSuccessToast
     }
   };
 
-  // Add a check for both states to show loading
-  if (isCheckingExistingGuests || !initialCheckDone) {
-    // Show loading indicator while checking session
+  // Show loading or form based on state
+  if (isCheckingExistingGuests) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-        <div className="flex flex-col items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-          <p className="text-gray-600">Verificando si ya has registrado tu cabaña...</p>
+      <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gray-50 layout-fullwidth">
+        <div className="flex flex-col items-center justify-center p-6 rounded-lg bg-white shadow-md">
+          <Loader2 className="h-8 w-8 animate-spin text-hotel-600 mb-2" />
+          <h2 className="text-lg font-medium">Verificando registro...</h2>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
+    <div className="min-h-screen w-full layout-fullwidth overflow-hidden bg-gray-50 px-0">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className={`w-full ${isMobile ? "max-w-[95%]" : "max-w-md"} bg-white rounded-xl shadow-lg p-6 space-y-4`}
+        className="w-full max-w-full mx-auto p-0 md:p-6"
       >
-        <div className="flex flex-col items-center justify-center mb-4">
-          <motion.div 
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5, type: "spring" }}
-            className="bg-blue-50 p-3 rounded-full mb-4"
-          >
-            <Hotel className="h-10 w-10 text-blue-600" />
-          </motion.div>
-          <h1 className="text-2xl font-bold text-center text-gray-800">
-            Bienvenido al Parque Temático Quimbaya
-          </h1>
-          
-          {preselectedRoom && (
-            <motion.div 
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="mt-5 p-4 bg-blue-50 border border-blue-100 rounded-lg w-full text-center"
-            >
-              <h2 className="text-xl font-bold text-blue-600">Cabaña {preselectedRoom.room_number}</h2>
-              {preselectedRoom.type && (
-                <p className="text-lg text-blue-700">{getRoomTypeText(preselectedRoom.type)}</p>
+        <div className="w-full bg-white shadow-md rounded-none md:rounded-lg overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-hotel-700 to-hotel-600 p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Hotel className="h-8 w-8" />
+                <div>
+                  <h1 className="text-xl font-bold">Parque Temático Quimbaya</h1>
+                  <p className="text-sm text-white/80">Registro de huésped</p>
+                </div>
+              </div>
+              {preselectedRoom && (
+                <div className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                  Cabaña {preselectedRoom.room_number}
+                </div>
               )}
-            </motion.div>
-          )}
+            </div>
+          </div>
           
-          <p className="text-gray-600 text-center mt-4">
-            Para comunicarse con recepción, por favor ingrese sus datos
-          </p>
-          <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
-            <p>Si necesita cualquier servicio para su cabaña, tiene alguna consulta o requiere asistencia, 
-            puede escribirnos directamente usando nuestro sistema de chat.</p>
+          {/* Form content */}
+          <div className="p-6">
+            {preselectedRoom && preselectedRoom.status !== 'available' && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-md text-amber-800">
+                <p className="font-medium">Esta cabaña está marcada como {preselectedRoom.status === 'occupied' ? 'ocupada' : preselectedRoom.status}.</p>
+                <p className="text-sm mt-1">Podría haber un error. Si la cabaña debería estar disponible, contacte a recepción.</p>
+              </div>
+            )}
+            
+            <form onSubmit={handleSubmit} className="space-y-6 w-full">
+              <div className="space-y-4 w-full">
+                <div>
+                  <Label htmlFor="guestName">Nombre completo</Label>
+                  <Input
+                    id="guestName"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    placeholder="Ingrese su nombre completo"
+                    required
+                    className="mt-1 w-full"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="guestCount">Número de huéspedes</Label>
+                  <div className="select-container">
+                    <Select
+                      value={guestCount}
+                      onValueChange={setGuestCount}
+                    >
+                      <SelectTrigger id="guestCount" className="w-full mt-1">
+                        <SelectValue placeholder="Seleccione cantidad de huéspedes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 huésped</SelectItem>
+                        <SelectItem value="2">2 huéspedes</SelectItem>
+                        <SelectItem value="3">3 huéspedes</SelectItem>
+                        <SelectItem value="4">4 huéspedes</SelectItem>
+                        <SelectItem value="5">5 huéspedes</SelectItem>
+                        <SelectItem value="6">6+ huéspedes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                {!preselectedRoom && (
+                  <div>
+                    <Label htmlFor="roomNumber">Cabaña</Label>
+                    <div className="select-container">
+                      <Select
+                        value={selectedRoomId}
+                        onValueChange={setSelectedRoomId}
+                        disabled={isLoadingRooms}
+                      >
+                        <SelectTrigger id="roomNumber" className="w-full mt-1">
+                          <SelectValue placeholder={isLoadingRooms ? "Cargando cabañas..." : "Seleccione una cabaña"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {rooms.map((room) => (
+                            <SelectItem key={room.id} value={room.id}>
+                              Cabaña {room.room_number} 
+                              {room.type && ` - ${getRoomTypeText(room.type)}`}
+                            </SelectItem>
+                          ))}
+                          {rooms.length === 0 && !isLoadingRooms && (
+                            <SelectItem value="none" disabled>
+                              No hay cabañas disponibles
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <motion.div
+                className="mt-4"
+                whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                whileTap={{ scale: isLoading ? 1 : 0.98 }}
+              >
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 bg-gradient-to-r from-hotel-600 to-hotel-500 hover:from-hotel-700 hover:to-hotel-600 text-white rounded-lg font-medium shadow-md"
+                  disabled={isLoading || isLoadingRooms || (!selectedRoomId && !preselectedRoom)}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center">
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Procesando...
+                    </span>
+                  ) : (
+                    "Continuar"
+                  )}
+                </Button>
+              </motion.div>
+            </form>
           </div>
         </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="guestName" className="text-gray-700">Nombre completo</Label>
-            <Input
-              id="guestName"
-              placeholder="Ingrese su nombre completo"
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              className="w-full h-12 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-              disabled={isLoading}
-            />
-          </div>
-          
-          {/* Solo mostrar la selección de cabaña si no hay una preseleccionada */}
-          {!preselectedRoom && (
-            <div className="space-y-2">
-              <Label htmlFor="roomNumber" className="text-gray-700">Seleccione su cabaña</Label>
-              {isLoadingRooms ? (
-                <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg">
-                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-blue-600" />
-                  <span className="text-sm text-gray-600">Cargando cabañas...</span>
-                </div>
-              ) : rooms.length === 0 ? (
-                <div className="text-center p-4 text-sm text-red-500 bg-red-50 rounded-lg">
-                  No hay cabañas disponibles
-                </div>
-              ) : (
-                <Select 
-                  value={selectedRoomId} 
-                  onValueChange={setSelectedRoomId}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger className="w-full h-12 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
-                    <SelectValue placeholder="Seleccione su cabaña" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[50vh]">
-                    {rooms.map((room) => (
-                      <SelectItem key={room.id} value={room.id}>
-                        {room.room_number} 
-                        {room.type && ` - ${getRoomTypeText(room.type)}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          )}
-          
-          {(selectedRoomId || preselectedRoom) && (
-            <div className="space-y-2">
-              <Label htmlFor="guestCount" className="text-gray-700">¿Cuántos hospedados hay en la cabaña?</Label>
-              <Select 
-                value={guestCount} 
-                onValueChange={setGuestCount}
-                disabled={isLoading}
-              >
-                <SelectTrigger className="w-full h-12 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
-                  <SelectValue placeholder="Seleccione cantidad de hospedados" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      {num} {num === 1 ? 'Persona' : 'Personas'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          
-          <motion.div
-            className="mt-4"
-            whileHover={{ scale: isLoading ? 1 : 1.02 }}
-            whileTap={{ scale: isLoading ? 1 : 0.98 }}
-          >
-            <Button 
-              type="submit" 
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium shadow-md"
-              disabled={isLoading || isLoadingRooms || (!selectedRoomId && !preselectedRoom)}
-            >
-              {isLoading ? (
-                <span className="flex items-center">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Procesando...
-                </span>
-              ) : (
-                "Continuar"
-              )}
-            </Button>
-          </motion.div>
-        </form>
       </motion.div>
     </div>
   );

@@ -12,6 +12,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
+import EnhancedStatsCharts from "./dashboard/EnhancedStatsCharts";
+import EnhancedRoomManagement from "./dashboard/EnhancedRoomManagement";
 type ResponseStat = {
   guest_id: string;
   guest_name: string;
@@ -346,496 +348,210 @@ const DashboardStats = () => {
     if (minutes === null || minutes === 0) return 0;
     return Math.round(minutes);
   };
-  return <div className="container mx-auto p-1 sm:p-2 h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 sm:mb-3 gap-1">
-        <h2 className="text-lg sm:text-xl font-bold text-hotel-800">Estadísticas del Sistema</h2>
-        
-        <div className="flex flex-wrap items-center gap-1 sm:gap-2 sm:justify-end">
-          <div className="text-xs text-gray-500 order-2 sm:order-1 flex items-center">
-            <span className="mr-1">Actualizado:</span>
-            {formatLastUpdated()}
-          </div>
-          
-          <ConnectionStatusIndicator className="order-1 sm:order-2 text-gray-700" />
-          
-          <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isRefreshing} className="flex items-center gap-1 ml-auto sm:ml-0 order-3 h-7 text-xs">
-            <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>Actualizar</span>
-          </Button>
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Panel de Estadísticas</h1>
+          <p className="text-muted-foreground">
+            Última actualización: {formatLastUpdated()}
+          </p>
         </div>
-      </div>
-      
-      {/* Main stats cards - 2 rows of 4 on desktop, stacked on mobile */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-        <AnimatePresence mode="wait">
-          <motion.div key={`card-guests-${summary.totalGuests}`} initial={{
-          opacity: 0.8,
-          scale: 0.95
-        }} animate={{
-          opacity: 1,
-          scale: 1
-        }} transition={{
-          duration: 0.2
-        }}>
-            <Card className="overflow-hidden bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
-                <CardTitle className="text-xs sm:text-sm font-medium">Total Huéspedes</CardTitle>
-                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
-              </CardHeader>
-              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
-                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.totalGuests}</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          <motion.div key={`card-messages-${summary.totalMessages}`} initial={{
-          opacity: 0.8,
-          scale: 0.95
-        }} animate={{
-          opacity: 1,
-          scale: 1
-        }} transition={{
-          duration: 0.2,
-          delay: 0.05
-        }}>
-            <Card className="overflow-hidden bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
-                <CardTitle className="text-xs sm:text-sm font-medium">Total Mensajes</CardTitle>
-                <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
-              </CardHeader>
-              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
-                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.totalMessages}</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          <motion.div key={`card-pending-${summary.pendingMessages}`} initial={{
-          opacity: 0.8,
-          scale: 0.95
-        }} animate={{
-          opacity: 1,
-          scale: 1
-        }} transition={{
-          duration: 0.2,
-          delay: 0.1
-        }}>
-            <Card className="overflow-hidden bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
-                <CardTitle className="text-xs sm:text-sm font-medium">Mensajes Pendientes</CardTitle>
-                <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
-              </CardHeader>
-              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
-                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.pendingMessages}</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          <motion.div key={`card-time-${Math.round(summary.avgResponseTime)}`} initial={{
-          opacity: 0.8,
-          scale: 0.95
-        }} animate={{
-          opacity: 1,
-          scale: 1
-        }} transition={{
-          duration: 0.2,
-          delay: 0.15
-        }}>
-            <Card className="overflow-hidden bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
-                <CardTitle className="text-xs sm:text-sm font-medium">Tiempo Promedio</CardTitle>
-                <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
-              </CardHeader>
-              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
-                <div className="text-lg sm:text-2xl font-bold text-hotel-800">
-                  {formatResponseTime(summary.avgResponseTime)}
-                </div>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">
-                  minutos:segundos
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          {/* Segunda fila de estadísticas */}
-          <motion.div key={`card-active-rooms-${summary.activeRooms}`} initial={{
-          opacity: 0.8,
-          scale: 0.95
-        }} animate={{
-          opacity: 1,
-          scale: 1
-        }} transition={{
-          duration: 0.2,
-          delay: 0.2
-        }}>
-            <Card className="overflow-hidden bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
-                <CardTitle className="text-xs sm:text-sm font-medium">Cabañas Activas</CardTitle>
-                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
-              </CardHeader>
-              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
-                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.activeRooms}</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          <motion.div key={`card-guests-today-${summary.guestsToday}`} initial={{
-          opacity: 0.8,
-          scale: 0.95
-        }} animate={{
-          opacity: 1,
-          scale: 1
-        }} transition={{
-          duration: 0.2,
-          delay: 0.25
-        }}>
-            <Card className="overflow-hidden bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
-                <CardTitle className="text-xs sm:text-sm font-medium">Huéspedes Hoy</CardTitle>
-                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
-              </CardHeader>
-              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
-                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.guestsToday}</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          <motion.div key={`card-msg-per-guest-${Math.round(summary.messagesPerGuest)}`} initial={{
-          opacity: 0.8,
-          scale: 0.95
-        }} animate={{
-          opacity: 1,
-          scale: 1
-        }} transition={{
-          duration: 0.2,
-          delay: 0.3
-        }}>
-            <Card className="overflow-hidden bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
-                <CardTitle className="text-xs sm:text-sm font-medium">Msgs por Huésped</CardTitle>
-                <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
-              </CardHeader>
-              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
-                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{summary.messagesPerGuest.toFixed(1)}</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          <motion.div key={`card-response-rate-${Math.round(summary.responseRate)}`} initial={{
-          opacity: 0.8,
-          scale: 0.95
-        }} animate={{
-          opacity: 1,
-          scale: 1
-        }} transition={{
-          duration: 0.2,
-          delay: 0.35
-        }}>
-            <Card className="overflow-hidden bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
-                <CardTitle className="text-xs sm:text-sm font-medium">Tasa de Respuesta</CardTitle>
-                <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-hotel-700" />
-              </CardHeader>
-              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
-                <div className="text-lg sm:text-2xl font-bold text-hotel-800">{formatPercentage(summary.responseRate)}</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-      
-      {/* Time range selector */}
-      <div className="flex justify-between items-center mb-3 bg-hotel-50/50 p-2 rounded-lg">
-        <h3 className="text-sm sm:text-base font-semibold text-hotel-800">Actividad por Período</h3>
-        <div className="flex space-x-2">
-          <Button
-            size="sm"
-            variant={timeRange === 'day' ? 'default' : 'outline'}
-            onClick={() => handleTimeRangeChange('day')}
-            className={`text-xs h-7 px-2 sm:h-8 sm:px-3 ${timeRange === 'day' ? 'bg-hotel-700 hover:bg-hotel-800' : ''}`}
-          >
-            Día
-          </Button>
-          <Button
-            size="sm"
-            variant={timeRange === 'week' ? 'default' : 'outline'}
-            onClick={() => handleTimeRangeChange('week')}
-            className={`text-xs h-7 px-2 sm:h-8 sm:px-3 ${timeRange === 'week' ? 'bg-hotel-700 hover:bg-hotel-800' : ''}`}
-          >
-            Semana
-          </Button>
-          <Button
-            size="sm"
-            variant={timeRange === 'month' ? 'default' : 'outline'}
-            onClick={() => handleTimeRangeChange('month')}
-            className={`text-xs h-7 px-2 sm:h-8 sm:px-3 ${timeRange === 'month' ? 'bg-hotel-700 hover:bg-hotel-800' : ''}`}
-          >
-            Mes
-          </Button>
-        </div>
+        <Button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="gap-2"
+        >
+          {isRefreshing ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          Actualizar
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 flex-grow">
-        {/* Daily Activity Chart */}
-        <Card className="lg:col-span-2 bg-white shadow-sm">
-          <CardHeader className="p-3">
-            <div className="flex flex-wrap items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <BarChartIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                Actividad Diaria
-              </CardTitle>
+      {/* Tarjetas de resumen */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Huéspedes registrados
+                </p>
+                <h3 className="text-2xl font-bold mt-1">{summary.totalGuests}</h3>
+              </div>
+              <div className="p-2 bg-primary-foreground/20 rounded-full">
+                <User className="h-4 w-4 text-primary" />
+              </div>
             </div>
-            <CardDescription className="text-xs sm:text-sm mt-1">
-              Mensajes y huéspedes activos por día
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-3 pb-3 h-[200px] sm:h-[240px]">
-            {dailyActivity.length > 0 ? <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dailyActivity} margin={{
-              top: 5,
-              right: 10,
-              left: 0,
-              bottom: 25
-            }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" angle={-45} textAnchor="end" height={60} tick={{
-                fontSize: 10
-              }} />
-                  <YAxis tick={{
-                fontSize: 10
-              }} />
-                  <Tooltip formatter={value => [value, '']} labelFormatter={label => `Fecha: ${label}`} contentStyle={{
-                fontSize: '12px'
-              }} />
-                  <Bar name="Mensajes" dataKey="message_count" fill="#8B5CF6" />
-                  <Bar name="Huéspedes" dataKey="unique_guests" fill="#D946EF" />
-                </BarChart>
-              </ResponsiveContainer> : <div className="h-full flex items-center justify-center">
-                <p className="text-muted-foreground">
-                  {isLoading ? "Cargando datos..." : "No hay datos suficientes"}
-                </p>
-              </div>}
+            <p className="text-xs text-muted-foreground mt-2">
+              {summary.guestsToday} nuevos hoy
+            </p>
           </CardContent>
         </Card>
 
-        {/* Guest Activity Pie Chart */}
-        <Card className="bg-white shadow-sm">
-          <CardHeader className="p-3">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-              Actividad de Huéspedes
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1">
-              Huéspedes activos en las últimas 24h
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-3 pb-3 h-[200px] sm:h-[240px]">
-            {activeGuests + inactiveGuests > 0 ? <div className="h-full flex flex-col items-center justify-center">
-                <ResponsiveContainer width="100%" height={180}>
-                  <PieChart>
-                    <Pie data={guestActivityData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={5} dataKey="value" label={({
-                  name,
-                  percent
-                }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                      {guestActivityData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={value => [value, 'Huéspedes']} />
-                  </PieChart>
-                </ResponsiveContainer>
-                
-                <div className="flex justify-center gap-4 text-xs">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-[#8B5CF6] rounded-full mr-1"></div>
-                    <span>Activos: {activeGuests}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-[#D946EF] rounded-full mr-1"></div>
-                    <span>Inactivos: {inactiveGuests}</span>
-                  </div>
-                </div>
-              </div> : <div className="h-full flex items-center justify-center">
-                <p className="text-muted-foreground">
-                  {isLoading ? "Cargando datos..." : "No hay datos suficientes"}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Total de mensajes
                 </p>
-              </div>}
+                <h3 className="text-2xl font-bold mt-1">{summary.totalMessages}</h3>
+              </div>
+              <div className="p-2 bg-primary-foreground/20 rounded-full">
+                <MessageSquare className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {formatPercentage(summary.responseRate)}% tasa de respuesta
+            </p>
           </CardContent>
         </Card>
-        
-        {/* Response Time Chart */}
-        <Card className="lg:col-span-2 bg-white shadow-sm">
-          <CardHeader className="p-3">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
-              Tiempos de Respuesta
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1">
-              Tiempo promedio y máximo de respuesta por huésped (segundos)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-3 pb-3 h-[200px] sm:h-[240px]">
-            {chartData.length > 0 ? <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{
-              top: 5,
-              right: 20,
-              left: 0,
-              bottom: 60
-            }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} tick={{
-                fontSize: 10
-              }} />
-                  <YAxis tick={{
-                fontSize: 10
-              }} />
-                  <Tooltip formatter={value => [`${value} seg`, '']} contentStyle={{
-                fontSize: '12px'
-              }} />
-                  <Bar name="Tiempo Promedio" dataKey="avg" fill="#4f46e5" />
-                  <Bar name="Tiempo Máximo" dataKey="max" fill="#ef4444" />
-                </BarChart>
-              </ResponsiveContainer> : <div className="h-full flex items-center justify-center">
-                <p className="text-muted-foreground">
-                  {isLoading ? "Cargando datos..." : "No hay datos suficientes"}
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Tiempo de respuesta
                 </p>
-              </div>}
+                <h3 className="text-2xl font-bold mt-1">
+                  {formatResponseTime(summary.avgResponseTime)}
+                </h3>
+              </div>
+              <div className="p-2 bg-primary-foreground/20 rounded-full">
+                <Clock className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Promedio en el último mes
+            </p>
           </CardContent>
         </Card>
-        
-        {/* Room Activity Table */}
-        <Card className="lg:col-span-1 bg-white shadow-sm">
-          <CardHeader className="p-3">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
-              Actividad por Cabaña
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1">
-              Mensajes y huéspedes por cabaña
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  <TableHead className="text-xs py-2 pl-4">Cabaña</TableHead>
-                  <TableHead className="text-xs text-center py-2">Huésp.</TableHead>
-                  <TableHead className="text-xs text-center py-2 pr-4">Msgs.</TableHead>
-                </TableRow>
-              </TableHeader>
-            </Table>
-            <ScrollArea className="h-[160px] sm:h-[200px]">
-              <Table>
-                <TableBody>
-                  {isLoading ? <TableRow>
-                      <TableCell colSpan={3} className="text-center">
-                        <div className="flex items-center justify-center py-3">
-                          <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                          <span className="text-xs">Cargando...</span>
-                        </div>
-                      </TableCell>
-                    </TableRow> : roomActivity.length === 0 ? <TableRow>
-                      <TableCell colSpan={3} className="text-center text-xs py-3">
-                        No hay datos disponibles
-                      </TableCell>
-                    </TableRow> : <AnimatePresence>
-                      {roomActivity.map(room => <motion.tr key={room.room_number} initial={{
-                    opacity: 0,
-                    y: 5
-                  }} animate={{
-                    opacity: 1,
-                    y: 0
-                  }} exit={{
-                    opacity: 0
-                  }} transition={{
-                    duration: 0.2
-                  }} className="group hover:bg-muted/40">
-                          <TableCell className="font-medium text-xs py-2.5 pl-4">
-                            {room.room_number}
-                          </TableCell>
-                          <TableCell className="text-center text-xs py-2.5">
-                            {room.guest_count}
-                          </TableCell>
-                          <TableCell className="text-center text-xs py-2.5 pr-4">
-                            {room.message_count}
-                          </TableCell>
-                        </motion.tr>)}
-                    </AnimatePresence>}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-        
-        {/* Pending Messages Table */}
-        <Card className="lg:col-span-3 bg-white shadow-sm">
-          <CardHeader className="p-3">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-              Mensajes Sin Responder
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1">
-              Huéspedes con mensajes pendientes
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  <TableHead className="text-xs py-2 pl-4">Huésped</TableHead>
-                  <TableHead className="text-xs py-2">Hab.</TableHead>
-                  <TableHead className="text-xs text-right py-2">Tiempo Espera</TableHead>
-                  <TableHead className="text-xs text-right py-2 pr-4">Pendientes</TableHead>
-                </TableRow>
-              </TableHeader>
-            </Table>
-            <ScrollArea className="h-[140px] sm:h-[180px]">
-              <Table>
-                <TableBody>
-                  {isLoading ? <TableRow>
-                      <TableCell colSpan={4} className="text-center">
-                        <div className="flex items-center justify-center py-3">
-                          <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                          <span className="text-xs">Cargando...</span>
-                        </div>
-                      </TableCell>
-                    </TableRow> : stats.filter(s => (s.pending_messages || 0) > 0).length === 0 ? <TableRow>
-                      <TableCell colSpan={4} className="text-center text-xs py-3">
-                        No hay mensajes pendientes
-                      </TableCell>
-                    </TableRow> : <AnimatePresence>
-                      {stats.filter(stat => (stat.pending_messages || 0) > 0).sort((a, b) => (b.wait_time_minutes || 0) - (a.wait_time_minutes || 0)).map(stat => <motion.tr key={stat.guest_id} initial={{
-                    opacity: 0,
-                    y: 5
-                  }} animate={{
-                    opacity: 1,
-                    y: 0
-                  }} exit={{
-                    opacity: 0
-                  }} transition={{
-                    duration: 0.2
-                  }} className="group hover:bg-muted/40">
-                            <TableCell className="font-medium text-xs py-2.5 pl-4">
-                              {stat.guest_name}
-                            </TableCell>
-                            <TableCell className="text-xs py-2.5">
-                              {stat.room_number}
-                            </TableCell>
-                            <TableCell className="text-right text-xs py-2.5">
-                              <span className="">
-                                {formatWaitTime(stat.wait_time_minutes)} min
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right text-xs py-2.5 pr-4">
-                              <span className="inline-flex items-center justify-center bg-amber-100 text-amber-800 rounded-full px-2 py-0.5">
-                                {stat.pending_messages}
-                              </span>
-                            </TableCell>
-                          </motion.tr>)}
-                    </AnimatePresence>}
-                </TableBody>
-              </Table>
-            </ScrollArea>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Habitaciones activas
+                </p>
+                <h3 className="text-2xl font-bold mt-1">
+                  {summary.activeRooms}/{roomActivity.length}
+                </h3>
+              </div>
+              <div className="p-2 bg-primary-foreground/20 rounded-full">
+                <BarChartIcon className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {summary.pendingMessages} mensajes pendientes
+            </p>
           </CardContent>
         </Card>
       </div>
-    </div>;
+
+      {/* Gráficos mejorados */}
+      <div className="mb-8">
+        <EnhancedStatsCharts
+          dailyActivity={dailyActivity}
+          roomActivity={roomActivity}
+          activeGuests={activeGuests}
+          inactiveGuests={inactiveGuests}
+          totalMessages={summary.totalMessages}
+          pendingMessages={summary.pendingMessages}
+          responseRate={summary.responseRate}
+        />
+      </div>
+
+      {/* Gestión de habitaciones mejorada */}
+      <div className="mb-8">
+        <EnhancedRoomManagement showGuestCount={true} />
+      </div>
+
+      {/* Tabla de tiempos de respuesta */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Tiempos de respuesta por huésped</CardTitle>
+          <CardDescription>
+            Estadísticas detalladas de tiempos de respuesta a mensajes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[400px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Huésped</TableHead>
+                  <TableHead>Habitación</TableHead>
+                  <TableHead>Mensajes</TableHead>
+                  <TableHead>Tiempo de respuesta</TableHead>
+                  <TableHead>Tiempo máximo</TableHead>
+                  <TableHead>Pendientes</TableHead>
+                  <TableHead>Espera actual</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stats.map((stat) => (
+                  <TableRow key={stat.guest_id}>
+                    <TableCell className="font-medium">
+                      {stat.guest_name}
+                    </TableCell>
+                    <TableCell>{stat.room_number}</TableCell>
+                    <TableCell>{stat.total_messages}</TableCell>
+                    <TableCell>
+                      {formatResponseTime(stat.avg_response_time)}
+                    </TableCell>
+                    <TableCell>
+                      {formatResponseTime(stat.max_response_time)}
+                    </TableCell>
+                    <TableCell>{stat.pending_messages || 0}</TableCell>
+                    <TableCell>
+                      {formatWaitTime(stat.wait_time_minutes)} min
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+      
+      {/* Controles */}
+      <div className="flex space-x-4 mb-4">
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Rango de tiempo</p>
+          <div className="flex space-x-2">
+            <Button
+              variant={timeRange === "day" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleTimeRangeChange("day")}
+            >
+              24h
+            </Button>
+            <Button
+              variant={timeRange === "week" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleTimeRangeChange("week")}
+            >
+              7 días
+            </Button>
+            <Button
+              variant={timeRange === "month" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleTimeRangeChange("month")}
+            >
+              30 días
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
+
 export default DashboardStats;

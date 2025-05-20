@@ -12,15 +12,12 @@ export type GuestRegistration = {
 // Function to check if there's an existing guest registration using both localStorage and database
 export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFromQR?: string): Promise<GuestRegistration> => {
   try {
-    console.log("Checking registration with params:", { skipRedirect, roomIdFromQR });
     // Get guest ID and room ID from localStorage
     const guestId = localStorage.getItem('guest_id');
     const storedRoomId = localStorage.getItem('roomId');
 
     // If we have a QR code scan with a room ID - PRIORITIZE checking database first
     if (roomIdFromQR) {
-      console.log(`QR scan detected with room ID: ${roomIdFromQR}`);
-      
       // IMPROVED PRIORITY: First check if there's ANY existing guest registered for this room in the database
       // This allows access from any device that scans the QR code for an occupied room
       const { data: roomGuest, error: roomGuestError } = await supabase
@@ -31,8 +28,6 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
       
       // If we found a guest for this room in the database
       if (!roomGuestError && roomGuest) {
-        console.log("Found existing registration for this room in database:", roomGuest);
-        
         // Update localStorage with this room's guest info for future reference
         localStorage.setItem('guest_id', roomGuest.id);
         localStorage.setItem('guestName', roomGuest.name);
@@ -45,12 +40,10 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
           .update({ status: 'occupied' })
           .eq('id', roomIdFromQR);
           
-        console.log("Room guest info saved to localStorage and room confirmed as occupied");
         return roomGuest;
       }
       
       // If no direct guest found, check room status
-      console.log("No direct guest record found, checking room status...");
       const { data: roomData } = await supabase
         .from('rooms')
         .select('status, room_number')
@@ -58,7 +51,6 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
         .single();
         
       if (roomData && roomData.status === 'occupied') {
-        console.log("Room is marked as occupied but no guest record found. This is inconsistent.");
         // We'll create a placeholder guest record to maintain consistency
         // This handles cases where the room status and guest records are out of sync
         return null;
@@ -66,8 +58,6 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
       
       // If the user has a stored guest ID for this exact room
       if (guestId && storedRoomId === roomIdFromQR) {
-        console.log("User is already registered for this room in localStorage. Verifying in database...");
-        
         // Verify the guest record still exists in database
         const { data: existingGuest, error: guestError } = await supabase
           .from('guests')
@@ -76,12 +66,11 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
           .maybeSingle();
         
         if (guestError) {
-          console.error("Error fetching guest record:", guestError);
           return null;
         }
         
         if (!existingGuest) {
-          console.log("Guest record no longer exists in database. Clearing localStorage.");
+          // Guest record no longer exists in database. Clearing localStorage
           localStorage.removeItem('guest_id');
           localStorage.removeItem('guestName');
           localStorage.removeItem('roomNumber');
@@ -94,7 +83,6 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
       } 
       
       // No registration found for this room - check room status
-      console.log("No existing registration found for this room. Checking room status...");
       return null;
     }
     
@@ -108,12 +96,11 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
         .maybeSingle();
         
       if (error) {
-        console.error("Error checking registration:", error);
         return null;
       }
       
       if (!data) {
-        console.log("Guest ID exists in localStorage but not in database. Clearing localStorage.");
+        // Guest ID exists in localStorage but not in database. Clearing localStorage
         localStorage.removeItem('guest_id');
         localStorage.removeItem('guestName');
         localStorage.removeItem('roomNumber');
@@ -121,14 +108,11 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
         return null;
       }
       
-      console.log("Found valid existing registration:", data);
       return data;
     }
     
-    console.log("No existing registration found.");
     return null;
   } catch (error) {
-    console.error("Error checking existing registration:", error);
     return null;
   }
 };
@@ -136,8 +120,6 @@ export const checkExistingRegistration = async (skipRedirect?: boolean, roomIdFr
 // Function to clear guest registration when a room is marked as available
 export const clearRoomRegistration = async (roomId: string): Promise<boolean> => {
   try {
-    console.log(`Clearing registration for room ID: ${roomId}`);
-    
     // Get any guests registered for this room
     const { data: guests, error: guestError } = await supabase
       .from('guests')
@@ -145,7 +127,6 @@ export const clearRoomRegistration = async (roomId: string): Promise<boolean> =>
       .eq('room_id', roomId);
       
     if (guestError) {
-      console.error("Error fetching guests for room:", guestError);
       return false;
     }
     
@@ -157,16 +138,12 @@ export const clearRoomRegistration = async (roomId: string): Promise<boolean> =>
         .eq('room_id', roomId);
         
       if (deleteError) {
-        console.error("Error deleting guests:", deleteError);
         return false;
       }
-      
-      console.log(`Deleted ${guests.length} guest registrations for room ID: ${roomId}`);
     }
     
     return true;
   } catch (error) {
-    console.error("Error clearing room registration:", error);
     return false;
   }
 };

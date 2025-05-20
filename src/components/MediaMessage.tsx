@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FileImage, FileVideo, Maximize, Minimize } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MediaMessageProps {
   mediaUrl: string;
@@ -10,11 +10,43 @@ interface MediaMessageProps {
   isGuest: boolean;
 }
 
+// Componente de imagen optimizada
+const OptimizedImage = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  
+  return (
+    <div className="relative">
+      {!loaded && !error && (
+        <Skeleton className={`absolute inset-0 rounded-md ${className}`} />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`rounded-md ${className} ${loaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          setError(true);
+          setLoaded(true);
+        }}
+        style={{ aspectRatio: "16/9", objectFit: "cover" }}
+      />
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-md">
+          <span className="text-sm text-gray-500">Error al cargar la imagen</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Reset error state when mediaUrl changes
   useEffect(() => {
@@ -22,6 +54,15 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
     setVideoError(false);
     console.log(`MediaMessage rendering with URL: ${mediaUrl} and type: ${mediaType}`);
   }, [mediaUrl, mediaType]);
+
+  useEffect(() => {
+    // Simular carga completada después de un tiempo o cuando la imagen realmente se cargue
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, [mediaUrl]);
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -71,15 +112,10 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
         <div className="relative cursor-pointer" onClick={handleOpen}>
           {!imageError && isValidUrl ? (
             <div className={`rounded overflow-hidden ${borderStyle}`}>
-              <img
+              <OptimizedImage
                 src={mediaUrl}
                 alt="Imagen enviada"
                 className="max-w-full rounded max-h-40 object-contain w-auto h-auto"
-                loading="lazy"
-                onError={(e) => {
-                  console.error("Failed to load image:", mediaUrl, e);
-                  setImageError(true);
-                }}
               />
             </div>
           ) : (
@@ -96,15 +132,22 @@ const MediaMessage = ({ mediaUrl, mediaType, isGuest }: MediaMessageProps) => {
         <div className="cursor-pointer flex flex-col" onClick={handleOpen}>
           <div className={`relative bg-black rounded overflow-hidden min-h-[100px] min-w-[150px] ${borderStyle}`}>
             {!videoError && isValidUrl ? (
-              <video
-                src={mediaUrl}
-                className="max-h-40 max-w-full object-contain w-auto h-auto"
-                preload="metadata"
-                onError={(e) => {
-                  console.error("Failed to load video:", mediaUrl, e);
-                  setVideoError(true);
-                }}
-              />
+              <div className="relative">
+                {isLoading && (
+                  <Skeleton className="absolute inset-0 rounded-md" />
+                )}
+                <video
+                  src={mediaUrl}
+                  className={`max-h-40 max-w-full object-contain w-auto h-auto ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+                  preload="metadata"
+                  onLoadedData={() => setIsLoading(false)}
+                  onError={(e) => {
+                    console.error("Failed to load video:", mediaUrl, e);
+                    setVideoError(true);
+                    setIsLoading(false);
+                  }}
+                />
+              </div>
             ) : (
               <div className="flex items-center justify-center h-full w-full p-4">
                 <FileVideo className="h-10 w-10 text-white opacity-70 mr-2" />

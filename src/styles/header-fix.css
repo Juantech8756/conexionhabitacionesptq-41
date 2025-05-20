@@ -1,0 +1,219 @@
+/* Solución definitiva para el header */
+
+/* Asegurar que el header sea visible y tenga el tamaño correcto */
+.dashboard-header-container {
+  height: 80px !important;
+  width: 100% !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15) !important;
+  display: flex !important;
+  align-items: center !important;
+  background: linear-gradient(to right, #6e4d31, #8f6744) !important;
+  color: white !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  overflow: visible !important;
+  transform: none !important;
+  pointer-events: auto !important;
+}
+
+/* Asegurar que el contenido interno del header esté correctamente posicionado */
+.dashboard-header-container > div {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 24px !important;
+}
+
+/* Asegurar que el título sea visible */
+.dashboard-header-container h1 {
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  color: white !important;
+  margin: 0 !important;
+}
+
+/* Asegurar que los botones sean visibles */
+.dashboard-header-container button {
+  background-color: transparent !important;
+  color: white !important;
+  border-radius: 50% !important;
+  width: 48px !important;
+  height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background-color 0.2s !important;
+}
+
+.dashboard-header-container button:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Asegurar que el dashboard tenga el padding correcto */
+.reception-dashboard {
+  padding-top: 80px !important;
+}
+
+/* ESTILOS PARA EL HEADER DEL CHAT */
+.chat-header-minimal {
+  height: 75px !important;
+  width: 100% !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 900 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 !important;
+  background-color: #6e4d31 !important;
+  color: white !important;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Contenedor interno del header */
+.chat-header-minimal > div {
+  display: flex !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+/* Contenedor izquierdo (información) */
+.chat-header-minimal .flex-1 {
+  max-width: calc(100% - 80px) !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Asegurar visibilidad del título y datos */
+.chat-header-minimal h2 {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.chat-header-minimal .flex-col > div {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Estilos para el título del chat */
+.chat-header-minimal h2,
+.chat-header-minimal .chat-title {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: white !important;
+  margin: 0 !important;
+  max-width: 150px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+}
+
+/* Estilos para la información de la habitación */
+.chat-header-minimal .text-sm {
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  display: flex !important;
+  align-items: center !important;
+  letter-spacing: 0.2px !important;
+}
+
+/* Estilos para los iconos en la información de habitación */
+.chat-header-minimal .text-sm svg {
+  margin-right: 6px !important;
+}
+
+/* Contenedor derecho (botón eliminar) */
+.chat-header-minimal button:has(.trash-icon) {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 8px !important;
+  padding: 0 !important;
+  margin-right: 4px !important;
+  margin-left: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  background-color: transparent !important;
+  flex-shrink: 0 !important;
+}
+
+.chat-header-minimal button:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Estilo específico para el icono de eliminar */
+.chat-header-minimal .trash-icon {
+  height: 18px !important;
+  width: 18px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  display: block !important;
+}
+
+/* Cambio de color al hacer hover en el icono */
+.chat-header-minimal button:hover svg.trash-icon {
+  color: #f87171 !important;
+}
+
+/* Ajustes para dispositivos móviles */
+@media (max-width: 640px) {
+  .chat-header-minimal > div {
+    padding: 0 8px !important;
+  }
+  
+  .chat-header-minimal h2 {
+    font-size: 18px !important;
+    max-width: 120px !important;
+  }
+  
+  .chat-header-minimal .text-sm {
+    font-size: 12px !important;
+  }
+  
+  /* Asegurar que el botón de atrás tenga suficiente espacio */
+  .chat-header-minimal button[aria-label="Volver a la lista de huéspedes"] {
+    margin-right: 8px !important;
+  }
+}
+
+/* Botón de volver atrás específico para el chat de recepción */
+.chat-header-minimal button[aria-label="Volver a la lista de huéspedes"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  background-color: transparent !important;
+  color: white !important;
+  border-radius: 50% !important;
+  margin-right: 10px !important;
+  flex-shrink: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 10 !important;
+}
+
+.chat-header-minimal button[aria-label="Volver a la lista de huéspedes"] svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: white !important;
+  opacity: 0.95 !important;
+  display: block !important;
+}
+
+.chat-header-minimal button[aria-label="Volver a la lista de huéspedes"]:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+} 
